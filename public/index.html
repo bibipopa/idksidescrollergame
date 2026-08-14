@@ -3,172 +3,164 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#070711">
-  <meta name="description" content="RIFT//RAID — кооперативный браузерный босс-раш для 2–4 игроков">
-  <title>RIFT//RAID — Multiplayer Boss Fight</title>
+  <meta name="theme-color" content="#090806">
+  <meta name="description" content="RIFT//RAID: Ashen Hundred — кооперативный soulslike-рогалик на 1–4 игроков">
+  <title>RIFT//RAID: Ashen Hundred</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&amp;family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-  <div class="noise" aria-hidden="true"></div>
+  <div class="grain" aria-hidden="true"></div>
   <div id="app">
     <header class="topbar">
-      <button class="brand" id="brandButton" type="button" aria-label="На главный экран">
-        <span class="brand-mark"><i></i><i></i></span>
-        <span>RIFT<span>//</span>RAID</span>
+      <button class="brand" id="brandButton" type="button">
+        <span class="brand-sigil">✦</span>
+        <span>RIFT<em>//</em>RAID <small>ASHEN HUNDRED</small></span>
       </button>
-      <div class="server-state" id="serverState"><i></i><span>Подключение...</span></div>
+      <div class="top-actions">
+        <button class="wallet" id="shopButton" type="button"><span class="coin">¤</span><b id="currencyCount">0</b><i>АРСЕНАЛ</i></button>
+        <div class="server-state" id="serverState"><i></i><span>Подключение...</span></div>
+      </div>
     </header>
 
     <main>
       <section class="screen home-screen active" id="homeScreen">
-        <div class="ambient ambient-one"></div>
-        <div class="ambient ambient-two"></div>
+        <div class="cathedral" aria-hidden="true"><i></i><i></i><i></i></div>
         <div class="home-copy">
-          <div class="eyebrow"><span>КООПЕРАТИВНЫЙ РЕЙД</span><b>2–4 ИГРОКА</b></div>
-          <h1>Сломай босса.<br><em>Не команду.</em></h1>
-          <p>Быстрый сайдскроллер, где каждый игрок подключается со своего устройства. Создай комнату, отправь код друзьям и ворвись в разлом.</p>
+          <div class="eyebrow"><span>ПЕПЕЛЬНЫЙ ЗАБЕГ</span><b>1–4 СТРАННИКА</b></div>
+          <h1>Пройди<br><em>сотню.</em></h1>
+          <p>Сто стадий одного проклятого стража. Читай его движения, парируй удары и собирай уникальную сборку из карт после каждой победы.</p>
           <div class="feature-row">
+            <div><strong>100</strong><span>стадий босса</span></div>
+            <div><strong>20</strong><span>разных перков</span></div>
             <div><strong>03</strong><span>боевых класса</span></div>
-            <div><strong>∞</strong><span>командных тактик</span></div>
-            <div><strong>1</strong><span>очень злой босс</span></div>
           </div>
         </div>
 
-        <div class="entry-card glass">
-          <div class="card-heading">
-            <div><span>ПОДГОТОВКА</span><h2>Выбери бойца</h2></div>
-            <span class="step-badge">01</span>
-          </div>
+        <div class="entry-card panel">
+          <div class="card-heading"><div><span>ПОДГОТОВКА</span><h2>Выбери путь</h2></div><span class="roman">I</span></div>
+          <label class="field-label" for="nameInput">Имя странника</label>
+          <div class="input-wrap"><span>†</span><input id="nameInput" maxlength="16" autocomplete="nickname" placeholder="Например, Dwalin"></div>
 
-          <label class="field-label" for="nameInput">Позывной</label>
-          <div class="input-wrap">
-            <span class="input-icon">@</span>
-            <input id="nameInput" maxlength="16" autocomplete="nickname" placeholder="Например, Dwalin">
-          </div>
-
-          <div class="hero-picker" id="homeHeroPicker">
-            <button class="hero-option selected" type="button" data-hero="blade">
-              <span class="hero-icon blade-icon"><i></i></span>
-              <span><strong>Клинок</strong><small>Баланс / рывок</small></span>
-              <b>01</b>
+          <div class="class-picker" id="classPicker">
+            <button class="class-option selected" type="button" data-class="swordsman">
+              <span class="class-icon sword-icon">†</span><span><strong>Мечник</strong><small>Равновесие стали</small></span><b>ДОСТУПЕН</b>
             </button>
-            <button class="hero-option" type="button" data-hero="spark">
-              <span class="hero-icon spark-icon"><i></i></span>
-              <span><strong>Искра</strong><small>Дальний бой</small></span>
-              <b>02</b>
+            <button class="class-option locked" type="button" data-class="greatsword">
+              <span class="class-icon great-icon">‡</span><span><strong>Тяжёлый мечник</strong><small>Медленный сокрушитель</small></span><b class="lock-label">600 ¤</b>
             </button>
-            <button class="hero-option" type="button" data-hero="bastion">
-              <span class="hero-icon bastion-icon"><i></i></span>
-              <span><strong>Бастион</strong><small>Броня / урон</small></span>
-              <b>03</b>
+            <button class="class-option locked" type="button" data-class="rogue">
+              <span class="class-icon rogue-icon">⋔</span><span><strong>Вор</strong><small>Кинжалы и скорость</small></span><b class="lock-label">900 ¤</b>
             </button>
           </div>
 
-          <button class="primary-button" id="createRoomButton" type="button">
-            <span>Создать комнату</span><i>↗</i>
-          </button>
-
-          <div class="or"><span>или войти по коду</span></div>
-
+          <button class="primary-button" id="createRoomButton" type="button"><span>Открыть разлом</span><i>→</i></button>
+          <div class="or"><span>или присоединиться</span></div>
           <div class="join-row">
-            <input id="roomCodeInput" class="code-input" maxlength="5" inputmode="text" autocomplete="off" placeholder="ABCDE" aria-label="Код комнаты">
-            <button class="secondary-button" id="joinRoomButton" type="button">Войти <span>→</span></button>
+            <input id="roomCodeInput" class="code-input" maxlength="5" autocomplete="off" placeholder="КОД">
+            <button class="secondary-button" id="joinRoomButton" type="button">ВОЙТИ →</button>
           </div>
           <p class="form-error" id="homeError" role="alert"></p>
         </div>
-
-        <div class="scroll-note"><span></span> Браузерная игра · установка не нужна</div>
       </section>
 
       <section class="screen lobby-screen" id="lobbyScreen">
-        <div class="lobby-orbit" aria-hidden="true"><i></i><i></i><i></i></div>
         <div class="lobby-shell">
           <div class="lobby-title">
-            <div class="eyebrow"><span>КОМНАТА СОЗДАНА</span><b id="lobbyCount">1 / 4</b></div>
-            <h1>Собери свой <em>отряд</em></h1>
-            <p>Отправь код друзьям. Они смогут войти с телефона или компьютера, пока вы находитесь на этом экране.</p>
+            <div class="eyebrow"><span>У КОСТРА</span><b id="lobbyCount">1 / 4</b></div>
+            <h1>Собери <em>клятву</em></h1>
+            <p>Забег можно начать одному или дождаться других странников. Отправь им код комнаты.</p>
           </div>
-
-          <div class="room-code-panel glass">
-            <span>КОД ДОСТУПА</span>
-            <button id="copyCodeButton" type="button" title="Скопировать код">
-              <strong id="roomCodeText">-----</strong>
-              <i>Копировать</i>
-            </button>
-          </div>
-
+          <div class="room-code-panel panel"><span>ПЕЧАТЬ КОМНАТЫ</span><button id="copyCodeButton" type="button"><strong id="roomCodeText">-----</strong><i>КОПИРОВАТЬ</i></button></div>
           <div class="squad-grid" id="squadGrid"></div>
-
           <div class="lobby-actions">
-            <button class="ghost-button" id="leaveLobbyButton" type="button">← Покинуть</button>
-            <div class="lobby-hint" id="lobbyHint"><i></i><span>Ждём ещё одного игрока</span></div>
-            <button class="primary-button launch-button" id="startGameButton" type="button" disabled>
-              <span>Начать рейд</span><i>→</i>
-            </button>
+            <button class="ghost-button" id="leaveLobbyButton" type="button">← ПОКИНУТЬ</button>
+            <div class="lobby-hint" id="lobbyHint"><i></i><span>Забег доступен</span></div>
+            <button class="primary-button launch-button" id="startGameButton" type="button"><span>Начать забег</span><i>→</i></button>
           </div>
-          <p class="form-error centered" id="lobbyError" role="alert"></p>
+          <p class="form-error" id="lobbyError" role="alert"></p>
         </div>
       </section>
 
       <section class="screen game-screen" id="gameScreen">
-        <canvas id="gameCanvas" aria-label="Игровое поле"></canvas>
-
+        <canvas id="gameCanvas"></canvas>
         <div class="game-hud">
-          <div class="raid-meta glass-compact">
-            <span class="mini-brand">R//R</span>
+          <div class="raid-meta hud-panel">
+            <span class="mini-sigil">✦</span>
             <div><small>КОМНАТА</small><strong id="hudRoomCode">-----</strong></div>
             <div><small>ВРЕМЯ</small><strong id="timerText">00:00</strong></div>
           </div>
 
           <div class="boss-hud">
-            <div class="boss-name"><span>СТРАЖ РАЗЛОМА</span><b id="bossPhase">ФАЗА 1</b></div>
+            <div class="boss-name"><span id="bossName">СТРАЖ ПЕПЛА</span><b id="stageText">СТАДИЯ 1 / 100</b></div>
             <div class="boss-bar"><i id="bossHealthBar"></i><span></span></div>
-            <small id="bossHealthText">1800 / 1800</small>
+            <small id="bossHealthText">365 / 365</small>
           </div>
 
-          <div class="squad-hud glass-compact" id="squadHud"></div>
+          <div class="squad-hud hud-panel" id="squadHud"></div>
+          <div class="player-vitals hud-panel" id="playerVitals">
+            <div class="hearts" id="heartsBar"></div>
+            <div class="stamina-track"><i id="staminaBar"></i></div>
+            <div class="vital-labels"><span>ЖИЗНЬ</span><b>ВЫНОСЛИВОСТЬ</b></div>
+          </div>
         </div>
 
         <div class="controls-tip" id="controlsTip">
-          <span><kbd>A</kbd><kbd>D</kbd> Движение</span>
-          <span><kbd>W</kbd> Прыжок</span>
-          <span><kbd>J</kbd> Атака</span>
-          <span><kbd>K</kbd> Рывок</span>
-          <span><kbd>E</kbd> Умение</span>
+          <span><kbd>A</kbd><kbd>D</kbd> Движение</span><span><kbd>W</kbd> Прыжок</span>
+          <span><kbd>J</kbd> Лёгкая</span><span><kbd>K</kbd> Тяжёлая</span>
+          <span><kbd>H</kbd> Парирование</span><span><kbd>L</kbd> Перекат</span>
         </div>
 
-        <div class="touch-controls" id="touchControls" aria-label="Сенсорное управление">
-          <div class="touch-move">
-            <button type="button" data-input="left" aria-label="Влево">←</button>
-            <button type="button" data-input="right" aria-label="Вправо">→</button>
-          </div>
+        <div class="touch-controls">
+          <div class="touch-move"><button type="button" data-input="left">←</button><button type="button" data-input="right">→</button></div>
           <div class="touch-actions">
             <button type="button" data-input="jump"><small>W</small>Прыжок</button>
-            <button type="button" data-input="dash"><small>K</small>Рывок</button>
-            <button type="button" data-input="ability"><small>E</small>Навык</button>
-            <button class="touch-attack" type="button" data-input="attack"><small>J</small>Удар</button>
+            <button type="button" data-input="parry"><small>H</small>Парир.</button>
+            <button type="button" data-input="roll"><small>L</small>Перекат</button>
+            <button type="button" data-input="heavy"><small>K</small>Тяж.</button>
+            <button class="touch-attack" type="button" data-input="light"><small>J</small>Удар</button>
           </div>
         </div>
       </section>
     </main>
 
-    <div class="toast-stack" id="toastStack" aria-live="polite"></div>
+    <div class="perk-overlay" id="perkOverlay" aria-hidden="true">
+      <div class="perk-shell">
+        <span class="perk-kicker" id="perkKicker">СТАДИЯ ПРОЙДЕНА</span>
+        <h2>Прими один дар</h2>
+        <p id="perkSubtitle">Остальные карты обратятся в пепел.</p>
+        <div class="perk-grid" id="perkGrid"></div>
+        <div class="waiting-perks" id="waitingPerks">Сделай выбор</div>
+      </div>
+    </div>
 
+    <div class="modal-overlay" id="shopOverlay" aria-hidden="true">
+      <div class="shop-card panel">
+        <button class="close-button" id="closeShopButton" type="button">×</button>
+        <div class="shop-heading"><span>АРСЕНАЛ ПЕПЛА</span><h2>Наследие забегов</h2><p>Валюта хранится на этом устройстве.</p></div>
+        <div class="shop-balance"><span>ТВОЙ ПЕПЕЛ</span><strong><i>¤</i> <b id="shopCurrency">0</b></strong></div>
+        <h3>Пути странника</h3>
+        <div class="shop-grid" id="classShop"></div>
+        <h3>Облики оружия</h3>
+        <div class="skin-grid" id="skinShop"></div>
+      </div>
+    </div>
+
+    <div class="toast-stack" id="toastStack"></div>
     <div class="result-overlay" id="resultOverlay" aria-hidden="true">
-      <div class="result-card glass">
-        <span class="result-kicker" id="resultKicker">РАЗЛОМ ЗАКРЫТ</span>
-        <h2 id="resultTitle">Рейд завершён</h2>
-        <p id="resultSubtitle">Команда сделала это.</p>
+      <div class="result-card panel">
+        <span class="result-kicker" id="resultKicker">ЗАБЕГ ОКОНЧЕН</span>
+        <h2 id="resultTitle">Пламя погасло</h2>
+        <p id="resultSubtitle">Достигнута стадия 1.</p>
+        <div class="run-summary" id="runSummary"></div>
         <div class="result-stats" id="resultStats"></div>
-        <button class="primary-button" id="rematchButton" type="button"><span>Вернуться в комнату</span><i>↻</i></button>
-        <button class="ghost-button result-exit" id="resultExitButton" type="button">Выйти на главную</button>
+        <button class="primary-button" id="rematchButton" type="button"><span>Вернуться к костру</span><i>↻</i></button>
+        <button class="ghost-button" id="resultExitButton" type="button">ВЫЙТИ НА ГЛАВНУЮ</button>
       </div>
     </div>
   </div>
-
   <script src="/socket.io/socket.io.js"></script>
   <script src="/game.js"></script>
 </body>

@@ -7,45 +7,67 @@ const { Server } = require('socket.io');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, {
-  cors: { origin: true, methods: ['GET', 'POST'] },
-  transports: ['websocket', 'polling'],
-});
+const io = new Server(server, { cors: { origin: true }, transports: ['websocket', 'polling'] });
 
 const PORT = Number(process.env.PORT) || 3000;
 const TICK_RATE = 30;
 const DT = 1 / TICK_RATE;
-const WORLD = { width: 3200, height: 720, floor: 640 };
-const ROOM_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const MAX_PLAYERS = 4;
-
+const MAX_STAGE = 100;
+const WORLD = { width: 2800, height: 720, floor: 640 };
+const ROOM_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const PLATFORMS = [
-  { x: 0, y: 640, w: 3200, h: 80 },
-  { x: 320, y: 520, w: 260, h: 22 },
-  { x: 720, y: 430, w: 260, h: 22 },
-  { x: 1120, y: 550, w: 320, h: 22 },
-  { x: 1570, y: 455, w: 300, h: 22 },
-  { x: 2020, y: 535, w: 300, h: 22 },
-  { x: 2490, y: 430, w: 260, h: 22 },
+  { x: 0, y: 640, w: 2800, h: 80 },
+  { x: 315, y: 515, w: 265, h: 22 },
+  { x: 725, y: 430, w: 255, h: 22 },
+  { x: 1120, y: 540, w: 310, h: 22 },
+  { x: 1620, y: 455, w: 290, h: 22 },
+  { x: 2110, y: 525, w: 270, h: 22 },
 ];
 
-const HEROES = {
-  blade: {
-    label: 'Клинок', maxHp: 110, speed: 390, jump: 720,
-    attackDamage: 18, attackRange: 122, attackCooldown: 0.34,
-    abilityDamage: 62, abilityCooldown: 8,
+const CLASSES = {
+  swordsman: {
+    label: 'Мечник', maxHp: 3, maxStamina: 100, staminaRegen: 27,
+    speed: 360, jump: 700, lightDamage: 26, heavyDamage: 58,
+    lightCost: 17, heavyCost: 36, rollCost: 29, parryCost: 15,
+    lightTime: 0.3, heavyTime: 0.68, attackRange: 116, parryWindow: 0.18,
   },
-  spark: {
-    label: 'Искра', maxHp: 85, speed: 430, jump: 750,
-    attackDamage: 12, attackRange: 520, attackCooldown: 0.46,
-    abilityDamage: 18, abilityCooldown: 9,
+  greatsword: {
+    label: 'Тяжёлый мечник', maxHp: 3, maxStamina: 112, staminaRegen: 23,
+    speed: 305, jump: 650, lightDamage: 38, heavyDamage: 88,
+    lightCost: 23, heavyCost: 48, rollCost: 34, parryCost: 18,
+    lightTime: 0.44, heavyTime: 0.9, attackRange: 142, parryWindow: 0.14,
   },
-  bastion: {
-    label: 'Бастион', maxHp: 155, speed: 325, jump: 650,
-    attackDamage: 24, attackRange: 105, attackCooldown: 0.55,
-    abilityDamage: 42, abilityCooldown: 11,
+  rogue: {
+    label: 'Вор', maxHp: 3, maxStamina: 128, staminaRegen: 34,
+    speed: 425, jump: 735, lightDamage: 18, heavyDamage: 43,
+    lightCost: 11, heavyCost: 27, rollCost: 21, parryCost: 12,
+    lightTime: 0.2, heavyTime: 0.48, attackRange: 86, parryWindow: 0.23,
   },
 };
+
+const SKINS = new Set(['iron', 'ember', 'moon', 'abyss']);
+const PERKS = [
+  { id: 'vitality', name: 'Сердце титана', description: '+1 к максимуму здоровья.', rarity: 'common', icon: '♥' },
+  { id: 'endurance', name: 'Закалённые жилы', description: '+25 к запасу выносливости.', rarity: 'common', icon: '◒' },
+  { id: 'sharpened', name: 'Точильный камень', description: '+16% ко всему урону.', rarity: 'common', icon: '†' },
+  { id: 'lungs', name: 'Ровное дыхание', description: 'Выносливость восстанавливается на 28% быстрее.', rarity: 'common', icon: '≈' },
+  { id: 'quickstep', name: 'Лёгкая поступь', description: '+9% к скорости передвижения.', rarity: 'common', icon: '»' },
+  { id: 'feather_roll', name: 'Пепельный перекат', description: 'Перекаты расходуют на 25% меньше выносливости.', rarity: 'rare', icon: '◌' },
+  { id: 'parry_master', name: 'Холодная сталь', description: 'Окно парирования становится длиннее.', rarity: 'rare', icon: '◇' },
+  { id: 'light_mastery', name: 'Танец клинка', description: 'Лёгкие атаки быстрее и дешевле.', rarity: 'rare', icon: '⌁' },
+  { id: 'heavy_mastery', name: 'Сокрушитель', description: 'Тяжёлые атаки наносят на 35% больше урона.', rarity: 'rare', icon: '⬙' },
+  { id: 'echo_blade', name: 'Эхо клинка', description: 'Каждая третья лёгкая атака наносит двойной урон.', rarity: 'epic', icon: 'Ⅲ' },
+  { id: 'executioner', name: 'Приговор', description: '+70% урона, когда у босса меньше 30% здоровья.', rarity: 'epic', icon: '⌄' },
+  { id: 'perfect_guard', name: 'Идеальный ответ', description: 'Парирование удваивает следующую атаку.', rarity: 'epic', icon: '✦' },
+  { id: 'ember_step', name: 'След углей', description: 'Перекат сквозь босса наносит урон.', rarity: 'epic', icon: '♨' },
+  { id: 'blood_oath', name: 'Клятва охотника', description: 'Каждое восьмое попадание лечит 1 здоровье.', rarity: 'epic', icon: '8' },
+  { id: 'last_stand', name: 'Последний рубеж', description: 'При 1 здоровье урон увеличен на 45%.', rarity: 'rare', icon: 'Ⅰ' },
+  { id: 'second_wind', name: 'Отказ угасать', description: 'Раз за стадию смертельный удар оставляет 1 здоровье.', rarity: 'legendary', icon: '☼' },
+  { id: 'moonlight', name: 'Лунный разрез', description: 'Тяжёлая атака выпускает дальнюю волну.', rarity: 'legendary', icon: '☾' },
+  { id: 'thorns', name: 'Шипы возмездия', description: 'Парирование ранит и дольше оглушает босса.', rarity: 'legendary', icon: '✥' },
+  { id: 'greed', name: 'Знак алчности', description: '+50% к валюте за следующие стадии.', rarity: 'rare', icon: '¤' },
+];
 
 const rooms = new Map();
 let entitySequence = 1;
@@ -54,383 +76,362 @@ app.disable('x-powered-by');
 app.use(express.static(path.join(__dirname, 'public')));
 app.get('/health', (_req, res) => res.json({ ok: true, rooms: rooms.size }));
 
-function clamp(value, min, max) {
-  return Math.max(min, Math.min(max, value));
-}
-
+const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+const overlaps = (a, b) => a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
 function cleanName(value) {
-  const name = String(value || '').replace(/[<>\n\r]/g, '').trim().slice(0, 16);
-  return name || `Рейдер-${Math.floor(100 + Math.random() * 900)}`;
+  return String(value || '').replace(/[<>\n\r]/g, '').trim().slice(0, 16) || `Странник-${Math.floor(100 + Math.random() * 900)}`;
 }
-
-function cleanHero(value) {
-  return Object.hasOwn(HEROES, value) ? value : 'blade';
-}
+function cleanClass(value) { return Object.hasOwn(CLASSES, value) ? value : 'swordsman'; }
+function cleanSkin(value) { return SKINS.has(value) ? value : 'iron'; }
+function perkCount(player, id) { return player.perks[id] || 0; }
 
 function makeRoomCode() {
   for (let attempt = 0; attempt < 100; attempt += 1) {
     let code = '';
-    for (let i = 0; i < 5; i += 1) {
-      code += ROOM_ALPHABET[Math.floor(Math.random() * ROOM_ALPHABET.length)];
-    }
+    for (let index = 0; index < 5; index += 1) code += ROOM_ALPHABET[Math.floor(Math.random() * ROOM_ALPHABET.length)];
     if (!rooms.has(code)) return code;
   }
   return String(Date.now()).slice(-5);
 }
 
-function makePlayer(socketId, name, hero, slot) {
-  const stats = HEROES[hero];
+function derivedStats(player) {
+  const base = CLASSES[player.classId];
   return {
-    id: socketId,
-    name,
-    hero,
-    slot,
-    x: 210 + slot * 85,
-    y: WORLD.floor - 58,
-    w: 42,
-    h: 58,
-    vx: 0,
-    vy: 0,
-    facing: 1,
-    hp: stats.maxHp,
-    maxHp: stats.maxHp,
-    respawns: 3,
-    downed: false,
-    reviveTimer: 0,
-    invulnerable: 0,
-    attackCooldown: 0,
-    abilityCooldown: 0,
-    dashCooldown: 0,
-    dashTimer: 0,
-    onGround: false,
-    input: { left: false, right: false, jump: false, attack: false, dash: false, ability: false },
-    jumpHeld: false,
-    dashHeld: false,
-    abilityHeld: false,
-    damageDone: 0,
+    maxHp: base.maxHp + perkCount(player, 'vitality'),
+    maxStamina: base.maxStamina + perkCount(player, 'endurance') * 25,
+    staminaRegen: base.staminaRegen * Math.pow(1.28, perkCount(player, 'lungs')),
+    speed: base.speed * Math.pow(1.09, perkCount(player, 'quickstep')),
+    jump: base.jump,
+    lightDamage: base.lightDamage * Math.pow(1.16, perkCount(player, 'sharpened')),
+    heavyDamage: base.heavyDamage * Math.pow(1.16, perkCount(player, 'sharpened')) * Math.pow(1.35, perkCount(player, 'heavy_mastery')),
+    lightCost: base.lightCost * Math.pow(0.82, perkCount(player, 'light_mastery')),
+    heavyCost: base.heavyCost,
+    rollCost: base.rollCost * Math.pow(0.75, perkCount(player, 'feather_roll')),
+    parryCost: base.parryCost,
+    lightTime: base.lightTime * Math.pow(0.86, perkCount(player, 'light_mastery')),
+    heavyTime: base.heavyTime,
+    attackRange: base.attackRange,
+    parryWindow: base.parryWindow + perkCount(player, 'parry_master') * 0.055,
+  };
+}
+
+function makePlayer(id, name, classId, skin, slot) {
+  const base = CLASSES[classId];
+  return {
+    id, name, classId, skin, slot,
+    x: 220 + slot * 76, y: WORLD.floor - 60, w: 42, h: 60, vx: 0, vy: 0, facing: 1,
+    hp: base.maxHp, maxHp: base.maxHp, stamina: base.maxStamina, maxStamina: base.maxStamina,
+    staminaDelay: 0, downed: false, onGround: false, invulnerable: 0,
+    action: 'idle', actionTimer: 0, actionDuration: 0, actionHit: false, parryActive: 0, rollHit: false,
+    nextHitMultiplier: 1, lightChain: 0, hitsLanded: 0, secondWindUsed: false, damageDone: 0,
+    perks: {}, perkOffer: [], perkChosen: false,
+    input: { left: false, right: false, jump: false, light: false, heavy: false, parry: false, roll: false },
+    held: { jump: false, light: false, heavy: false, parry: false, roll: false },
   };
 }
 
 function publicPlayer(player, hostId, inGame = false) {
-  const base = {
-    id: player.id,
-    name: player.name,
-    hero: player.hero,
-    slot: player.slot,
-    isHost: player.id === hostId,
-  };
+  const base = { id: player.id, name: player.name, classId: player.classId, skin: player.skin, slot: player.slot, isHost: player.id === hostId };
   if (!inGame) return base;
   return {
-    ...base,
-    x: Math.round(player.x * 10) / 10,
-    y: Math.round(player.y * 10) / 10,
-    vx: Math.round(player.vx),
-    vy: Math.round(player.vy),
-    w: player.w,
-    h: player.h,
-    facing: player.facing,
-    hp: Math.max(0, Math.round(player.hp)),
-    maxHp: player.maxHp,
-    respawns: player.respawns,
-    downed: player.downed,
-    invulnerable: player.invulnerable > 0,
-    attackCooldown: player.attackCooldown,
-    abilityCooldown: player.abilityCooldown,
-    dashCooldown: player.dashCooldown,
-    dashTimer: player.dashTimer,
-    damageDone: Math.round(player.damageDone),
+    ...base, x: Math.round(player.x * 10) / 10, y: Math.round(player.y * 10) / 10,
+    vx: Math.round(player.vx), vy: Math.round(player.vy), w: player.w, h: player.h, facing: player.facing,
+    hp: Math.max(0, Math.round(player.hp)), maxHp: player.maxHp,
+    stamina: Math.max(0, Math.round(player.stamina)), maxStamina: Math.round(player.maxStamina),
+    downed: player.downed, invulnerable: player.invulnerable > 0,
+    action: player.action, actionTimer: player.actionTimer, actionDuration: player.actionDuration,
+    parryActive: player.parryActive > 0, damageDone: Math.round(player.damageDone),
+    perks: player.perks, perkOffer: player.perkOffer, perkChosen: player.perkChosen,
   };
 }
 
-function makeRoom(hostSocket, name, hero) {
+function createRoom(socket, name, classId, skin) {
   const code = makeRoomCode();
   const room = {
-    code,
-    hostId: hostSocket.id,
-    status: 'lobby',
-    createdAt: Date.now(),
-    players: new Map(),
-    boss: null,
-    projectiles: [],
-    waves: [],
-    effects: [],
-    elapsed: 0,
-    resultTimer: 0,
-    stateSequence: 0,
+    code, hostId: socket.id, status: 'lobby', createdAt: Date.now(), players: new Map(),
+    stage: 1, stagesCleared: 0, elapsed: 0, boss: null,
+    projectiles: [], waves: [], effects: [], stateSequence: 0, nextStageTimer: null,
   };
-  room.players.set(hostSocket.id, makePlayer(hostSocket.id, name, hero, 0));
+  room.players.set(socket.id, makePlayer(socket.id, name, classId, skin, 0));
   rooms.set(code, room);
   return room;
 }
 
-function roomLobbyState(room) {
-  return {
-    code: room.code,
-    status: room.status,
-    hostId: room.hostId,
-    players: [...room.players.values()].map((player) => publicPlayer(player, room.hostId)),
-    maxPlayers: MAX_PLAYERS,
-  };
+function lobbyState(room) {
+  return { code: room.code, status: room.status, hostId: room.hostId, maxPlayers: MAX_PLAYERS, players: [...room.players.values()].map((p) => publicPlayer(p, room.hostId)) };
 }
-
-function emitLobby(room) {
-  io.to(room.code).emit('lobby-state', roomLobbyState(room));
-}
-
-function socketRoom(socket) {
-  const code = socket.data.roomCode;
-  return code ? rooms.get(code) : null;
-}
+function emitLobby(room) { io.to(room.code).emit('lobby-state', lobbyState(room)); }
+function socketRoom(socket) { return rooms.get(socket.data.roomCode); }
 
 function leaveCurrentRoom(socket) {
   const room = socketRoom(socket);
   if (!room) return;
-
   room.players.delete(socket.id);
   socket.leave(room.code);
   socket.data.roomCode = null;
-
-  if (room.players.size === 0) {
+  if (!room.players.size) {
+    if (room.nextStageTimer) clearTimeout(room.nextStageTimer);
     rooms.delete(room.code);
     return;
   }
-
-  if (room.hostId === socket.id) {
-    room.hostId = room.players.keys().next().value;
-  }
-
+  if (room.hostId === socket.id) room.hostId = room.players.keys().next().value;
   let slot = 0;
-  for (const player of room.players.values()) {
-    player.slot = slot;
-    slot += 1;
-  }
-
+  for (const player of room.players.values()) player.slot = slot++;
   if (room.status === 'lobby') emitLobby(room);
-  else io.to(room.code).emit('toast', { text: 'Игрок покинул рейд', tone: 'warn' });
+  else if (room.status === 'perk') checkPerkSelections(room);
+  else checkTeamWipe(room);
 }
 
-function resetPlayerForGame(player) {
-  const stats = HEROES[player.hero];
-  player.x = 220 + player.slot * 82;
-  player.y = WORLD.floor - player.h;
-  player.vx = 0;
-  player.vy = 0;
-  player.hp = stats.maxHp;
-  player.maxHp = stats.maxHp;
-  player.respawns = 3;
-  player.downed = false;
-  player.reviveTimer = 0;
-  player.invulnerable = 1.4;
-  player.attackCooldown = 0;
-  player.abilityCooldown = 0;
-  player.dashCooldown = 0;
-  player.dashTimer = 0;
-  player.damageDone = 0;
-}
-
-function startRoom(room) {
-  room.status = 'playing';
-  room.elapsed = 0;
-  room.resultTimer = 0;
-  room.projectiles = [];
-  room.waves = [];
-  room.effects = [];
-  room.boss = {
-    x: 2630,
-    y: WORLD.floor - 142,
-    w: 116,
-    h: 142,
-    vx: 0,
-    hp: 1800 + Math.max(0, room.players.size - 2) * 500,
-    maxHp: 1800 + Math.max(0, room.players.size - 2) * 500,
-    phase: 1,
-    facing: -1,
-    attack: 'idle',
-    attackTimer: 1.5,
-    moveTimer: 0,
-    flash: 0,
-  };
-  for (const player of room.players.values()) resetPlayerForGame(player);
-  io.to(room.code).emit('game-start', { world: WORLD, platforms: PLATFORMS });
-}
-
-function overlaps(a, b) {
-  return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
-}
-
-function circleHitsRect(projectile, rect) {
-  const closestX = clamp(projectile.x, rect.x, rect.x + rect.w);
-  const closestY = clamp(projectile.y, rect.y, rect.y + rect.h);
-  const dx = projectile.x - closestX;
-  const dy = projectile.y - closestY;
-  return dx * dx + dy * dy < projectile.r * projectile.r;
-}
-
-function addEffect(room, type, x, y, color = '#ffffff', ttl = 0.35, size = 80) {
+function addEffect(room, type, x, y, color = '#c8a86b', ttl = 0.35, size = 80) {
   room.effects.push({ id: entitySequence++, type, x, y, color, ttl, maxTtl: ttl, size });
 }
 
-function damagePlayer(room, player, damage, knockX = 0, knockY = -240) {
-  if (player.downed || player.invulnerable > 0 || room.status !== 'playing') return;
-  if (player.hero === 'bastion' && player.abilityCooldown > HEROES.bastion.abilityCooldown - 1.4) {
-    damage *= 0.35;
+function resetPlayerForStage(player) {
+  const stats = derivedStats(player);
+  Object.assign(player, {
+    maxHp: stats.maxHp, maxStamina: stats.maxStamina, hp: stats.maxHp, stamina: stats.maxStamina,
+    x: 225 + player.slot * 78, y: WORLD.floor - player.h, vx: 0, vy: 0, facing: 1,
+    downed: false, onGround: false, invulnerable: 1, staminaDelay: 0,
+    action: 'idle', actionTimer: 0, parryActive: 0,
+    secondWindUsed: false, perkOffer: [], perkChosen: false,
+    input: { left: false, right: false, jump: false, light: false, heavy: false, parry: false, roll: false },
+    held: { jump: false, light: false, heavy: false, parry: false, roll: false },
+  });
+}
+
+function resetPlayerForRun(player) {
+  player.perks = {};
+  player.damageDone = 0;
+  player.nextHitMultiplier = 1;
+  player.lightChain = 0;
+  player.hitsLanded = 0;
+  resetPlayerForStage(player);
+}
+
+function bossHealth(stage, count) {
+  const base = 250 + count * 115;
+  const step = stage - 1;
+  return Math.round(base * (1 + step * 0.082 + Math.pow(step / 12, 1.55) * 0.22));
+}
+
+function spawnBoss(room) {
+  const maxHp = bossHealth(room.stage, room.players.size);
+  room.boss = {
+    x: 2250, y: WORLD.floor - 150, w: 122, h: 150, vx: 0,
+    hp: maxHp, maxHp, facing: -1, tier: Math.min(10, Math.ceil(room.stage / 10)),
+    attackCooldown: Math.max(0.68, 2.05 - room.stage * 0.014), currentAttack: null,
+    stagger: 0, flash: 0,
+  };
+}
+
+function startRun(room) {
+  Object.assign(room, { status: 'playing', stage: 1, stagesCleared: 0, elapsed: 0, projectiles: [], waves: [], effects: [] });
+  for (const player of room.players.values()) resetPlayerForRun(player);
+  spawnBoss(room);
+  io.to(room.code).emit('game-start', { world: WORLD, platforms: PLATFORMS, maxStage: MAX_STAGE });
+  io.to(room.code).emit('stage-start', { stage: 1 });
+}
+
+function startNextStage(room) {
+  if (room.status !== 'perk' || !rooms.has(room.code)) return;
+  room.status = 'playing';
+  room.stage += 1;
+  room.projectiles = [];
+  room.waves = [];
+  room.effects = [];
+  for (const player of room.players.values()) resetPlayerForStage(player);
+  spawnBoss(room);
+  io.to(room.code).emit('stage-start', { stage: room.stage });
+}
+
+function alivePlayers(room) { return [...room.players.values()].filter((player) => !player.downed); }
+function nearestPlayer(room) {
+  if (!room.boss) return null;
+  return alivePlayers(room).reduce((best, player) => {
+    const distance = Math.abs(player.x - room.boss.x);
+    return !best || distance < best.distance ? { player, distance } : best;
+  }, null)?.player || null;
+}
+
+function onParry(room, player, sourceX, projectile) {
+  const boss = room.boss;
+  player.parryActive = 0;
+  player.action = 'parry_success';
+  player.actionTimer = player.actionDuration = 0.36;
+  player.stamina = Math.min(player.maxStamina, player.stamina + 28);
+  if (perkCount(player, 'perfect_guard')) player.nextHitMultiplier = Math.max(2, player.nextHitMultiplier);
+  if (boss) {
+    boss.currentAttack = null;
+    boss.stagger = Math.max(boss.stagger, 1.25 + perkCount(player, 'thorns') * 0.55);
+    if (perkCount(player, 'thorns')) damageBoss(room, player, 28 * perkCount(player, 'thorns'), boss.x + boss.w / 2, boss.y + 70, '#d7b46a', true);
+  }
+  if (projectile) projectile.ttl = 0;
+  addEffect(room, 'parry', sourceX, player.y + 25, '#f0d28d', 0.48, 125);
+  io.to(room.code).emit('toast', { text: `${player.name}: ИДЕАЛЬНОЕ ПАРИРОВАНИЕ`, tone: 'gold' });
+}
+
+function damagePlayer(room, player, damage = 1, knockX = 0, knockY = -220, parryable = false, sourceX = 0, projectile = null) {
+  if (player.downed || player.invulnerable > 0 || room.status !== 'playing') return 'ignored';
+  if (parryable && player.parryActive > 0) {
+    onParry(room, player, sourceX, projectile);
+    return 'parried';
+  }
+  if (player.hp - damage <= 0 && perkCount(player, 'second_wind') && !player.secondWindUsed) {
+    player.secondWindUsed = true;
+    player.hp = 1;
+    player.invulnerable = 1.1;
+    addEffect(room, 'second_wind', player.x + 21, player.y + 30, '#e7c477', 0.75, 150);
+    return 'saved';
   }
   player.hp -= damage;
   player.vx += knockX;
   player.vy = Math.min(player.vy, knockY);
-  player.invulnerable = 0.55;
-  addEffect(room, 'hit', player.x + player.w / 2, player.y + player.h / 2, '#ff5470', 0.32, 62);
+  player.invulnerable = 0.72;
+  player.action = 'hurt';
+  player.actionTimer = player.actionDuration = 0.35;
+  addEffect(room, 'hit', player.x + 21, player.y + 30, '#8f2638', 0.35, 65);
   if (player.hp <= 0) {
     player.hp = 0;
     player.downed = true;
-    player.reviveTimer = 3.5;
-    player.vx = 0;
-    player.vy = 0;
-    io.to(room.code).emit('toast', { text: `${player.name} выведен из строя`, tone: 'danger' });
+    player.vx = player.vy = 0;
+    player.action = 'downed';
+    io.to(room.code).emit('toast', { text: `${player.name} пал. Победа команды вернёт его.`, tone: 'danger' });
+    checkTeamWipe(room);
   }
+  return 'hit';
 }
 
-function damageBoss(room, player, damage, x, y, color) {
+function damageBoss(room, player, rawDamage, x, y, color = '#d7b46a', bypass = false) {
   const boss = room.boss;
   if (!boss || boss.hp <= 0 || room.status !== 'playing') return;
+  let damage = rawDamage;
+  if (!bypass) {
+    if (boss.hp / boss.maxHp < 0.3 && perkCount(player, 'executioner')) damage *= 1.7;
+    if (player.hp === 1 && perkCount(player, 'last_stand')) damage *= 1.45;
+    damage *= player.nextHitMultiplier;
+    player.nextHitMultiplier = 1;
+  }
+  if (boss.stagger > 0) damage *= 1.45;
+  damage = Math.max(1, Math.round(damage));
   boss.hp = Math.max(0, boss.hp - damage);
   boss.flash = 0.12;
   player.damageDone += damage;
-  addEffect(room, 'slash', x, y, color, 0.28, 95);
-  if (boss.hp === 0) finishRoom(room, 'victory');
+  player.hitsLanded += 1;
+  if (perkCount(player, 'blood_oath') && player.hitsLanded % 8 === 0) {
+    player.hp = Math.min(player.maxHp, player.hp + 1);
+    addEffect(room, 'heal', player.x + 21, player.y, '#8faa72', 0.45, 70);
+  }
+  addEffect(room, 'slash', x, y, color, 0.3, 95);
+  if (boss.hp === 0) clearStage(room);
 }
 
-function finishRoom(room, status) {
-  if (room.status !== 'playing') return;
-  room.status = status;
-  room.resultTimer = 0;
-  room.projectiles = [];
-  room.waves = [];
-  io.to(room.code).emit('game-over', {
-    result: status,
-    elapsed: room.elapsed,
-    players: [...room.players.values()]
-      .map((player) => ({ name: player.name, hero: player.hero, damageDone: Math.round(player.damageDone) }))
-      .sort((a, b) => b.damageDone - a.damageDone),
-  });
+function attackBoss(room, player, type) {
+  const boss = room.boss;
+  if (!boss) return;
+  const stats = derivedStats(player);
+  const range = stats.attackRange + (type === 'heavy' ? 30 : 0);
+  const hitbox = { x: player.facing > 0 ? player.x + 36 : player.x - range + 6, y: player.y - 14, w: range, h: player.h + 28 };
+  let damage = type === 'heavy' ? stats.heavyDamage : stats.lightDamage;
+  if (type === 'light') {
+    player.lightChain += 1;
+    if (perkCount(player, 'echo_blade') && player.lightChain % 3 === 0) damage *= 2;
+  }
+  const colors = { iron: '#d7b46a', ember: '#e25f3f', moon: '#9eb7dd', abyss: '#9a70c5' };
+  if (overlaps(hitbox, boss)) damageBoss(room, player, damage, boss.x + 61, boss.y + 65, colors[player.skin]);
+  else addEffect(room, type === 'heavy' ? 'heavy_slash' : 'slash', hitbox.x + hitbox.w / 2, player.y + 25, '#817562', 0.22, range * 0.65);
+
+  if (room.status === 'playing' && type === 'heavy' && perkCount(player, 'moonlight')) {
+    room.projectiles.push({
+      id: entitySequence++, kind: 'player_wave', ownerId: player.id,
+      x: player.x + 21 + player.facing * 30, y: player.y + 28,
+      vx: player.facing * 620, vy: 0, r: 18, damage: Math.round(stats.heavyDamage * 0.55), ttl: 1.6,
+    });
+  }
+}
+
+function startAction(player, action) {
+  const stats = derivedStats(player);
+  const cost = { light: stats.lightCost, heavy: stats.heavyCost, parry: stats.parryCost, roll: stats.rollCost }[action];
+  if (player.stamina < cost || player.action !== 'idle') return false;
+  player.stamina -= cost;
+  player.staminaDelay = 0.72;
+  player.action = action;
+  player.actionHit = false;
+  player.actionDuration = { light: stats.lightTime, heavy: stats.heavyTime, parry: 0.62, roll: 0.46 }[action];
+  player.actionTimer = player.actionDuration;
+  if (action === 'parry') player.parryActive = stats.parryWindow;
+  if (action === 'roll') {
+    player.invulnerable = 0.3;
+    player.rollHit = false;
+    player.vx = player.facing * 710;
+  }
+  return true;
+}
+
+function updatePlayerAction(room, player) {
+  if (player.action === 'idle' || player.action === 'downed') return;
+  player.actionTimer -= DT;
+  player.parryActive = Math.max(0, player.parryActive - DT);
+  if (player.action === 'light' && !player.actionHit && player.actionTimer <= player.actionDuration * 0.56) {
+    player.actionHit = true;
+    attackBoss(room, player, 'light');
+  }
+  if (player.action === 'heavy' && !player.actionHit && player.actionTimer <= player.actionDuration * 0.34) {
+    player.actionHit = true;
+    attackBoss(room, player, 'heavy');
+  }
+  if (player.action === 'roll') {
+    player.vx = player.facing * 710;
+    if (!player.rollHit && perkCount(player, 'ember_step') && room.boss && overlaps(player, room.boss)) {
+      player.rollHit = true;
+      damageBoss(room, player, 24 * perkCount(player, 'ember_step'), room.boss.x + 61, room.boss.y + 75, '#d95d3e', true);
+    }
+  }
+  if (player.actionTimer <= 0) {
+    player.action = 'idle';
+    player.actionTimer = 0;
+    player.parryActive = 0;
+  }
 }
 
 function updatePlayer(room, player) {
-  const stats = HEROES[player.hero];
-  player.attackCooldown = Math.max(0, player.attackCooldown - DT);
-  player.abilityCooldown = Math.max(0, player.abilityCooldown - DT);
-  player.dashCooldown = Math.max(0, player.dashCooldown - DT);
+  const stats = derivedStats(player);
+  player.maxHp = stats.maxHp;
+  player.maxStamina = stats.maxStamina;
   player.invulnerable = Math.max(0, player.invulnerable - DT);
-
-  if (player.downed) {
-    player.reviveTimer -= DT;
-    if (player.reviveTimer <= 0 && player.respawns > 0) {
-      player.respawns -= 1;
-      player.downed = false;
-      player.hp = player.maxHp;
-      player.x = 250 + player.slot * 70;
-      player.y = WORLD.floor - player.h;
-      player.invulnerable = 2;
-      addEffect(room, 'spawn', player.x + player.w / 2, player.y + player.h / 2, '#64fdf4', 0.65, 130);
-    }
-    return;
-  }
-
+  player.staminaDelay = Math.max(0, player.staminaDelay - DT);
+  if (player.downed) return;
   const input = player.input;
-  const direction = (input.right ? 1 : 0) - (input.left ? 1 : 0);
-  if (direction !== 0) player.facing = direction;
-
-  if (input.dash && !player.dashHeld && player.dashCooldown <= 0) {
-    player.dashTimer = 0.17;
-    player.dashCooldown = 1.4;
-    player.invulnerable = Math.max(player.invulnerable, 0.22);
-    player.vx = player.facing * 900;
-    addEffect(room, 'dash', player.x + player.w / 2, player.y + player.h / 2, '#a78bfa', 0.22, 86);
+  const direction = Number(input.right) - Number(input.left);
+  if (direction) player.facing = direction;
+  for (const action of ['light', 'heavy', 'parry', 'roll']) {
+    if (input[action] && !player.held[action]) startAction(player, action);
+    player.held[action] = input[action];
   }
-  player.dashHeld = input.dash;
-
-  if (player.dashTimer > 0) {
-    player.dashTimer -= DT;
-    player.vx = player.facing * 900;
-  } else {
-    const targetVx = direction * stats.speed;
-    player.vx += (targetVx - player.vx) * Math.min(1, 14 * DT);
-  }
-
-  if (input.jump && !player.jumpHeld && player.onGround) {
+  if (input.jump && !player.held.jump && player.onGround && player.action !== 'roll') {
     player.vy = -stats.jump;
     player.onGround = false;
   }
-  player.jumpHeld = input.jump;
+  player.held.jump = input.jump;
+  updatePlayerAction(room, player);
 
-  if (input.attack && player.attackCooldown <= 0) {
-    player.attackCooldown = stats.attackCooldown;
-    if (player.hero === 'spark') {
-      room.projectiles.push({
-        id: entitySequence++, ownerId: player.id, kind: 'player',
-        x: player.x + player.w / 2 + player.facing * 28,
-        y: player.y + player.h * 0.43,
-        vx: player.facing * 820, vy: 0, r: 9, damage: stats.attackDamage, ttl: 0.9,
-      });
-    } else {
-      const hitbox = {
-        x: player.facing > 0 ? player.x + player.w - 4 : player.x - stats.attackRange + 4,
-        y: player.y - 12,
-        w: stats.attackRange,
-        h: player.h + 24,
-      };
-      if (overlaps(hitbox, room.boss)) {
-        damageBoss(room, player, stats.attackDamage, room.boss.x + room.boss.w / 2, room.boss.y + 65,
-          player.hero === 'blade' ? '#73f7ff' : '#ffc857');
-      } else {
-        addEffect(room, 'slash', hitbox.x + hitbox.w / 2, player.y + player.h / 2, '#7c8ca5', 0.18, 60);
-      }
-    }
+  if (player.action !== 'roll') {
+    const factor = player.action === 'idle' || player.action === 'parry' ? 1 : 0.3;
+    const targetVx = direction * stats.speed * factor;
+    player.vx += (targetVx - player.vx) * Math.min(1, 13 * DT);
   }
-
-  if (input.ability && !player.abilityHeld && player.abilityCooldown <= 0) {
-    player.abilityCooldown = stats.abilityCooldown;
-    if (player.hero === 'spark') {
-      for (const angle of [-0.22, 0, 0.22]) {
-        room.projectiles.push({
-          id: entitySequence++, ownerId: player.id, kind: 'player',
-          x: player.x + player.w / 2, y: player.y + player.h * 0.4,
-          vx: player.facing * 760, vy: angle * 760, r: 14,
-          damage: stats.abilityDamage, ttl: 1.25,
-        });
-      }
-      addEffect(room, 'burst', player.x + player.w / 2, player.y + 24, '#ff62d4', 0.45, 120);
-    } else if (player.hero === 'blade') {
-      const dx = room.boss.x + room.boss.w / 2 - (player.x + player.w / 2);
-      const dy = room.boss.y + room.boss.h / 2 - (player.y + player.h / 2);
-      if (Math.abs(dx) < 270 && Math.abs(dy) < 150) {
-        damageBoss(room, player, stats.abilityDamage, room.boss.x + room.boss.w / 2, room.boss.y + 60, '#d8b4fe');
-      }
-      addEffect(room, 'burst', player.x + player.w / 2, player.y + player.h / 2, '#a78bfa', 0.48, 270);
-    } else {
-      player.invulnerable = Math.max(player.invulnerable, 1.4);
-      const dx = room.boss.x + room.boss.w / 2 - (player.x + player.w / 2);
-      const dy = room.boss.y + room.boss.h / 2 - (player.y + player.h / 2);
-      if (Math.abs(dx) < 170 && Math.abs(dy) < 150) {
-        damageBoss(room, player, stats.abilityDamage, room.boss.x + room.boss.w / 2, room.boss.y + 70, '#ffc857');
-      }
-      addEffect(room, 'shield', player.x + player.w / 2, player.y + player.h / 2, '#ffc857', 1.4, 92);
-    }
-  }
-  player.abilityHeld = input.ability;
+  if (player.staminaDelay <= 0 && player.action === 'idle') player.stamina = Math.min(player.maxStamina, player.stamina + stats.staminaRegen * DT);
 
   const previousBottom = player.y + player.h;
-  player.vy += 1900 * DT;
-  player.x += player.vx * DT;
+  player.vy += 1880 * DT;
+  player.x = clamp(player.x + player.vx * DT, 0, WORLD.width - player.w);
   player.y += player.vy * DT;
-  player.x = clamp(player.x, 0, WORLD.width - player.w);
   player.onGround = false;
-
   if (player.vy >= 0) {
     const currentBottom = player.y + player.h;
     for (const platform of PLATFORMS) {
-      const horizontallyInside = player.x + player.w > platform.x + 6 && player.x < platform.x + platform.w - 6;
-      if (horizontallyInside && previousBottom <= platform.y + 8 && currentBottom >= platform.y) {
+      const inside = player.x + player.w > platform.x + 6 && player.x < platform.x + platform.w - 6;
+      if (inside && previousBottom <= platform.y + 8 && currentBottom >= platform.y) {
         player.y = platform.y - player.h;
         player.vy = 0;
         player.onGround = true;
@@ -438,84 +439,75 @@ function updatePlayer(room, player) {
       }
     }
   }
-
-  if (player.y > WORLD.height + 180) {
+  if (player.y > WORLD.height + 150) {
+    player.x = 225;
     player.y = WORLD.floor - player.h;
-    player.x = 220;
-    damagePlayer(room, player, 28, 0, -200);
+    damagePlayer(room, player, 1);
   }
 }
 
-function alivePlayers(room) {
-  return [...room.players.values()].filter((player) => !player.downed);
+function telegraphTime(stage, type) {
+  const base = { slash: 0.58, cleave: 0.85, slam: 0.88, volley: 0.72, wave: 0.76, charge: 0.68 }[type];
+  return Math.max(0.26, base - Math.min(0.48, stage * 0.0042));
 }
 
-function selectTarget(room) {
-  const candidates = alivePlayers(room);
-  if (!candidates.length) return null;
-  return candidates.reduce((best, player) => {
-    const distance = Math.abs(player.x - room.boss.x);
-    return !best || distance < best.distance ? { player, distance } : best;
-  }, null).player;
+function chooseBossAttack(room, target) {
+  const distance = Math.abs(target.x - room.boss.x);
+  const available = distance < 185 ? ['slash', 'cleave', 'slam'] : ['charge', 'volley', 'slam'];
+  if (room.stage >= 4) available.push('wave');
+  const type = available[Math.floor(Math.random() * available.length)];
+  const duration = telegraphTime(room.stage, type);
+  room.boss.currentAttack = { type, phase: 'telegraph', timer: duration, duration, targetId: target.id, targetX: target.x + 21 };
 }
 
-function spawnBossOrb(room, target, speed = 430) {
-  const boss = room.boss;
-  const startX = boss.x + boss.w / 2;
-  const startY = boss.y + 42;
-  const targetX = target.x + target.w / 2;
-  const targetY = target.y + target.h / 2;
-  const distance = Math.max(1, Math.hypot(targetX - startX, targetY - startY));
-  room.projectiles.push({
-    id: entitySequence++, kind: 'boss', x: startX, y: startY,
-    vx: ((targetX - startX) / distance) * speed,
-    vy: ((targetY - startY) / distance) * speed,
-    r: boss.phase >= 3 ? 18 : 15,
-    damage: boss.phase >= 3 ? 20 : 16,
-    ttl: 5,
-  });
-}
-
-function beginBossAttack(room) {
-  const boss = room.boss;
-  const roll = Math.random();
-  if (roll < 0.44) {
-    boss.attack = 'orb';
-    boss.attackTimer = boss.phase >= 2 ? 0.85 : 1.05;
-    const target = selectTarget(room);
-    if (target) {
-      spawnBossOrb(room, target, 430 + boss.phase * 45);
-      if (boss.phase >= 2) setTimeout(() => {
-        if (rooms.get(room.code) === room && room.status === 'playing') spawnBossOrb(room, target, 475);
-      }, 230);
+function bossMelee(room, radius, parryable) {
+  const centerX = room.boss.x + 61;
+  for (const player of alivePlayers(room)) {
+    const playerCenter = player.x + 21;
+    if (Math.abs(playerCenter - centerX) <= radius && Math.abs(player.y - room.boss.y) < 145) {
+      damagePlayer(room, player, 1, Math.sign(playerCenter - centerX) * 380, -300, parryable, centerX);
     }
-  } else if (roll < 0.77) {
-    boss.attack = 'wave';
-    boss.attackTimer = 1.2;
-    room.waves.push({
-      id: entitySequence++, x: boss.x + boss.w / 2, y: WORLD.floor - 20,
-      vx: -500 - boss.phase * 70, w: 76, h: 38,
-      damage: 20 + boss.phase * 2, ttl: 5, hit: [],
+  }
+  addEffect(room, parryable ? 'boss_slash' : 'slam', centerX, room.boss.y + 82, parryable ? '#a52d3d' : '#6f2630', 0.42, radius * 1.7);
+}
+
+function spawnBossOrb(room, target, offset = 0) {
+  const boss = room.boss;
+  const x = boss.x + 61;
+  const y = boss.y + 42;
+  const angle = Math.atan2(target.y + 30 - y, target.x + 21 - x) + offset;
+  const speed = 390 + Math.min(300, room.stage * 4.2);
+  room.projectiles.push({ id: entitySequence++, kind: 'boss', x, y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, r: 14 + Math.min(7, Math.floor(room.stage / 25)), damage: 1, ttl: 5 });
+}
+
+function executeBossAttack(room, attack) {
+  const boss = room.boss;
+  const target = room.players.get(attack.targetId) || nearestPlayer(room);
+  if (attack.type === 'slash') bossMelee(room, 155, true);
+  if (attack.type === 'cleave') bossMelee(room, 245, true);
+  if (attack.type === 'slam') {
+    const radius = 145 + Math.min(90, room.stage * 0.7);
+    for (const player of alivePlayers(room)) {
+      const center = player.x + 21;
+      if (Math.abs(center - attack.targetX) < radius && player.y + player.h > WORLD.floor - 100) damagePlayer(room, player, 1, Math.sign(center - attack.targetX) * 420, -390);
+    }
+    addEffect(room, 'ground_slam', attack.targetX, WORLD.floor, '#7c2935', 0.48, radius * 2);
+  }
+  if (attack.type === 'volley' && target) {
+    for (const player of alivePlayers(room)) spawnBossOrb(room, player);
+    if (room.stage >= 35) { spawnBossOrb(room, target, -0.18); spawnBossOrb(room, target, 0.18); }
+  }
+  if (attack.type === 'wave') {
+    const count = room.stage >= 70 ? 3 : room.stage >= 25 ? 2 : 1;
+    for (let index = 0; index < count; index += 1) room.waves.push({
+      id: entitySequence++, x: boss.x + 61, y: WORLD.floor - 6,
+      vx: -470 - room.stage * 2.4 - index * 45, w: 72, h: 38 + index * 6, damage: 1, ttl: 5, hit: [],
     });
-    if (boss.phase >= 3) {
-      room.waves.push({
-        id: entitySequence++, x: boss.x + boss.w / 2, y: WORLD.floor - 20,
-        vx: 500 + boss.phase * 70, w: 76, h: 38,
-        damage: 22, ttl: 5, hit: [],
-      });
-    }
-  } else {
-    boss.attack = 'slam';
-    boss.attackTimer = 1.05;
-    const target = selectTarget(room);
-    if (target) {
-      const markerX = clamp(target.x + target.w / 2, 90, WORLD.width - 90);
-      room.effects.push({
-        id: entitySequence++, type: 'warning', x: markerX, y: WORLD.floor,
-        color: '#ff355e', ttl: 0.72, maxTtl: 0.72, size: boss.phase >= 3 ? 290 : 230,
-        damageAt: 0.08, triggered: false,
-      });
-    }
+  }
+  if (attack.type === 'charge' && target) {
+    const direction = Math.sign(target.x - boss.x) || boss.facing;
+    boss.x = clamp(boss.x + direction * (240 + Math.min(220, room.stage * 2)), 70, WORLD.width - boss.w - 70);
+    bossMelee(room, 125, true);
   }
 }
 
@@ -523,33 +515,36 @@ function updateBoss(room) {
   const boss = room.boss;
   if (!boss || boss.hp <= 0) return;
   boss.flash = Math.max(0, boss.flash - DT);
-  const healthRatio = boss.hp / boss.maxHp;
-  boss.phase = healthRatio > 0.66 ? 1 : healthRatio > 0.32 ? 2 : 3;
-
-  const target = selectTarget(room);
+  if (boss.stagger > 0) { boss.stagger -= DT; boss.vx *= 0.82; return; }
+  const target = nearestPlayer(room);
   if (!target) return;
   boss.facing = target.x < boss.x ? -1 : 1;
-  const distance = target.x - boss.x;
-
-  boss.moveTimer -= DT;
-  if (boss.moveTimer <= 0) {
-    const preferred = 250 + boss.phase * 20;
-    boss.vx = Math.abs(distance) > preferred ? Math.sign(distance) * (78 + boss.phase * 20) : 0;
-    boss.moveTimer = 0.2;
-  }
-  boss.x = clamp(boss.x + boss.vx * DT, 90, WORLD.width - boss.w - 90);
-
-  for (const player of alivePlayers(room)) {
-    if (overlaps({ x: boss.x + 18, y: boss.y + 28, w: boss.w - 36, h: boss.h - 28 }, player)) {
-      damagePlayer(room, player, 12 + boss.phase * 2, Math.sign(player.x - boss.x) * 360, -300);
+  if (boss.currentAttack) {
+    const attack = boss.currentAttack;
+    attack.timer -= DT;
+    if (attack.phase === 'telegraph' && attack.timer <= 0) {
+      executeBossAttack(room, attack);
+      attack.phase = 'recovery';
+      attack.timer = attack.duration = Math.max(0.28, 0.7 - room.stage * 0.0035);
+    } else if (attack.phase === 'recovery' && attack.timer <= 0) {
+      boss.currentAttack = null;
+      boss.attackCooldown = Math.max(0.55, 1.5 - room.stage * 0.008);
     }
+    return;
   }
+  boss.attackCooldown -= DT;
+  const distance = target.x - boss.x;
+  if (Math.abs(distance) > 150) {
+    boss.vx = Math.sign(distance) * (75 + Math.min(155, room.stage * 1.65));
+    boss.x = clamp(boss.x + boss.vx * DT, 70, WORLD.width - boss.w - 70);
+  } else boss.vx *= 0.75;
+  if (boss.attackCooldown <= 0) chooseBossAttack(room, target);
+}
 
-  boss.attackTimer -= DT;
-  if (boss.attackTimer <= 0) {
-    beginBossAttack(room);
-    boss.attackTimer += Math.max(0.65, 1.75 - boss.phase * 0.2);
-  }
+function circleHitsRect(circle, rect) {
+  const x = clamp(circle.x, rect.x, rect.x + rect.w);
+  const y = clamp(circle.y, rect.y, rect.y + rect.h);
+  return (circle.x - x) ** 2 + (circle.y - y) ** 2 < circle.r ** 2;
 }
 
 function updateProjectiles(room) {
@@ -557,25 +552,19 @@ function updateProjectiles(room) {
     projectile.x += projectile.vx * DT;
     projectile.y += projectile.vy * DT;
     projectile.ttl -= DT;
-
     if (projectile.kind === 'boss') {
       for (const player of alivePlayers(room)) {
         if (circleHitsRect(projectile, player)) {
-          damagePlayer(room, player, projectile.damage, Math.sign(projectile.vx) * 240, -230);
-          projectile.ttl = 0;
-          addEffect(room, 'burst', projectile.x, projectile.y, '#ff355e', 0.32, 70);
+          if (damagePlayer(room, player, 1, Math.sign(projectile.vx) * 260, -240, true, projectile.x, projectile) !== 'ignored') projectile.ttl = 0;
           break;
         }
       }
-    } else if (circleHitsRect(projectile, room.boss)) {
+    } else if (room.boss && circleHitsRect(projectile, room.boss)) {
       const owner = room.players.get(projectile.ownerId);
-      if (owner) damageBoss(room, owner, projectile.damage, projectile.x, projectile.y, '#ff62d4');
+      if (owner) damageBoss(room, owner, projectile.damage, projectile.x, projectile.y, '#9eb7dd');
       projectile.ttl = 0;
     }
-
-    if (projectile.x < -100 || projectile.x > WORLD.width + 100 || projectile.y < -150 || projectile.y > WORLD.height + 150) {
-      projectile.ttl = 0;
-    }
+    if (projectile.x < -100 || projectile.x > WORLD.width + 100 || projectile.y < -130 || projectile.y > WORLD.height + 130) projectile.ttl = 0;
   }
   room.projectiles = room.projectiles.filter((projectile) => projectile.ttl > 0);
 }
@@ -584,11 +573,11 @@ function updateWaves(room) {
   for (const wave of room.waves) {
     wave.x += wave.vx * DT;
     wave.ttl -= DT;
-    const hitbox = { x: wave.x - wave.w / 2, y: wave.y - wave.h, w: wave.w, h: wave.h };
+    const box = { x: wave.x - wave.w / 2, y: wave.y - wave.h, w: wave.w, h: wave.h };
     for (const player of alivePlayers(room)) {
-      if (!wave.hit.includes(player.id) && overlaps(hitbox, player)) {
+      if (!wave.hit.includes(player.id) && overlaps(box, player)) {
         wave.hit.push(player.id);
-        damagePlayer(room, player, wave.damage, Math.sign(wave.vx) * 430, -320);
+        damagePlayer(room, player, 1, Math.sign(wave.vx) * 390, -330);
       }
     }
   }
@@ -596,47 +585,93 @@ function updateWaves(room) {
 }
 
 function updateEffects(room) {
-  for (const effect of room.effects) {
-    effect.ttl -= DT;
-    if (effect.type === 'warning' && !effect.triggered && effect.ttl <= effect.damageAt) {
-      effect.triggered = true;
-      effect.type = 'slam';
-      effect.ttl = 0.38;
-      effect.maxTtl = 0.38;
-      const radius = effect.size / 2;
-      for (const player of alivePlayers(room)) {
-        const center = player.x + player.w / 2;
-        if (Math.abs(center - effect.x) < radius && player.y + player.h > WORLD.floor - 95) {
-          damagePlayer(room, player, 28 + room.boss.phase * 3, Math.sign(center - effect.x) * 460, -420);
-        }
-      }
-    }
-  }
+  for (const effect of room.effects) effect.ttl -= DT;
   room.effects = room.effects.filter((effect) => effect.ttl > 0);
+}
+
+function randomPerkOffer(player) {
+  const weights = { common: 48, rare: 31, epic: 16, legendary: 5 };
+  const candidates = [...PERKS];
+  const selected = [];
+  while (selected.length < 3) {
+    const weighted = candidates.map((perk) => ({ perk, weight: weights[perk.rarity] / (1 + perkCount(player, perk.id) * 0.7) }));
+    const total = weighted.reduce((sum, item) => sum + item.weight, 0);
+    let roll = Math.random() * total;
+    let chosen = weighted[0].perk;
+    for (const item of weighted) { roll -= item.weight; if (roll <= 0) { chosen = item.perk; break; } }
+    selected.push(chosen);
+    candidates.splice(candidates.findIndex((perk) => perk.id === chosen.id), 1);
+  }
+  return selected;
+}
+
+function applyPerk(player, id) {
+  player.perks[id] = (player.perks[id] || 0) + 1;
+  const stats = derivedStats(player);
+  player.maxHp = stats.maxHp;
+  player.maxStamina = stats.maxStamina;
+  player.hp = stats.maxHp;
+  player.stamina = stats.maxStamina;
+}
+
+function clearStage(room) {
+  if (room.status !== 'playing') return;
+  room.stagesCleared = room.stage;
+  if (room.stage >= MAX_STAGE) return finishRun(room, 'victory');
+  room.status = 'perk';
+  room.projectiles = [];
+  room.waves = [];
+  room.boss = null;
+  for (const player of room.players.values()) {
+    player.perkOffer = randomPerkOffer(player);
+    player.perkChosen = false;
+    player.downed = false;
+    player.action = 'idle';
+    const reward = Math.round((7 + room.stage * 1.45) * (1 + perkCount(player, 'greed') * 0.5));
+    io.to(player.id).emit('currency-earned', { amount: reward, stage: room.stage });
+  }
+  io.to(room.code).emit('stage-cleared', { stage: room.stage });
+  io.to(room.code).emit('state', snapshot(room));
+}
+
+function checkPerkSelections(room) {
+  if (room.status !== 'perk' || !room.players.size) return;
+  if ([...room.players.values()].every((player) => player.perkChosen)) {
+    if (room.nextStageTimer) clearTimeout(room.nextStageTimer);
+    room.nextStageTimer = setTimeout(() => { room.nextStageTimer = null; startNextStage(room); }, 900);
+  }
+}
+
+function checkTeamWipe(room) {
+  if (room.status === 'playing' && room.players.size && [...room.players.values()].every((player) => player.downed)) finishRun(room, 'defeat');
+}
+
+function finishRun(room, result) {
+  if (!['playing', 'perk'].includes(room.status)) return;
+  room.status = result;
+  room.projectiles = [];
+  room.waves = [];
+  io.to(room.code).emit('game-over', {
+    result, stageReached: room.stage, stagesCleared: room.stagesCleared, elapsed: room.elapsed,
+    players: [...room.players.values()].map((player) => ({
+      name: player.name, classId: player.classId, damageDone: Math.round(player.damageDone),
+      perkCount: Object.values(player.perks).reduce((sum, count) => sum + count, 0),
+    })).sort((a, b) => b.damageDone - a.damageDone),
+  });
 }
 
 function snapshot(room) {
   const boss = room.boss;
   return {
-    sequence: ++room.stateSequence,
-    status: room.status,
-    elapsed: Math.round(room.elapsed * 10) / 10,
+    sequence: ++room.stateSequence, status: room.status, stage: room.stage, maxStage: MAX_STAGE,
+    stagesCleared: room.stagesCleared, elapsed: Math.round(room.elapsed * 10) / 10,
     players: [...room.players.values()].map((player) => publicPlayer(player, room.hostId, true)),
     boss: boss ? {
-      x: Math.round(boss.x * 10) / 10,
-      y: boss.y,
-      w: boss.w,
-      h: boss.h,
-      hp: Math.round(boss.hp),
-      maxHp: boss.maxHp,
-      phase: boss.phase,
-      facing: boss.facing,
-      attack: boss.attack,
-      flash: boss.flash > 0,
+      x: Math.round(boss.x * 10) / 10, y: boss.y, w: boss.w, h: boss.h,
+      hp: Math.round(boss.hp), maxHp: boss.maxHp, facing: boss.facing, tier: boss.tier,
+      flash: boss.flash > 0, stagger: boss.stagger > 0, currentAttack: boss.currentAttack,
     } : null,
-    projectiles: room.projectiles,
-    waves: room.waves,
-    effects: room.effects,
+    projectiles: room.projectiles, waves: room.waves, effects: room.effects,
   };
 }
 
@@ -648,103 +683,95 @@ function tickRoom(room) {
   updateProjectiles(room);
   updateWaves(room);
   updateEffects(room);
-
-  const stillFighting = [...room.players.values()].some((player) => !player.downed || player.respawns > 0);
-  if (!stillFighting) finishRoom(room, 'defeat');
   io.to(room.code).emit('state', snapshot(room));
 }
 
 io.on('connection', (socket) => {
   socket.data.roomCode = null;
-
   socket.on('create-room', (payload, reply = () => {}) => {
     leaveCurrentRoom(socket);
-    const hero = cleanHero(payload?.hero);
-    const room = makeRoom(socket, cleanName(payload?.name), hero);
+    const room = createRoom(socket, cleanName(payload?.name), cleanClass(payload?.classId), cleanSkin(payload?.skin));
     socket.data.roomCode = room.code;
     socket.join(room.code);
-    reply({ ok: true, room: roomLobbyState(room), playerId: socket.id });
+    reply({ ok: true, room: lobbyState(room), playerId: socket.id });
     emitLobby(room);
   });
-
   socket.on('join-room', (payload, reply = () => {}) => {
-    const code = String(payload?.code || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5);
+    const code = String(payload?.code || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5);
     const room = rooms.get(code);
     if (!room) return reply({ ok: false, error: 'Комната с таким кодом не найдена' });
-    if (room.status !== 'lobby') return reply({ ok: false, error: 'Битва в этой комнате уже началась' });
+    if (room.status !== 'lobby') return reply({ ok: false, error: 'Забег уже начался' });
     if (room.players.size >= MAX_PLAYERS) return reply({ ok: false, error: 'В комнате уже 4 игрока' });
-
     leaveCurrentRoom(socket);
-    const hero = cleanHero(payload?.hero);
-    room.players.set(socket.id, makePlayer(socket.id, cleanName(payload?.name), hero, room.players.size));
+    room.players.set(socket.id, makePlayer(socket.id, cleanName(payload?.name), cleanClass(payload?.classId), cleanSkin(payload?.skin), room.players.size));
     socket.data.roomCode = room.code;
     socket.join(room.code);
-    reply({ ok: true, room: roomLobbyState(room), playerId: socket.id });
+    reply({ ok: true, room: lobbyState(room), playerId: socket.id });
     emitLobby(room);
   });
-
-  socket.on('select-hero', (heroValue) => {
+  socket.on('select-class', (payload) => {
     const room = socketRoom(socket);
-    if (!room || room.status !== 'lobby') return;
-    const player = room.players.get(socket.id);
-    if (!player) return;
-    player.hero = cleanHero(heroValue);
+    const player = room?.players.get(socket.id);
+    if (!room || room.status !== 'lobby' || !player) return;
+    player.classId = cleanClass(payload?.classId);
+    player.skin = cleanSkin(payload?.skin);
     emitLobby(room);
   });
-
   socket.on('start-game', (reply = () => {}) => {
     const room = socketRoom(socket);
     if (!room) return reply({ ok: false, error: 'Комната не найдена' });
-    if (room.hostId !== socket.id) return reply({ ok: false, error: 'Начать бой может только создатель комнаты' });
-    if (room.players.size < 2) return reply({ ok: false, error: 'Для рейда нужно минимум 2 игрока' });
-    if (room.status !== 'lobby') return reply({ ok: false, error: 'Бой уже начался' });
-    startRoom(room);
+    if (room.hostId !== socket.id) return reply({ ok: false, error: 'Начать забег может только создатель' });
+    if (room.status !== 'lobby') return reply({ ok: false, error: 'Забег уже начался' });
+    startRun(room);
     return reply({ ok: true });
   });
-
-  socket.on('input', (input) => {
+  socket.on('input', (value) => {
     const room = socketRoom(socket);
     const player = room?.players.get(socket.id);
-    if (!room || room.status !== 'playing' || !player || !input) return;
-    player.input = {
-      left: input.left === true,
-      right: input.right === true,
-      jump: input.jump === true,
-      attack: input.attack === true,
-      dash: input.dash === true,
-      ability: input.ability === true,
-    };
+    if (!room || room.status !== 'playing' || !player || !value) return;
+    player.input = Object.fromEntries(['left', 'right', 'jump', 'light', 'heavy', 'parry', 'roll'].map((key) => [key, value[key] === true]));
   });
-
+  socket.on('choose-perk', (id, reply = () => {}) => {
+    const room = socketRoom(socket);
+    const player = room?.players.get(socket.id);
+    if (!room || room.status !== 'perk' || !player || player.perkChosen) return reply({ ok: false, error: 'Выбор закрыт' });
+    if (!player.perkOffer.some((perk) => perk.id === id)) return reply({ ok: false, error: 'Такой карты нет' });
+    applyPerk(player, id);
+    player.perkChosen = true;
+    io.to(room.code).emit('state', snapshot(room));
+    checkPerkSelections(room);
+    return reply({ ok: true });
+  });
+  if (process.env.NODE_ENV === 'test') {
+    socket.on('debug-clear-stage', () => {
+      const room = socketRoom(socket);
+      if (room?.status === 'playing' && room.boss) {
+        room.boss.hp = 0;
+        clearStage(room);
+      }
+    });
+    socket.on('debug-down-player', (playerId) => {
+      const room = socketRoom(socket);
+      const player = room?.players.get(playerId);
+      if (room?.status === 'playing' && player) {
+        player.hp = 0;
+        player.downed = true;
+        player.action = 'downed';
+        checkTeamWipe(room);
+      }
+    });
+  }
   socket.on('return-lobby', (reply = () => {}) => {
     const room = socketRoom(socket);
     if (!room) return reply({ ok: false, error: 'Комната закрыта' });
-    if (room.hostId !== socket.id) return reply({ ok: false, error: 'Только создатель может запустить реванш' });
-    room.status = 'lobby';
-    room.boss = null;
-    room.projectiles = [];
-    room.waves = [];
-    room.effects = [];
+    if (room.hostId !== socket.id) return reply({ ok: false, error: 'Только создатель может запустить новый забег' });
+    Object.assign(room, { status: 'lobby', boss: null, projectiles: [], waves: [], effects: [] });
     emitLobby(room);
     return reply({ ok: true });
   });
-
   socket.on('leave-room', () => leaveCurrentRoom(socket));
   socket.on('disconnect', () => leaveCurrentRoom(socket));
 });
 
-setInterval(() => {
-  for (const room of rooms.values()) tickRoom(room);
-}, 1000 / TICK_RATE);
-
-setInterval(() => {
-  const cutoff = Date.now() - 6 * 60 * 60 * 1000;
-  for (const [code, room] of rooms.entries()) {
-    if (room.createdAt < cutoff && room.players.size === 0) rooms.delete(code);
-  }
-}, 60_000).unref();
-
-server.listen(PORT, '0.0.0.0', () => {
-  console.log(`RIFT//RAID is running at http://localhost:${PORT}`);
-});
-
+setInterval(() => { for (const room of rooms.values()) tickRoom(room); }, 1000 / TICK_RATE);
+server.listen(PORT, '0.0.0.0', () => console.log(`RIFT//RAID: ASHEN HUNDRED is running at http://localhost:${PORT}`));
