@@ -13,7 +13,8 @@ const PORT = Number(process.env.PORT) || 3000;
 const TICK_RATE = 30;
 const DT = 1 / TICK_RATE;
 const MAX_PLAYERS = 4;
-const MAX_STAGE = 100;
+const STAGES_PER_BOSS = 5;
+const MAX_STAGE = 50;
 const WORLD = { width: 2800, height: 720, floor: 640 };
 const ROOM_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const GROUND = { x: 0, y: 640, w: 2800, h: 80 };
@@ -167,7 +168,7 @@ const BOSSES = [
   { id: 'moon_huntress', name: 'ЛУННАЯ ОХОТНИЦА', title: 'Стрела над разломом', color: '#5365a8', eye: '#dce4ff', speed: 1.3, attackRate: 0.72, near: ['blink','slash','ring_burst','twin_slash'], far: ['volley','skyfall','beam','marked'], phase2: ['charge','wave'], phase3: ['quake','cleave'] },
   { id: 'storm_sovereign', name: 'ВЛАДЫКА БУРИ', title: 'Гром, принявший форму', color: '#356f99', eye: '#bce9ff', speed: 1.18, attackRate: 0.7, near: ['ring_burst','quake','blink','slam'], far: ['beam','marked','volley','skyfall'], phase2: ['wave','charge'], phase3: ['twin_slash','cleave'] },
   { id: 'void_apostle', name: 'АПОСТОЛ ПУСТОТЫ', title: 'Тень последней клятвы', color: '#713c7d', eye: '#efb8ff', speed: 1.26, attackRate: 0.66, near: ['blink','ring_burst','twin_slash','marked'], far: ['beam','skyfall','volley','quake'], phase2: ['charge','cleave'], phase3: ['wave','slam'] },
-  { id: 'ashen_king', name: 'ПЕПЕЛЬНЫЙ КОРОЛЬ', title: 'Владелец сотой печати', color: '#9a7444', eye: '#fff0b0', speed: 1.34, attackRate: 0.62, near: ['slash','twin_slash','blink','cleave','quake'], far: ['beam','marked','ring_burst','skyfall','charge','volley'], phase2: ['wave','slam'], phase3: ['blink','beam','marked','quake','ring_burst'] },
+  { id: 'ashen_king', name: 'ПЕПЕЛЬНЫЙ КОРОЛЬ', title: 'Владелец последней печати', color: '#9a7444', eye: '#fff0b0', speed: 1.34, attackRate: 0.62, near: ['slash','twin_slash','blink','cleave','quake'], far: ['beam','marked','ring_burst','skyfall','charge','volley'], phase2: ['wave','slam'], phase3: ['blink','beam','marked','quake','ring_burst'] },
 ];
 
 const ROUTES = [
@@ -177,6 +178,7 @@ const ROUTES = [
   { id: 'forge', name: 'Забытая кузня', description: 'Босс крепче, но отряд наносит на 20% больше урона.', hp: 1.18, attackRate: 0.94, reward: 1.3, playerDamage: 1.2 },
   { id: 'oath', name: 'Алтарь клятвы', description: 'Командная способность почти заряжена. Босс тоже усилен.', hp: 1.2, attackRate: 0.9, reward: 1.25, teamPower: 75 },
   { id: 'ruins', name: 'Живые руины', description: 'Опасности арены срабатывают чаще, награда увеличена.', hp: 1.1, attackRate: 0.9, reward: 1.65, hazardRate: 1.45 },
+  { id: 'healing', name: 'Комната тихого света', description: 'Живые странники восстанавливают до 2 HP. Павшие вернутся с 1 HP. Награда ниже.', hp: 1, attackRate: 1, reward: 0.65, heal: 2, special: 'healing' },
 ];
 
 const RUN_MODIFIERS = [
@@ -333,6 +335,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.get('/health', (_req, res) => res.json({ ok: true, rooms: rooms.size }));
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+const difficultyStage = (stage) => 1 + (Math.max(1, stage) - 1) * 2;
 const overlaps = (a, b) => a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
 function cleanName(value) {
   return String(value || '').replace(/[<>\n\r]/g, '').trim().slice(0, 16) || `Странник-${Math.floor(100 + Math.random() * 900)}`;
@@ -357,11 +360,11 @@ function skillTotal(player, stat) {
     return sum + (skill?.classId === player.classId && skill.stat === stat ? skill.value : 0);
   }, 0);
 }
-function arenaForStage(stage) { return ARENAS[Math.min(ARENAS.length - 1, Math.floor((stage - 1) / 10))]; }
+function arenaForStage(stage) { return ARENAS[Math.min(ARENAS.length - 1, Math.floor((stage - 1) / STAGES_PER_BOSS))]; }
 
 function setArena(room) {
   const source = arenaForStage(room.stage);
-  const tier = Math.min(10, Math.floor((room.stage - 1) / 10) + 1);
+  const tier = Math.min(10, Math.floor((room.stage - 1) / STAGES_PER_BOSS) + 1);
   const edgeInset = [0, 60, 100, 140, 180, 220, 250, 280, 310, 340][tier - 1];
   const rightEdge = WORLD.width - edgeInset;
   const gaps = ARENA_GAPS[tier - 1]
@@ -488,7 +491,7 @@ function createRoom(socket, name, classId, skin, equippedSkills, weaponId, appea
     stage: 1, stagesCleared: 0, elapsed: 0, boss: null,
     projectiles: [], waves: [], effects: [], bossEvents: [], arena: null, arenaTime: 0,
     stateSequence: 0, nextStageTimer: null, routeOffer: [], routeVotes: {}, routeEffect: null,
-    modifier: null, teamPower: 0, lastParryAt: 0, lastParryId: null,
+    modifier: null, teamPower: 0, lastParryAt: 0, lastParryId: null, nextHealingOfferStage: 3,
   };
   room.players.set(socket.id, makePlayer(socket.id, name, classId, skin, 0, equippedSkills, weaponId, appearance));
   rooms.set(code, room);
@@ -571,12 +574,12 @@ function resetPlayerForRun(player, room) {
 
 function bossHealth(stage, count) {
   const base = 250 + count * 115;
-  const step = stage - 1;
+  const step = difficultyStage(stage) - 1;
   const growth = step * 0.082 + Math.pow(step / 12, 1.55) * 0.22;
   return Math.round(base * (1 + growth * 5));
 }
 
-function bossDamage(stage) { return 1 + Math.floor((stage - 1) / 20); }
+function bossDamage(stage) { return 1 + Math.floor((difficultyStage(stage) - 1) / 20); }
 
 function groundSupports(room, centerX) {
   return (room.arena?.platforms || [GROUND]).some((platform) => platform.y === WORLD.floor && centerX >= platform.x && centerX <= platform.x + platform.w);
@@ -595,7 +598,8 @@ function nearestSafeBossX(room, desiredX, bossWidth = 122) {
 }
 
 function spawnBoss(room) {
-  const archetype = BOSSES[Math.min(BOSSES.length - 1, Math.floor((room.stage - 1) / 10))];
+  const threatStage = difficultyStage(room.stage);
+  const archetype = BOSSES[Math.min(BOSSES.length - 1, Math.floor((room.stage - 1) / STAGES_PER_BOSS))];
   const route = room.routeEffect || {};
   const modifier = room.modifier || {};
   const curseStacks = [...room.players.values()].reduce((sum, player) => sum + perkCount(player, 'curse_bearer'), 0);
@@ -603,13 +607,13 @@ function spawnBoss(room) {
   const spawnX = nearestSafeBossX(room, Math.min(2250, (room.arena?.bounds?.right || WORLD.width) - 360));
   room.boss = {
     x: spawnX, y: WORLD.floor - 150, w: 122, h: 150, vx: 0, vy: 0, onGround: true,
-    hp: maxHp, maxHp, facing: -1, tier: Math.min(10, Math.ceil(room.stage / 10)), bossId: archetype.id,
+    hp: maxHp, maxHp, facing: -1, tier: Math.min(10, Math.ceil(room.stage / STAGES_PER_BOSS)), bossId: archetype.id,
     name: archetype.name, title: archetype.title, color: archetype.color, eye: archetype.eye, profile: archetype,
     phase: 1, phaseFlash: 0, targetId: null,
     damage: Math.max(1, Math.ceil(bossDamage(room.stage) * (modifier.bossDamage || 1))),
     attackRate: archetype.attackRate * (route.attackRate || 1) * (modifier.attackRate || 1),
     moveRate: archetype.speed, projectileRate: modifier.projectileSpeed || 1,
-    attackCooldown: Math.max(0.48, (1.48 - room.stage * 0.008) * archetype.attackRate), currentAttack: null,
+    attackCooldown: Math.max(0.48, (1.48 - threatStage * 0.008) * archetype.attackRate), currentAttack: null,
     lastAttack: null, stagger: 0, flash: 0,
     dashTimer: 0, dashCooldown: 1.8, jumpCooldown: 1.2, repositionTimer: 0.8,
     moveDirection: -1, dashDirection: -1, gapLeapTimer: 0, gapDirection: -1,
@@ -618,7 +622,7 @@ function spawnBoss(room) {
 
 function startRun(room) {
   const modifier = RUN_MODIFIERS[Math.floor(Math.random() * RUN_MODIFIERS.length)];
-  Object.assign(room, { status: 'playing', stage: 1, stagesCleared: 0, elapsed: 0, projectiles: [], waves: [], effects: [], bossEvents: [], routeOffer: [], routeVotes: {}, routeEffect: null, modifier, teamPower: 0, lastParryAt: 0, lastParryId: null });
+  Object.assign(room, { status: 'playing', stage: 1, stagesCleared: 0, elapsed: 0, projectiles: [], waves: [], effects: [], bossEvents: [], routeOffer: [], routeVotes: {}, routeEffect: null, modifier, teamPower: 0, lastParryAt: 0, lastParryId: null, nextHealingOfferStage: 3 + Math.floor(Math.random() * 3) });
   setArena(room);
   for (const player of room.players.values()) resetPlayerForRun(player, room);
   spawnBoss(room);
@@ -1063,10 +1067,11 @@ function telegraphTime(stage, type) {
 
 function buildBossAttack(room, target, type) {
   const phaseRate = room.boss?.phase === 3 ? 0.72 : room.boss?.phase === 2 ? 0.84 : 1;
-  const duration = telegraphTime(room.stage, type) * (room.boss?.attackRate || 1) * phaseRate;
+  const threatStage = difficultyStage(room.stage);
+  const duration = telegraphTime(threatStage, type) * (room.boss?.attackRate || 1) * phaseRate;
   const attack = { type, phase: 'telegraph', timer: duration, duration, targetId: target.id, targetX: target.x + 21 };
   if (['skyfall', 'marked'].includes(type)) attack.targetXs = alivePlayers(room).map((player) => player.x + 21);
-  if (type === 'skyfall' && room.stage >= 55) attack.targetXs.push(clamp(target.x - 170, 80, WORLD.width - 80), clamp(target.x + 210, 80, WORLD.width - 80));
+  if (type === 'skyfall' && threatStage >= 55) attack.targetXs.push(clamp(target.x - 170, 80, WORLD.width - 80), clamp(target.x + 210, 80, WORLD.width - 80));
   if (type === 'beam') attack.direction = Math.sign(target.x - room.boss.x) || room.boss.facing;
   return attack;
 }
@@ -1100,14 +1105,15 @@ function bossMelee(room, radius, parryable) {
 
 function spawnBossOrb(room, target, offset = 0, options = {}) {
   const boss = room.boss;
+  const threatStage = difficultyStage(room.stage);
   const x = options.x ?? boss.x + 61;
   const y = options.y ?? boss.y + 42;
   const angle = options.angle ?? Math.atan2(target.y + 30 - y, target.x + 21 - x) + offset;
-  const speed = (options.speed ?? 390 + Math.min(300, room.stage * 4.2)) * (boss.projectileRate || 1) * (boss.phase === 3 ? 1.22 : boss.phase === 2 ? 1.1 : 1);
+  const speed = (options.speed ?? 390 + Math.min(300, threatStage * 4.2)) * (boss.projectileRate || 1) * (boss.phase === 3 ? 1.22 : boss.phase === 2 ? 1.1 : 1);
   room.projectiles.push({
     id: entitySequence++, kind: 'boss', style: options.style || 'orb', x, y,
     vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
-    r: options.r || 14 + Math.min(7, Math.floor(room.stage / 25)), damage: options.damage || boss.damage,
+    r: options.r || 14 + Math.min(7, Math.floor(threatStage / 25)), damage: options.damage || boss.damage,
     parryable: options.parryable !== false, ttl: options.ttl || 5,
   });
 }
@@ -1129,6 +1135,7 @@ function updateBossEvents(room) {
 
 function executeBossAttack(room, attack) {
   const boss = room.boss;
+  const threatStage = difficultyStage(room.stage);
   const target = room.players.get(attack.targetId) || nearestPlayer(room);
   if (attack.type === 'slash') bossMelee(room, 155, true);
   if (attack.type === 'cleave') bossMelee(room, 245, true);
@@ -1137,7 +1144,7 @@ function executeBossAttack(room, attack) {
     if (!parried) queueBossEvent(room, 0.28, 'melee', { radius: 225, parryable: true });
   }
   if (attack.type === 'slam') {
-    const radius = 145 + Math.min(90, room.stage * 0.7);
+    const radius = 145 + Math.min(90, threatStage * 0.7);
     for (const player of alivePlayers(room)) {
       const center = player.x + 21;
       if (Math.abs(center - attack.targetX) < radius && player.y + player.h > WORLD.floor - 100) damagePlayer(room, player, boss.damage, Math.sign(center - attack.targetX) * 420, -390);
@@ -1146,26 +1153,26 @@ function executeBossAttack(room, attack) {
   }
   if (attack.type === 'volley' && target) {
     for (const player of alivePlayers(room)) spawnBossOrb(room, player);
-    if (room.stage >= 35) { spawnBossOrb(room, target, -0.18); spawnBossOrb(room, target, 0.18); }
+    if (threatStage >= 35) { spawnBossOrb(room, target, -0.18); spawnBossOrb(room, target, 0.18); }
   }
   if (attack.type === 'skyfall') {
     for (const [index, targetX] of (attack.targetXs || []).entries()) {
       room.projectiles.push({
         id: entitySequence++, kind: 'boss', style: 'sky', x: targetX, y: -25 - index * 28,
-        vx: index % 2 ? 35 : -35, vy: 570 + Math.min(260, room.stage * 3.2),
+        vx: index % 2 ? 35 : -35, vy: 570 + Math.min(260, threatStage * 3.2),
         r: 17, damage: boss.damage, parryable: false, ttl: 2.2,
       });
     }
   }
   if (attack.type === 'ring_burst') {
-    const count = room.stage >= 80 ? 16 : room.stage >= 55 ? 12 : 8;
+    const count = threatStage >= 80 ? 16 : threatStage >= 55 ? 12 : 8;
     for (let index = 0; index < count; index += 1) {
-      spawnBossOrb(room, target, 0, { angle: (Math.PI * 2 * index) / count, speed: 330 + room.stage * 2.2, style: 'ring', r: 12 });
+      spawnBossOrb(room, target, 0, { angle: (Math.PI * 2 * index) / count, speed: 330 + threatStage * 2.2, style: 'ring', r: 12 });
     }
   }
   if (attack.type === 'beam') {
     const direction = attack.direction || boss.facing;
-    const length = 760 + Math.min(420, room.stage * 4);
+    const length = 760 + Math.min(420, threatStage * 4);
     const box = { x: direction > 0 ? boss.x + boss.w : boss.x - length, y: boss.y + 18, w: length, h: 94 };
     for (const player of alivePlayers(room)) {
       if (overlaps(box, player)) damagePlayer(room, player, boss.damage, direction * 510, -240);
@@ -1182,7 +1189,7 @@ function executeBossAttack(room, attack) {
     bossMelee(room, 150, true);
   }
   if (attack.type === 'marked') {
-    const radius = 128 + Math.min(42, room.stage * 0.35);
+    const radius = 128 + Math.min(42, threatStage * 0.35);
     for (const targetX of attack.targetXs || []) {
       for (const player of alivePlayers(room)) {
         const center = player.x + 21;
@@ -1192,25 +1199,25 @@ function executeBossAttack(room, attack) {
     }
   }
   if (attack.type === 'wave') {
-    const count = room.stage >= 70 ? 3 : room.stage >= 25 ? 2 : 1;
+    const count = threatStage >= 70 ? 3 : threatStage >= 25 ? 2 : 1;
     const direction = target ? Math.sign(target.x - boss.x) || -1 : -1;
     for (let index = 0; index < count; index += 1) room.waves.push({
       id: entitySequence++, x: boss.x + 61, y: WORLD.floor - 6,
-      vx: direction * (470 + room.stage * 2.4 + index * 45), w: 72, h: 38 + index * 6, damage: boss.damage, ttl: 5, hit: [],
+      vx: direction * (470 + threatStage * 2.4 + index * 45), w: 72, h: 38 + index * 6, damage: boss.damage, ttl: 5, hit: [],
     });
   }
   if (attack.type === 'quake') {
-    const count = room.stage >= 85 ? 2 : 1;
+    const count = threatStage >= 85 ? 2 : 1;
     for (const direction of [-1, 1]) for (let index = 0; index < count; index += 1) room.waves.push({
       id: entitySequence++, x: boss.x + 61 + direction * 30, y: WORLD.floor - 6,
-      vx: direction * (505 + room.stage * 2.7 + index * 70), w: 82, h: 48 + index * 7, damage: boss.damage, ttl: 5, hit: [],
+      vx: direction * (505 + threatStage * 2.7 + index * 70), w: 82, h: 48 + index * 7, damage: boss.damage, ttl: 5, hit: [],
     });
   }
   if (attack.type === 'charge' && target) {
     const direction = Math.sign(target.x - boss.x) || boss.facing;
     const left = (room.arena?.bounds?.left || 0) + 30;
     const right = (room.arena?.bounds?.right || WORLD.width) - boss.w - 30;
-    boss.x = nearestSafeBossX(room, clamp(boss.x + direction * (240 + Math.min(220, room.stage * 2)), left, right), boss.w);
+    boss.x = nearestSafeBossX(room, clamp(boss.x + direction * (240 + Math.min(220, threatStage * 2)), left, right), boss.w);
     bossMelee(room, 125, true);
   }
 }
@@ -1267,6 +1274,7 @@ function updateBossPhase(room, boss) {
 function updateBoss(room) {
   const boss = room.boss;
   if (!boss || boss.hp <= 0) return;
+  const threatStage = difficultyStage(room.stage);
   updateBossPhase(room, boss);
   boss.flash = Math.max(0, boss.flash - DT);
   boss.phaseFlash = Math.max(0, boss.phaseFlash - DT);
@@ -1293,11 +1301,11 @@ function updateBoss(room) {
       executeBossAttack(room, attack);
       attack.phase = 'recovery';
       const phaseRate = boss.phase === 3 ? 0.66 : boss.phase === 2 ? 0.8 : 1;
-      attack.timer = attack.duration = Math.max(0.2, (0.58 - room.stage * 0.0027) * boss.attackRate * phaseRate);
+      attack.timer = attack.duration = Math.max(0.2, (0.58 - threatStage * 0.0027) * boss.attackRate * phaseRate);
     } else if (attack.phase === 'recovery' && attack.timer <= 0) {
       boss.currentAttack = null;
       const phaseRate = boss.phase === 3 ? 0.58 : boss.phase === 2 ? 0.76 : 1;
-      boss.attackCooldown = Math.max(0.34, (1.18 - room.stage * 0.0055) * boss.attackRate * phaseRate);
+      boss.attackCooldown = Math.max(0.34, (1.18 - threatStage * 0.0055) * boss.attackRate * phaseRate);
     }
     return;
   }
@@ -1308,29 +1316,29 @@ function updateBoss(room) {
   boss.facing = distance < 0 ? -1 : 1;
   boss.attackCooldown -= DT;
   const phaseMove = boss.phase === 3 ? 1.32 : boss.phase === 2 ? 1.16 : 1;
-  const moveSpeed = (118 + Math.min(205, room.stage * 1.88)) * boss.moveRate * phaseMove;
-  const preferredDistance = room.stage >= 55 ? 195 : 165;
+  const moveSpeed = (118 + Math.min(205, threatStage * 1.88)) * boss.moveRate * phaseMove;
+  const preferredDistance = threatStage >= 55 ? 195 : 165;
 
   if (boss.repositionTimer <= 0) {
-    boss.repositionTimer = Math.max(0.72, 2.45 - room.stage * 0.013);
+    boss.repositionTimer = Math.max(0.72, 2.45 - threatStage * 0.013);
     boss.moveDirection = Math.random() < 0.55 ? Math.sign(distance) || boss.facing : -(Math.sign(distance) || boss.facing);
-    const canDash = room.stage >= 12 && boss.dashCooldown <= 0 && absoluteDistance > 210 && absoluteDistance < 920;
-    if (canDash && Math.random() < 0.48 + Math.min(0.28, room.stage * 0.003)) {
-      boss.dashTimer = 0.16 + Math.min(0.1, room.stage * 0.001);
+    const canDash = threatStage >= 12 && boss.dashCooldown <= 0 && absoluteDistance > 210 && absoluteDistance < 920;
+    if (canDash && Math.random() < 0.48 + Math.min(0.28, threatStage * 0.003)) {
+      boss.dashTimer = 0.16 + Math.min(0.1, threatStage * 0.001);
       boss.dashDirection = Math.sign(distance) || boss.facing;
-      boss.dashCooldown = Math.max(1.15, 3.1 - room.stage * 0.017);
+      boss.dashCooldown = Math.max(1.15, 3.1 - threatStage * 0.017);
       addEffect(room, 'blink', bossCenterX, boss.y + boss.h / 2, '#9b5261', 0.3, 105);
     }
-    const wantsJump = room.stage >= 8 && boss.onGround && boss.jumpCooldown <= 0 && (target.y < boss.y - 45 || Math.random() < 0.32);
+    const wantsJump = threatStage >= 8 && boss.onGround && boss.jumpCooldown <= 0 && (target.y < boss.y - 45 || Math.random() < 0.32);
     if (wantsJump) {
-      boss.vy = -(500 + Math.min(160, room.stage * 1.6));
+      boss.vy = -(500 + Math.min(160, threatStage * 1.6));
       boss.onGround = false;
-      boss.jumpCooldown = Math.max(1.35, 3.6 - room.stage * 0.018);
+      boss.jumpCooldown = Math.max(1.35, 3.6 - threatStage * 0.018);
     }
   }
 
   let desiredVx = 0;
-  if (boss.gapLeapTimer > 0) desiredVx = boss.gapDirection * (650 + Math.min(110, room.stage));
+  if (boss.gapLeapTimer > 0) desiredVx = boss.gapDirection * (650 + Math.min(110, threatStage));
   else if (boss.dashTimer > 0) desiredVx = boss.dashDirection * (moveSpeed * 2.85 + 120);
   else if (absoluteDistance < 105) desiredVx = -Math.sign(distance || 1) * moveSpeed * 0.82;
   else if (absoluteDistance > preferredDistance + 45) desiredVx = Math.sign(distance) * moveSpeed;
@@ -1342,7 +1350,7 @@ function updateBoss(room) {
   if (boss.x > arenaRight - boss.w - 115) desiredVx = -Math.abs(desiredVx);
   const travelDirection = Math.sign(desiredVx);
   if (boss.onGround && gapAhead(room, boss, travelDirection)) {
-    boss.vy = -(600 + Math.min(180, room.stage * 1.6));
+    boss.vy = -(600 + Math.min(180, threatStage * 1.6));
     boss.vx = travelDirection * Math.max(680, Math.abs(boss.vx));
     boss.onGround = false;
     boss.gapLeapTimer = 0.65;
@@ -1442,7 +1450,7 @@ function clearStage(room) {
   for (const player of room.players.values()) {
     player.bossesDefeated += 1;
     if (player.stageHitsTaken === 0) player.noHitStages += 1;
-    const reward = Math.round((7 + room.stage * 1.45) * (1 + perkCount(player, 'greed') * 0.5) * (room.routeEffect?.reward || 1) * (room.modifier?.reward || 1));
+    const reward = Math.round((14 + difficultyStage(room.stage) * 2.9) * (1 + perkCount(player, 'greed') * 0.5) * (room.routeEffect?.reward || 1) * (room.modifier?.reward || 1));
     io.to(player.id).emit('currency-earned', { amount: reward, stage: room.stage });
   }
   io.to(room.code).emit('stage-cleared', { stage: room.stage });
@@ -1472,7 +1480,14 @@ function beginRouteVote(room) {
   if (room.status !== 'perk' || !rooms.has(room.code)) return;
   room.status = 'route';
   room.routeVotes = {};
-  room.routeOffer = [...ROUTES].sort(() => Math.random() - 0.5).slice(0, 3);
+  const healingRoute = ROUTES.find((route) => route.id === 'healing');
+  const regularRoutes = ROUTES.filter((route) => route.id !== 'healing').sort(() => Math.random() - 0.5);
+  if (room.stage >= room.nextHealingOfferStage) {
+    room.routeOffer = [healingRoute, ...regularRoutes.slice(0, 2)].sort(() => Math.random() - 0.5);
+    room.nextHealingOfferStage = room.stage + 4 + Math.floor(Math.random() * 3);
+  } else {
+    room.routeOffer = regularRoutes.slice(0, 3);
+  }
   io.to(room.code).emit('state', snapshot(room));
 }
 
@@ -1491,7 +1506,18 @@ function checkRouteVotes(room) {
     return a.id.localeCompare(b.id);
   })[0];
   room.routeEffect = selected;
-  io.to(room.code).emit('route-chosen', selected);
+  let healedPlayers = 0;
+  let restoredHp = 0;
+  if (selected.heal) {
+    for (const player of room.players.values()) {
+      if (player.downed) continue;
+      const previousHp = player.hp;
+      player.hp = Math.min(player.maxHp, player.hp + selected.heal);
+      if (player.hp > previousHp) healedPlayers += 1;
+      restoredHp += player.hp - previousHp;
+    }
+  }
+  io.to(room.code).emit('route-chosen', { ...selected, healedPlayers, restoredHp });
   if (room.nextStageTimer) clearTimeout(room.nextStageTimer);
   room.nextStageTimer = setTimeout(() => { room.nextStageTimer = null; startNextStage(room); }, 900);
 }

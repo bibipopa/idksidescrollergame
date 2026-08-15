@@ -10,7 +10,12 @@
   --ember: #9f3543;
   --green: #7f9c70;
   --shadow: 0 35px 100px rgba(0, 0, 0, .62);
+  --ui-scale: 1;
 }
+
+html[data-ui-size="small"] { --ui-scale: .86; }
+html[data-ui-size="normal"] { --ui-scale: 1; }
+html[data-ui-size="large"] { --ui-scale: 1.16; }
 
 * { box-sizing: border-box; }
 html, body { width: 100%; min-height: 100%; margin: 0; background: var(--bg); color: var(--bone); font-family: Manrope, sans-serif; overscroll-behavior: none; }
@@ -28,6 +33,11 @@ body:has(.game-screen.active) .topbar { opacity: 0; pointer-events: none; }
 .brand-sigil { display: grid; width: 35px; height: 35px; place-items: center; border: 1px solid var(--gold); transform: rotate(45deg); color: var(--gold); box-shadow: inset 0 0 18px rgba(201,168,98,.12), 0 0 22px rgba(201,168,98,.08); }
 .brand-sigil::first-letter { transform: rotate(-45deg); }
 .top-actions { display: flex; align-items: center; gap: 16px; pointer-events: auto; }
+.ui-size-picker { display: flex; align-items: center; gap: 3px; height: 35px; padding: 3px; border: 1px solid var(--line); border-radius: 3px; background: rgba(17,15,12,.7); }
+.ui-size-picker > span { margin: 0 6px; color: #71695d; font-size: 7px; font-weight: 800; letter-spacing: 1px; }
+.ui-size-picker button { min-width: 29px; height: 27px; padding: 0 6px; border: 1px solid transparent; background: transparent; color: #777064; font-size: 8px; font-weight: 800; cursor: pointer; }
+.ui-size-picker button:hover { color: var(--bone); }
+.ui-size-picker button.selected { border-color: rgba(201,168,98,.42); background: rgba(201,168,98,.1); color: var(--gold-light); }
 .wallet { display: flex; align-items: center; gap: 7px; height: 35px; padding: 0 12px; border: 1px solid var(--line); border-radius: 3px; background: rgba(17,15,12,.7); cursor: pointer; }
 .wallet .coin { color: var(--gold-light); font: 700 18px "Cormorant Garamond", serif; }
 .wallet b { color: var(--gold-light); font-size: 11px; }
@@ -208,6 +218,10 @@ kbd { display: grid; min-width: 20px; height: 20px; padding: 0 4px; place-items:
 .route-overlay { position:fixed;z-index:125;inset:0;display:none;place-items:center;padding:30px;background:radial-gradient(circle at 50% 42%,rgba(92,64,112,.16),transparent 38%),rgba(4,4,5,.91);backdrop-filter:blur(13px) }
 .route-overlay.active{display:grid}.route-shell{width:min(1050px,95vw);text-align:center}.route-shell>span{color:#b28ac4;font-size:8px;font-weight:800;letter-spacing:2.3px}.route-shell h2{margin:7px 0 4px;font:600 clamp(38px,5vw,62px) "Cormorant Garamond",serif}.route-shell>p{margin:0 0 25px;color:#766e7c;font-size:10px}.route-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
 .route-card{position:relative;min-height:260px;padding:28px 22px;border:1px solid rgba(175,133,193,.32);background:linear-gradient(155deg,rgba(112,71,128,.11),#0b090d 70%);color:#d8cedd;text-align:left;cursor:pointer;transition:.2s}.route-card:hover{transform:translateY(-7px);border-color:#b58bc7}.route-card:disabled{cursor:default;opacity:.72}.route-card>i{display:grid;width:56px;height:56px;place-items:center;margin-bottom:35px;border:1px solid #9271a0;color:#c6a1d5;font:600 29px "Cormorant Garamond",serif}.route-card h3{margin:0 0 8px;font:600 25px "Cormorant Garamond",serif}.route-card p{margin:0;color:#827789;font-size:9px;line-height:1.55}.route-card b{position:absolute;right:16px;bottom:14px;color:#b990c9;font-size:8px}.route-card.voted{box-shadow:inset 0 0 45px rgba(158,111,178,.16);border-color:#d0a9e0}.route-waiting{margin-top:18px;color:#786b7f;font-size:8px;font-weight:800;letter-spacing:1.3px}
+.route-card.healing { border-color: rgba(125,168,121,.5); background: linear-gradient(155deg,rgba(83,128,78,.17),#090d09 70%); }
+.route-card.healing:hover, .route-card.healing.voted { border-color: #9ac48f; box-shadow: inset 0 0 48px rgba(91,143,83,.16); }
+.route-card.healing > i { border-color: #71966a; color: #a9d39f; }
+.route-card.healing b { color: #9ac48f; }
 
 /* Shop and results */
 .modal-overlay, .result-overlay { position: fixed; z-index: 130; inset: 0; display: none; place-items: center; padding: 25px; background: rgba(5,4,3,.82); backdrop-filter: blur(12px); }
@@ -267,6 +281,11 @@ kbd { display: grid; min-width: 20px; height: 20px; padding: 0 4px; place-items:
 .toast.danger { border-color: rgba(159,53,67,.55); }.toast.gold { border-color: rgba(201,168,98,.6); color: var(--gold-light); }.toast.warn { border-color: rgba(181,124,48,.4); }
 @keyframes toastIn { from { opacity: 0; transform: translateY(-8px); } }
 
+/* Масштабируется только интерфейс: разрешение и физика игрового canvas не меняются. */
+.topbar > .brand, .topbar > .top-actions, .home-copy, .entry-card, .lobby-shell,
+.raid-meta, .boss-hud, .squad-hud, .player-vitals, .team-oath, .controls-tip,
+.touch-controls, .perk-shell, .route-shell, .shop-card, .result-card, .toast-stack { zoom: var(--ui-scale); }
+
 @media (max-width: 980px) {
   .home-screen { flex-direction: column; gap: 35px; padding-top: 105px; }
   .home-copy { width: min(680px,91vw); text-align: center; }
@@ -284,7 +303,7 @@ kbd { display: grid; min-width: 20px; height: 20px; padding: 0 4px; place-items:
 }
 
 @media (max-width: 680px) {
-  .topbar { height: 63px; padding: 0 13px; }.brand { font-size: 12px; }.brand-sigil { width: 28px; height: 28px; }.wallet i,.server-state span { display: none; }
+  .topbar { height: 63px; padding: 0 13px; }.brand { font-size: 12px; }.brand-sigil { width: 28px; height: 28px; }.wallet i,.server-state span,.ui-size-picker>span { display: none; }.top-actions{gap:6px}.ui-size-picker button{min-width:24px;padding:0 3px}
   .home-screen { justify-content: flex-start; padding: 90px 14px 35px; }.home-copy h1 { font-size: 67px; letter-spacing: -3px; }.home-copy > p { margin: 21px auto; font-size: 12px; }.feature-row { gap: 17px; }.feature-row div { display: block; text-align: center; }.feature-row strong { display: block; font-size: 25px; }.feature-row span { display: block; font-size: 6px; }
   .entry-card { width: 100%; padding: 20px; }.lobby-screen { padding: 86px 13px 30px; align-items: flex-start; }.lobby-title h1 { font-size: 49px; }.room-code-panel strong { font-size: 24px; letter-spacing: 7px; }.room-code-panel i { display:none; }
   .squad-grid { gap: 7px; }.squad-card { min-height: 145px; }.avatar-art { transform: scale(.7); transform-origin: center top; height: 72px; margin-bottom: -14px; }.squad-info { padding-bottom: 9px; }

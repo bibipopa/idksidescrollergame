@@ -40,10 +40,10 @@ const ARMOR_META = {
 const AURA_META = { ash:{name:'Пепельный след',color:'#b5aa96'}, sparks:{name:'Искры',color:'#e38a4c'}, mist:{name:'Лунный туман',color:'#8baad2'}, runes:{name:'Руны пустоты',color:'#ae75c4'} };
 const ACHIEVEMENTS = [
   {id:'first_seal',name:'Первая печать',description:'Пройди хотя бы одну стадию.',stat:'highestStage',goal:2,reward:250},
-  {id:'first_lord',name:'Первый владыка',description:'Доберись до стадии 11.',stat:'highestStage',goal:11,reward:600},
-  {id:'deep_run',name:'Глубокий забег',description:'Доберись до стадии 26.',stat:'highestStage',goal:26,reward:1200},
-  {id:'half_hundred',name:'Половина сотни',description:'Доберись до стадии 51.',stat:'highestStage',goal:51,reward:2500},
-  {id:'ashen_hundred',name:'Пепельная сотня',description:'Победи финального босса.',stat:'highestStage',goal:101,reward:6000},
+  {id:'first_lord',name:'Первый владыка',description:'Доберись до стадии 6.',stat:'highestStage',goal:6,reward:600},
+  {id:'deep_run',name:'Глубокий забег',description:'Доберись до стадии 13.',stat:'highestStage',goal:13,reward:1200},
+  {id:'half_hundred',name:'Половина пути',description:'Доберись до стадии 26.',stat:'highestStage',goal:26,reward:2500},
+  {id:'ashen_hundred',name:'Последняя печать',description:'Победи финального босса.',stat:'highestStage',goal:51,reward:6000},
   {id:'parry_student',name:'Ученик зеркала',description:'Сделай 20 успешных парирований.',stat:'parries',goal:20,reward:500},
   {id:'parry_master',name:'Безупречная гарда',description:'Сделай 150 успешных парирований.',stat:'parries',goal:150,reward:1800},
   {id:'boss_hunter',name:'Охотник на владык',description:'Победи 50 боссов.',stat:'bosses',goal:50,reward:1600},
@@ -141,6 +141,7 @@ const SKIN_META = {
 
 const DEFAULT_PROFILE = {
   currency: 0,
+  uiSize: 'normal',
   unlockedClasses: ['swordsman'],
   unlockedSkins: ['iron'],
   selectedSkin: 'iron',
@@ -159,7 +160,7 @@ const DEFAULT_PROFILE = {
 const dom = Object.fromEntries([
   'homeScreen', 'lobbyScreen', 'gameScreen', 'serverState', 'nameInput', 'roomCodeInput',
   'createRoomButton', 'joinRoomButton', 'homeError', 'lobbyError', 'lobbyCount', 'roomCodeText',
-  'copyCodeButton', 'squadGrid', 'lobbyHint', 'startGameButton', 'leaveLobbyButton', 'brandButton',
+  'copyCodeButton', 'squadGrid', 'lobbyHint', 'startGameButton', 'leaveLobbyButton', 'brandButton', 'uiSizePicker',
   'gameCanvas', 'hudRoomCode', 'timerText', 'bossName', 'stageText', 'bossHealthBar', 'bossHealthText',
   'squadHud', 'playerVitals', 'heartsBar', 'staminaBar', 'controlsTip', 'toastStack',
   'perkOverlay', 'perkKicker', 'perkSubtitle', 'perkGrid', 'waitingPerks', 'shopButton', 'shopOverlay',
@@ -175,6 +176,7 @@ const screens = [dom.homeScreen, dom.lobbyScreen, dom.gameScreen];
 const input = { left: false, right: false, jump: false, light: false, heavy: false, parry: false, roll: false, team: false };
 
 let profile = loadProfile();
+applyUiSize(profile.uiSize);
 let selectedClass = profile.unlockedClasses.includes('swordsman') ? 'swordsman' : profile.unlockedClasses[0];
 let skillFilterClass = selectedClass;
 let roomCode = '';
@@ -206,6 +208,13 @@ function freshDaily() { return { date: dateKey(), stages: 0, parries: 0, damage:
 function xpForLevel(level) { const steps = Math.max(0, level - 1); return steps * 100 + 40 * steps * (steps + 1); }
 function levelFromXp(xp) { let level = 1; while (level < 50 && xp >= xpForLevel(level + 1)) level += 1; return level; }
 function classLevel(classId) { return levelFromXp(profile.classProgress?.[classId]?.xp || 0); }
+
+function applyUiSize(size) {
+  const safeSize = ['small', 'normal', 'large'].includes(size) ? size : 'normal';
+  profile.uiSize = safeSize;
+  document.documentElement.dataset.uiSize = safeSize;
+  dom.uiSizePicker?.querySelectorAll('[data-ui-size]').forEach((button) => button.classList.toggle('selected', button.dataset.uiSize === safeSize));
+}
 
 function loadProfile() {
   try {
@@ -244,6 +253,7 @@ function loadProfile() {
     const daily = saved.daily?.date === dateKey() ? { ...freshDaily(), ...saved.daily, claimed: Array.isArray(saved.daily.claimed) ? saved.daily.claimed : [] } : freshDaily();
     return {
       currency: Math.max(0, Math.floor(Number(saved.currency) || 0)),
+      uiSize: ['small', 'normal', 'large'].includes(saved.uiSize) ? saved.uiSize : 'normal',
       unlockedClasses,
       unlockedSkins,
       selectedSkin: unlockedSkins.includes(saved.selectedSkin) ? saved.selectedSkin : 'iron',
@@ -274,6 +284,7 @@ function classPayload(classId = selectedClass) {
 }
 
 function renderProfile() {
+  applyUiSize(profile.uiSize);
   dom.currencyCount.textContent = profile.currency;
   dom.shopCurrency.textContent = profile.currency;
   document.querySelectorAll('.class-option').forEach((button) => {
@@ -486,7 +497,7 @@ function applyRunProgress(data) {
   if (!me) return;
   if (profile.daily.date !== dateKey()) profile.daily = freshDaily();
   profile.stats.runs += 1;
-  profile.stats.highestStage = Math.max(profile.stats.highestStage, data.result === 'victory' ? 101 : data.stageReached);
+  profile.stats.highestStage = Math.max(profile.stats.highestStage, data.result === 'victory' ? 51 : data.stageReached);
   profile.stats.parries += me.parries || 0;
   profile.stats.bosses += me.bossesDefeated || 0;
   profile.stats.noHitStages += me.noHitStages || 0;
@@ -495,7 +506,7 @@ function applyRunProgress(data) {
   profile.daily.parries += me.parries || 0;
   profile.daily.damage += me.damageDone || 0;
   const oldLevel = classLevel(me.classId);
-  const xpEarned = (me.bossesDefeated || 0) * 90 + Math.floor((me.damageDone || 0) / 250) + (data.result === 'victory' ? 500 : 0);
+  const xpEarned = (me.bossesDefeated || 0) * 180 + Math.floor((me.damageDone || 0) / 125) + (data.result === 'victory' ? 500 : 0);
   profile.classProgress[me.classId].xp += xpEarned;
   const newLevel = classLevel(me.classId);
   profile.unlockedWeapons = Object.entries(WEAPON_META).filter(([, weapon]) => classLevel(weapon.classId) >= weapon.unlockLevel).map(([id]) => id);
@@ -719,8 +730,8 @@ function showRoutes(state) {
   resetInput();
   const voteCounts = {};
   for (const routeId of Object.values(state.routeVotes || {})) voteCounts[routeId] = (voteCounts[routeId] || 0) + 1;
-  const icons = { sanctuary:'♨', elite:'⚔', curse:'◇', forge:'⌁', oath:'✦', ruins:'⌂' };
-  dom.routeGrid.innerHTML = (state.routeOffer || []).map((route) => `<button class="route-card ${myVote === route.id ? 'voted' : ''}" type="button" data-route="${route.id}" ${myVote ? 'disabled' : ''}><i>${icons[route.id] || '◇'}</i><h3>${route.name}</h3><p>${route.description}</p><b>${voteCounts[route.id] || 0} ГОЛОСОВ</b></button>`).join('');
+  const icons = { sanctuary:'♨', elite:'⚔', curse:'◇', forge:'⌁', oath:'✦', ruins:'⌂', healing:'✚' };
+  dom.routeGrid.innerHTML = (state.routeOffer || []).map((route) => `<button class="route-card ${route.special === 'healing' ? 'healing' : ''} ${myVote === route.id ? 'voted' : ''}" type="button" data-route="${route.id}" ${myVote ? 'disabled' : ''}><i>${icons[route.id] || '◇'}</i><h3>${route.name}</h3><p>${route.description}</p><b>${voteCounts[route.id] || 0} ГОЛОСОВ</b></button>`).join('');
   dom.routeWaiting.textContent = myVote ? 'ЖДЁМ РЕШЕНИЕ ОТРЯДА' : 'ВЫБЕРИ ОДИН ИЗ ТРЁХ ПУТЕЙ';
   dom.routeGrid.querySelectorAll('[data-route]:not(:disabled)').forEach((button) => button.addEventListener('click', () => {
     dom.routeGrid.querySelectorAll('button').forEach((item) => { item.disabled = true; });
@@ -1016,6 +1027,11 @@ dom.roomCodeInput.addEventListener('keydown', (event) => { if(event.key==='Enter
 dom.copyCodeButton.addEventListener('click', copyCode); dom.startGameButton.addEventListener('click', startGame); dom.leaveLobbyButton.addEventListener('click', leaveHome);
 dom.brandButton.addEventListener('click', () => { if(!dom.gameScreen.classList.contains('active'))leaveHome(); });
 dom.shopButton.addEventListener('click', openShop); dom.closeShopButton.addEventListener('click', closeShop); dom.shopOverlay.addEventListener('click', (event) => { if(event.target===dom.shopOverlay)closeShop(); });
+dom.uiSizePicker?.querySelectorAll('[data-ui-size]').forEach((button) => button.addEventListener('click', () => {
+  applyUiSize(button.dataset.uiSize);
+  saveProfile();
+  toast(`Размер интерфейса: ${button.dataset.uiSize === 'small' ? 'маленький' : button.dataset.uiSize === 'large' ? 'крупный' : 'обычный'}`, 'gold');
+}));
 dom.boxBuyButton.addEventListener('click', purchaseBox);
 dom.resultExitButton.addEventListener('click', leaveHome); dom.rematchButton.addEventListener('click', () => socket.emit('return-lobby', (response) => { if(!response?.ok)toast(response?.error||'Не удалось вернуться','danger'); }));
 
@@ -1023,7 +1039,7 @@ socket.on('connect',()=>{dom.serverState.className='server-state online';dom.ser
 socket.on('disconnect',()=>{dom.serverState.className='server-state offline';dom.serverState.querySelector('span').textContent='Связь потеряна';if(dom.gameScreen.classList.contains('active'))toast('Соединение потеряно','danger');});
 socket.on('lobby-state',enterLobby);
 socket.on('game-start',(config)=>{world=config.world;applyArena(config.arena);gameState=null;previousBossHp=null;previousMeHp=null;currentRouteKey='';dom.resultOverlay.classList.remove('active');dom.perkOverlay.classList.remove('active');dom.routeOverlay.classList.remove('active');showScreen(dom.gameScreen);resizeCanvas();clearTimeout(controlsTimer);dom.controlsTip.classList.remove('hide');controlsTimer=setTimeout(()=>dom.controlsTip.classList.add('hide'),9500);ensureAudio();toast(`Модификатор: ${config.modifier?.name||'нет'}`,'gold');});
-socket.on('stage-start',({stage,arena:nextArena})=>{applyArena(nextArena);currentPerkKey='';currentRouteKey='';dom.perkOverlay.classList.remove('active');dom.perkOverlay.setAttribute('aria-hidden','true');dom.routeOverlay.classList.remove('active');dom.routeOverlay.setAttribute('aria-hidden','true');toast(`${stage>1&&(stage-1)%10===0?'НОВЫЙ ВЛАДЫКА · ':''}${nextArena?.name||`Стадия ${stage}`}`,'gold');});
+socket.on('stage-start',({stage,arena:nextArena})=>{applyArena(nextArena);currentPerkKey='';currentRouteKey='';dom.perkOverlay.classList.remove('active');dom.perkOverlay.setAttribute('aria-hidden','true');dom.routeOverlay.classList.remove('active');dom.routeOverlay.setAttribute('aria-hidden','true');toast(`${stage>1&&(stage-1)%5===0?'НОВЫЙ ВЛАДЫКА · ':''}${nextArena?.name||`Стадия ${stage}`}`,'gold');});
 socket.on('state',(state)=>{
   if(!dom.gameScreen.classList.contains('active'))showScreen(dom.gameScreen);if(state.arena)applyArena(state.arena);
   const bossDelta=previousBossHp!==null&&state.boss?previousBossHp-state.boss.hp:0;const me=state.players.find((player)=>player.id===socket.id);
@@ -1033,7 +1049,7 @@ socket.on('state',(state)=>{
   if(state.status==='perk')showPerks(state);else if(state.status==='route')showRoutes(state);else{dom.perkOverlay.classList.remove('active');dom.routeOverlay.classList.remove('active');}
 });
 socket.on('stage-cleared',({stage})=>toast(`Печать ${stage} разрушена`,'gold'));
-socket.on('route-chosen',(route)=>toast(`Путь выбран: ${route.name}`,'gold'));
+socket.on('route-chosen',(route)=>{toast(`Путь выбран: ${route.name}`,'gold');if(route.special==='healing')toast(route.restoredHp>0?`Тихий свет восстановил ${route.restoredHp} HP отряду`:'Здоровье живых странников уже заполнено','gold');});
 socket.on('boss-phase',({phase,name})=>{screenShake=20;playSound('phase');toast(`${name} · ФАЗА ${phase}`,'danger');});
 socket.on('currency-earned',({amount,stage})=>{profile.currency+=Math.max(0,Math.floor(amount));saveProfile();toast(`+${amount} пепла за стадию ${stage}`,'gold');});
 socket.on('toast',(payload)=>toast(payload.text,payload.tone));socket.on('game-over',showResults);
