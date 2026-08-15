@@ -1,0 +1,183 @@
+{
+  "bossId": "crimson_duelist",
+  "label": "Багровый дуэлянт",
+  "accent": "#c52f43",
+  "frameWidth": 64,
+  "frameHeight": 64,
+  "facing": "right",
+  "mirrorForLeft": true,
+  "animations": {
+    "idle": {
+      "label": "Бездействие",
+      "frames": 8,
+      "fps": 6,
+      "loop": true,
+      "sheet": "animations/idle.png",
+      "atlas": {
+        "x": 0,
+        "y": 0,
+        "frameWidth": 64,
+        "frameHeight": 64
+      }
+    },
+    "walk": {
+      "label": "Движение",
+      "frames": 8,
+      "fps": 9,
+      "loop": true,
+      "sheet": "animations/walk.png",
+      "atlas": {
+        "x": 0,
+        "y": 64,
+        "frameWidth": 64,
+        "frameHeight": 64
+      }
+    },
+    "jump": {
+      "label": "Прыжок",
+      "frames": 5,
+      "fps": 9,
+      "loop": false,
+      "sheet": "animations/jump.png",
+      "atlas": {
+        "x": 0,
+        "y": 128,
+        "frameWidth": 64,
+        "frameHeight": 64
+      }
+    },
+    "attack_slash": {
+      "label": "Ближняя серия",
+      "frames": 10,
+      "fps": 12,
+      "loop": false,
+      "sheet": "animations/attack_slash.png",
+      "atlas": {
+        "x": 0,
+        "y": 192,
+        "frameWidth": 64,
+        "frameHeight": 64
+      }
+    },
+    "attack_heavy": {
+      "label": "Тяжёлая атака",
+      "frames": 12,
+      "fps": 11,
+      "loop": false,
+      "sheet": "animations/attack_heavy.png",
+      "atlas": {
+        "x": 0,
+        "y": 256,
+        "frameWidth": 64,
+        "frameHeight": 64
+      }
+    },
+    "attack_ranged": {
+      "label": "Дальняя атака",
+      "frames": 12,
+      "fps": 10,
+      "loop": false,
+      "sheet": "animations/attack_ranged.png",
+      "atlas": {
+        "x": 0,
+        "y": 320,
+        "frameWidth": 64,
+        "frameHeight": 64
+      }
+    },
+    "attack_slam": {
+      "label": "Удар по арене",
+      "frames": 12,
+      "fps": 11,
+      "loop": false,
+      "sheet": "animations/attack_slam.png",
+      "atlas": {
+        "x": 0,
+        "y": 384,
+        "frameWidth": 64,
+        "frameHeight": 64
+      }
+    },
+    "dash": {
+      "label": "Рывок",
+      "frames": 8,
+      "fps": 14,
+      "loop": false,
+      "sheet": "animations/dash.png",
+      "atlas": {
+        "x": 0,
+        "y": 448,
+        "frameWidth": 64,
+        "frameHeight": 64
+      }
+    },
+    "blink": {
+      "label": "Телепортация",
+      "frames": 10,
+      "fps": 13,
+      "loop": false,
+      "sheet": "animations/blink.png",
+      "atlas": {
+        "x": 0,
+        "y": 512,
+        "frameWidth": 64,
+        "frameHeight": 64
+      }
+    },
+    "hurt": {
+      "label": "Получение урона",
+      "frames": 5,
+      "fps": 13,
+      "loop": false,
+      "sheet": "animations/hurt.png",
+      "atlas": {
+        "x": 0,
+        "y": 576,
+        "frameWidth": 64,
+        "frameHeight": 64
+      }
+    },
+    "poise_break": {
+      "label": "Слом стойкости",
+      "frames": 10,
+      "fps": 9,
+      "loop": false,
+      "sheet": "animations/poise_break.png",
+      "atlas": {
+        "x": 0,
+        "y": 640,
+        "frameWidth": 64,
+        "frameHeight": 64
+      }
+    },
+    "phase_change": {
+      "label": "Смена фазы",
+      "frames": 12,
+      "fps": 10,
+      "loop": false,
+      "sheet": "animations/phase_change.png",
+      "atlas": {
+        "x": 0,
+        "y": 704,
+        "frameWidth": 64,
+        "frameHeight": 64
+      }
+    },
+    "defeat": {
+      "label": "Поражение",
+      "frames": 12,
+      "fps": 9,
+      "loop": false,
+      "sheet": "animations/defeat.png",
+      "atlas": {
+        "x": 0,
+        "y": 768,
+        "frameWidth": 64,
+        "frameHeight": 64
+      }
+    }
+  },
+  "totalFrames": 124,
+  "atlasWidth": 768,
+  "atlasHeight": 832
+}

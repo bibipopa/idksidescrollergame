@@ -1,0 +1,106 @@
+{
+  "name": "Rift Raid Boss Sprite Pack",
+  "version": 1,
+  "cellSize": 64,
+  "bosses": {
+    "grave_knight": {
+      "label": "Могильный рыцарь",
+      "atlas": "bosses/grave_knight/atlas.png",
+      "metadata": "bosses/grave_knight/atlas.json",
+      "totalFrames": 124
+    },
+    "ember_colossus": {
+      "label": "Тлеющий колосс",
+      "atlas": "bosses/ember_colossus/atlas.png",
+      "metadata": "bosses/ember_colossus/atlas.json",
+      "totalFrames": 124
+    },
+    "drowned_oracle": {
+      "label": "Утонувший оракул",
+      "atlas": "bosses/drowned_oracle/atlas.png",
+      "metadata": "bosses/drowned_oracle/atlas.json",
+      "totalFrames": 124
+    },
+    "bell_inquisitor": {
+      "label": "Колокольный инквизитор",
+      "atlas": "bosses/bell_inquisitor/atlas.png",
+      "metadata": "bosses/bell_inquisitor/atlas.json",
+      "totalFrames": 124
+    },
+    "crimson_duelist": {
+      "label": "Багровый дуэлянт",
+      "atlas": "bosses/crimson_duelist/atlas.png",
+      "metadata": "bosses/crimson_duelist/atlas.json",
+      "totalFrames": 124
+    },
+    "iron_warden": {
+      "label": "Железный надзиратель",
+      "atlas": "bosses/iron_warden/atlas.png",
+      "metadata": "bosses/iron_warden/atlas.json",
+      "totalFrames": 124
+    },
+    "moon_huntress": {
+      "label": "Лунная охотница",
+      "atlas": "bosses/moon_huntress/atlas.png",
+      "metadata": "bosses/moon_huntress/atlas.json",
+      "totalFrames": 124
+    },
+    "storm_sovereign": {
+      "label": "Владыка бури",
+      "atlas": "bosses/storm_sovereign/atlas.png",
+      "metadata": "bosses/storm_sovereign/atlas.json",
+      "totalFrames": 124
+    },
+    "void_apostle": {
+      "label": "Апостол пустоты",
+      "atlas": "bosses/void_apostle/atlas.png",
+      "metadata": "bosses/void_apostle/atlas.json",
+      "totalFrames": 124
+    },
+    "ashen_king": {
+      "label": "Пепельный король",
+      "atlas": "bosses/ashen_king/atlas.png",
+      "metadata": "bosses/ashen_king/atlas.json",
+      "totalFrames": 124
+    },
+    "mirror_saint": {
+      "label": "Зеркальный святой",
+      "atlas": "bosses/mirror_saint/atlas.png",
+      "metadata": "bosses/mirror_saint/atlas.json",
+      "totalFrames": 124
+    },
+    "rootless_beast": {
+      "label": "Безкорневой зверь",
+      "atlas": "bosses/rootless_beast/atlas.png",
+      "metadata": "bosses/rootless_beast/atlas.json",
+      "totalFrames": 124
+    },
+    "clockwork_mourner": {
+      "label": "Часовой плакальщик",
+      "atlas": "bosses/clockwork_mourner/atlas.png",
+      "metadata": "bosses/clockwork_mourner/atlas.json",
+      "totalFrames": 124
+    },
+    "nameless_hunter": {
+      "label": "Безымянный охотник",
+      "atlas": "bosses/nameless_hunter/atlas.png",
+      "metadata": "bosses/nameless_hunter/atlas.json",
+      "totalFrames": 124
+    }
+  },
+  "animationOrder": [
+    "idle",
+    "walk",
+    "jump",
+    "attack_slash",
+    "attack_heavy",
+    "attack_ranged",
+    "attack_slam",
+    "dash",
+    "blink",
+    "hurt",
+    "poise_break",
+    "phase_change",
+    "defeat"
+  ]
+}
