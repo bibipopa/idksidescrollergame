@@ -17,6 +17,18 @@ const MAX_STAGE = 100;
 const WORLD = { width: 2800, height: 720, floor: 640 };
 const ROOM_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const GROUND = { x: 0, y: 640, w: 2800, h: 80 };
+const ARENA_GAPS = [
+  [],
+  [],
+  [{ x: 1400, w: 90 }],
+  [{ x: 1050, w: 100 }, { x: 2000, w: 100 }],
+  [{ x: 800, w: 110 }, { x: 1820, w: 110 }],
+  [{ x: 860, w: 120 }, { x: 1680, w: 120 }],
+  [{ x: 760, w: 125 }, { x: 1480, w: 125 }, { x: 2050, w: 125 }],
+  [{ x: 760, w: 130 }, { x: 1340, w: 140 }, { x: 1980, w: 130 }],
+  [{ x: 700, w: 140 }, { x: 1200, w: 145 }, { x: 1900, w: 145 }],
+  [{ x: 620, w: 155 }, { x: 1260, w: 165 }, { x: 1780, w: 155 }],
+];
 const ARENAS = [
   {
     name: 'Пепельные врата',
@@ -99,6 +111,25 @@ const CLASSES = {
     lightCost: 11, heavyCost: 27, rollCost: 21, parryCost: 12,
     lightTime: 0.2, heavyTime: 0.48, attackRange: 86, parryWindow: 0.23,
   },
+  spearman: {
+    label: 'Копейщик', maxHp: 3, maxStamina: 116, staminaRegen: 28,
+    speed: 345, jump: 705, lightDamage: 29, heavyDamage: 66,
+    lightCost: 18, heavyCost: 39, rollCost: 29, parryCost: 14,
+    lightTime: 0.33, heavyTime: 0.74, attackRange: 178, parryWindow: 0.17,
+  },
+  berserker: {
+    label: 'Берсерк', maxHp: 3, maxStamina: 92, staminaRegen: 22,
+    speed: 350, jump: 675, lightDamage: 35, heavyDamage: 79,
+    lightCost: 22, heavyCost: 45, rollCost: 33, parryCost: 19,
+    lightTime: 0.31, heavyTime: 0.82, attackRange: 128, parryWindow: 0.13,
+  },
+  ashmage: {
+    label: 'Пепельный маг', maxHp: 3, maxStamina: 138, staminaRegen: 31,
+    speed: 325, jump: 690, lightDamage: 24, heavyDamage: 59,
+    lightCost: 16, heavyCost: 38, rollCost: 27, parryCost: 17,
+    lightTime: 0.29, heavyTime: 0.7, attackRange: 105, parryWindow: 0.16,
+    ranged: true,
+  },
 };
 
 const SKINS = new Set(['iron', 'ember', 'moon', 'abyss']);
@@ -158,6 +189,27 @@ const PERKS = [
   { id: 'rogue_lightfeet', classId: 'rogue', name: 'Беззвучный шаг', description: 'Перекат дешевле на 20%, скорость движения выше на 5%.', rarity: 'common', icon: '⋔' },
   { id: 'rogue_venom', classId: 'rogue', name: 'Седьмой надрез', description: 'Каждое седьмое попадание наносит 40 дополнительного урона.', rarity: 'rare', icon: 'Ⅶ' },
   { id: 'rogue_gambit', classId: 'rogue', name: 'Грязный приём', description: 'Даёт 12% шанс нанести двойной урон.', rarity: 'legendary', icon: '※', maxStacks: 4 },
+
+  { id: 'spear_reach', classId: 'spearman', name: 'Дальняя грань', description: '+18% к дальности атак копьём.', rarity: 'common', icon: '─', maxStacks: 3 },
+  { id: 'spear_impale', classId: 'spearman', name: 'Третий выпад', description: 'Каждая третья тяжёлая атака наносит на 70% больше урона.', rarity: 'rare', icon: 'Ⅲ' },
+  { id: 'spear_vault', classId: 'spearman', name: 'Удар с высоты', description: 'Атаки в воздухе наносят ещё на 40% больше урона.', rarity: 'rare', icon: '↥' },
+  { id: 'spear_guard', classId: 'spearman', name: 'Древко стража', description: 'Увеличивает окно парирования копейщика.', rarity: 'epic', icon: '╫' },
+  { id: 'spear_lunge', classId: 'spearman', name: 'Выпад после шага', description: 'После переката следующая атака получает +35% урона.', rarity: 'epic', icon: '➝' },
+  { id: 'spear_recovery', classId: 'spearman', name: 'Возврат копья', description: 'Попадание тяжёлой атакой возвращает 14 выносливости.', rarity: 'common', icon: '↩' },
+
+  { id: 'berserk_fury', classId: 'berserker', name: 'Последняя ярость', description: 'При 1 здоровье урон увеличивается ещё на 70%.', rarity: 'rare', icon: '!' },
+  { id: 'berserk_heavy', classId: 'berserker', name: 'Сила двух рук', description: '+30% к урону тяжёлых атак.', rarity: 'common', icon: '✚' },
+  { id: 'berserk_endurance', classId: 'berserker', name: 'Второе дыхание', description: 'При низкой выносливости она восстанавливается вдвое быстрее.', rarity: 'rare', icon: '∞' },
+  { id: 'berserk_resolve', classId: 'berserker', name: 'Железная решимость', description: '+1 здоровье, но −7% скорости движения.', rarity: 'epic', icon: '⬣', maxStacks: 2 },
+  { id: 'berserk_combo', classId: 'berserker', name: 'Разгон ярости', description: 'Серия быстрых попаданий сильнее увеличивает урон.', rarity: 'epic', icon: '↟' },
+  { id: 'berserk_roar', classId: 'berserker', name: 'Восьмой гром', description: 'Каждое восьмое попадание наносит 55 дополнительного урона.', rarity: 'legendary', icon: 'Ⅷ' },
+
+  { id: 'mage_focus', classId: 'ashmage', name: 'Экономия пепла', description: 'Заклинания расходуют на 15% меньше выносливости.', rarity: 'common', icon: '◍' },
+  { id: 'mage_split', classId: 'ashmage', name: 'Расщеплённое пламя', description: 'Тяжёлая атака выпускает два дополнительных снаряда.', rarity: 'legendary', icon: '⋰', maxStacks: 2 },
+  { id: 'mage_barrage', classId: 'ashmage', name: 'Четвёртое слово', description: 'Каждая четвёртая лёгкая атака выпускает веер снарядов.', rarity: 'epic', icon: 'Ⅳ' },
+  { id: 'mage_power', classId: 'ashmage', name: 'Сгущённый пепел', description: '+20% к урону магических снарядов.', rarity: 'rare', icon: '●' },
+  { id: 'mage_phase', classId: 'ashmage', name: 'Фазовый сдвиг', description: 'Увеличивает неуязвимость во время переката.', rarity: 'rare', icon: '◐', maxStacks: 2 },
+  { id: 'mage_mana', classId: 'ashmage', name: 'Обратный поток', description: 'Попадание заклинанием возвращает 6 выносливости.', rarity: 'common', icon: '↺' },
 ];
 
 const rooms = new Map();
@@ -179,12 +231,28 @@ function arenaForStage(stage) { return ARENAS[Math.min(ARENAS.length - 1, Math.f
 
 function setArena(room) {
   const source = arenaForStage(room.stage);
+  const tier = Math.min(10, Math.floor((room.stage - 1) / 10) + 1);
+  const edgeInset = [0, 60, 100, 140, 180, 220, 250, 280, 310, 340][tier - 1];
+  const rightEdge = WORLD.width - edgeInset;
+  const gaps = ARENA_GAPS[tier - 1]
+    .map((gap) => ({ x: clamp(gap.x, edgeInset + 260, rightEdge - 260), w: gap.w }))
+    .filter((gap) => gap.x + gap.w < rightEdge - 210);
+  const floorPlatforms = [];
+  let floorStart = edgeInset;
+  for (const gap of gaps) {
+    if (gap.x > floorStart) floorPlatforms.push({ ...GROUND, x: floorStart, w: gap.x - floorStart });
+    floorStart = gap.x + gap.w;
+  }
+  if (floorStart < rightEdge) floorPlatforms.push({ ...GROUND, x: floorStart, w: rightEdge - floorStart });
+  const platforms = [...floorPlatforms, ...source.platforms.slice(1).map((platform) => ({ ...platform }))];
   room.arenaTime = 0;
   room.arena = {
-    tier: Math.min(10, Math.floor((room.stage - 1) / 10) + 1),
+    tier,
     name: source.name,
     theme: { ...source.theme },
-    platforms: source.platforms.map((platform) => ({ ...platform })),
+    bounds: { left: edgeInset, right: rightEdge },
+    gaps,
+    platforms,
     hazards: source.hazards.map((hazard) => ({ ...hazard, live: false, warningNow: false })),
   };
 }
@@ -195,6 +263,8 @@ function publicArena(room, includePlatforms = false) {
     tier: room.arena.tier,
     name: room.arena.name,
     theme: room.arena.theme,
+    bounds: room.arena.bounds,
+    gaps: room.arena.gaps,
     ...(includePlatforms ? { platforms: room.arena.platforms } : {}),
     hazards: room.arena.hazards.map((hazard) => ({ id: hazard.id, type: hazard.type, x: hazard.x, w: hazard.w, live: hazard.live, warning: hazard.warningNow })),
   };
@@ -214,30 +284,35 @@ function derivedStats(player) {
   const isSwordsman = player.classId === 'swordsman';
   const isGreatsword = player.classId === 'greatsword';
   const isRogue = player.classId === 'rogue';
+  const isSpearman = player.classId === 'spearman';
+  const isBerserker = player.classId === 'berserker';
+  const isMage = player.classId === 'ashmage';
   const damageScale = Math.pow(1.16, perkCount(player, 'sharpened')) * Math.pow(1.35, perkCount(player, 'glass_edge'));
   const discipline = isSwordsman ? Math.pow(0.88, perkCount(player, 'sword_discipline')) : 1;
   const rogueRoll = isRogue ? Math.pow(0.8, perkCount(player, 'rogue_lightfeet')) : 1;
   const speedScale = Math.pow(1.09, perkCount(player, 'quickstep'))
     * (isRogue ? Math.pow(1.05, perkCount(player, 'rogue_lightfeet')) : 1)
-    * (isGreatsword ? Math.pow(0.95, perkCount(player, 'great_mass')) * Math.pow(0.92, perkCount(player, 'great_colossus')) : 1);
+    * (isGreatsword ? Math.pow(0.95, perkCount(player, 'great_mass')) * Math.pow(0.92, perkCount(player, 'great_colossus')) : 1)
+    * (isBerserker ? Math.pow(0.93, perkCount(player, 'berserk_resolve')) : 1);
+  const spellCost = isMage ? Math.pow(0.85, perkCount(player, 'mage_focus')) : 1;
   return {
-    maxHp: Math.max(1, base.maxHp + perkCount(player, 'vitality') - perkCount(player, 'glass_edge') + (isGreatsword ? perkCount(player, 'great_colossus') : 0)),
+    maxHp: Math.max(1, base.maxHp + perkCount(player, 'vitality') - perkCount(player, 'glass_edge') + (isGreatsword ? perkCount(player, 'great_colossus') : 0) + (isBerserker ? perkCount(player, 'berserk_resolve') : 0)),
     maxStamina: Math.max(45, base.maxStamina + perkCount(player, 'endurance') * 25 - perkCount(player, 'curse_bearer') * 10),
     staminaRegen: base.staminaRegen * Math.pow(1.28, perkCount(player, 'lungs')),
     speed: base.speed * speedScale,
     jump: base.jump * Math.pow(1.12, perkCount(player, 'high_jump')),
     lightDamage: base.lightDamage * damageScale,
-    heavyDamage: base.heavyDamage * damageScale * Math.pow(1.35, perkCount(player, 'heavy_mastery')) * (isGreatsword ? Math.pow(1.3, perkCount(player, 'great_mass')) : 1),
-    lightCost: base.lightCost * Math.pow(0.82, perkCount(player, 'light_mastery')) * discipline,
-    heavyCost: base.heavyCost * discipline,
+    heavyDamage: base.heavyDamage * damageScale * Math.pow(1.35, perkCount(player, 'heavy_mastery')) * (isGreatsword ? Math.pow(1.3, perkCount(player, 'great_mass')) : 1) * (isBerserker ? Math.pow(1.3, perkCount(player, 'berserk_heavy')) : 1),
+    lightCost: base.lightCost * Math.pow(0.82, perkCount(player, 'light_mastery')) * discipline * spellCost,
+    heavyCost: base.heavyCost * discipline * spellCost,
     rollCost: base.rollCost * Math.pow(0.75, perkCount(player, 'feather_roll')) * rogueRoll,
     parryCost: base.parryCost,
     lightTime: base.lightTime * Math.pow(0.86, perkCount(player, 'light_mastery')),
     heavyTime: base.heavyTime,
-    attackRange: base.attackRange,
-    parryWindow: base.parryWindow + perkCount(player, 'parry_master') * 0.055 + (isSwordsman ? perkCount(player, 'sword_guard') * 0.04 : 0),
+    attackRange: base.attackRange * (isSpearman ? Math.pow(1.18, perkCount(player, 'spear_reach')) : 1),
+    parryWindow: base.parryWindow + perkCount(player, 'parry_master') * 0.055 + (isSwordsman ? perkCount(player, 'sword_guard') * 0.04 : 0) + (isSpearman ? perkCount(player, 'spear_guard') * 0.05 : 0),
     rollSpeed: 710 * Math.pow(1.12, perkCount(player, 'long_roll')),
-    rollInvulnerability: 0.3 + perkCount(player, 'safe_roll') * 0.08,
+    rollInvulnerability: 0.3 + perkCount(player, 'safe_roll') * 0.08 + (isMage ? perkCount(player, 'mage_phase') * 0.1 : 0),
   };
 }
 
@@ -249,7 +324,7 @@ function makePlayer(id, name, classId, skin, slot) {
     hp: base.maxHp, maxHp: base.maxHp, stamina: base.maxStamina, maxStamina: base.maxStamina,
     staminaDelay: 0, downed: false, onGround: false, invulnerable: 0,
     action: 'idle', actionTimer: 0, actionDuration: 0, actionHit: false, parryActive: 0, rollHit: false,
-    nextHitMultiplier: 1, lightChain: 0, hitsLanded: 0, weaponHits: 0,
+    nextHitMultiplier: 1, lightChain: 0, heavyChain: 0, hitsLanded: 0, weaponHits: 0,
     momentum: 0, momentumTimer: 0, wardCharges: 0, rollBuff: 1, lastAttackType: null,
     secondWindUsed: false, damageDone: 0,
     perks: {}, perkOffer: [], perkChosen: false,
@@ -315,11 +390,12 @@ function addEffect(room, type, x, y, color = '#c8a86b', ttl = 0.35, size = 80) {
   room.effects.push({ id: entitySequence++, type, x, y, color, ttl, maxTtl: ttl, size });
 }
 
-function resetPlayerForStage(player) {
+function resetPlayerForStage(player, room) {
   const stats = derivedStats(player);
+  const spawnX = (room?.arena?.bounds?.left || 0) + 72 + player.slot * 78;
   Object.assign(player, {
     maxHp: stats.maxHp, maxStamina: stats.maxStamina, hp: stats.maxHp, stamina: stats.maxStamina,
-    x: 225 + player.slot * 78, y: WORLD.floor - player.h, vx: 0, vy: 0, facing: 1,
+    x: spawnX, y: WORLD.floor - player.h, vx: 0, vy: 0, facing: 1,
     downed: false, onGround: false, invulnerable: 1, staminaDelay: 0,
     action: 'idle', actionTimer: 0, parryActive: 0,
     secondWindUsed: false, wardCharges: Math.min(2, perkCount(player, 'iron_skin')),
@@ -330,41 +406,65 @@ function resetPlayerForStage(player) {
   });
 }
 
-function resetPlayerForRun(player) {
+function resetPlayerForRun(player, room) {
   player.perks = {};
   player.damageDone = 0;
   player.nextHitMultiplier = 1;
   player.lightChain = 0;
+  player.heavyChain = 0;
   player.hitsLanded = 0;
   player.weaponHits = 0;
   player.momentum = 0;
   player.momentumTimer = 0;
   player.rollBuff = 1;
   player.lastAttackType = null;
-  resetPlayerForStage(player);
+  resetPlayerForStage(player, room);
 }
 
 function bossHealth(stage, count) {
   const base = 250 + count * 115;
   const step = stage - 1;
-  return Math.round(base * (1 + step * 0.082 + Math.pow(step / 12, 1.55) * 0.22));
+  const growth = step * 0.082 + Math.pow(step / 12, 1.55) * 0.22;
+  return Math.round(base * (1 + growth * 5));
+}
+
+function bossDamage(stage) { return 1 + Math.floor((stage - 1) / 20); }
+
+function groundSupports(room, centerX) {
+  return (room.arena?.platforms || [GROUND]).some((platform) => platform.y === WORLD.floor && centerX >= platform.x && centerX <= platform.x + platform.w);
+}
+
+function nearestSafeBossX(room, desiredX, bossWidth = 122) {
+  const floor = (room.arena?.platforms || [GROUND]).filter((platform) => platform.y === WORLD.floor && platform.w >= bossWidth + 30);
+  let best = desiredX;
+  let bestDistance = Infinity;
+  for (const platform of floor) {
+    const candidate = clamp(desiredX, platform.x + 15, platform.x + platform.w - bossWidth - 15);
+    const distance = Math.abs(candidate - desiredX);
+    if (distance < bestDistance) { best = candidate; bestDistance = distance; }
+  }
+  return best;
 }
 
 function spawnBoss(room) {
   const curseStacks = [...room.players.values()].reduce((sum, player) => sum + perkCount(player, 'curse_bearer'), 0);
   const maxHp = Math.max(1, Math.round(bossHealth(room.stage, room.players.size) * (1 - Math.min(0.32, curseStacks * 0.04))));
+  const spawnX = nearestSafeBossX(room, Math.min(2250, (room.arena?.bounds?.right || WORLD.width) - 360));
   room.boss = {
-    x: 2250, y: WORLD.floor - 150, w: 122, h: 150, vx: 0,
+    x: spawnX, y: WORLD.floor - 150, w: 122, h: 150, vx: 0, vy: 0, onGround: true,
     hp: maxHp, maxHp, facing: -1, tier: Math.min(10, Math.ceil(room.stage / 10)),
+    damage: bossDamage(room.stage),
     attackCooldown: Math.max(0.68, 2.05 - room.stage * 0.014), currentAttack: null,
     lastAttack: null, stagger: 0, flash: 0,
+    dashTimer: 0, dashCooldown: 1.8, jumpCooldown: 1.2, repositionTimer: 0.8,
+    moveDirection: -1, dashDirection: -1, gapLeapTimer: 0, gapDirection: -1,
   };
 }
 
 function startRun(room) {
   Object.assign(room, { status: 'playing', stage: 1, stagesCleared: 0, elapsed: 0, projectiles: [], waves: [], effects: [], bossEvents: [] });
   setArena(room);
-  for (const player of room.players.values()) resetPlayerForRun(player);
+  for (const player of room.players.values()) resetPlayerForRun(player, room);
   spawnBoss(room);
   io.to(room.code).emit('game-start', { world: WORLD, arena: publicArena(room, true), maxStage: MAX_STAGE });
   io.to(room.code).emit('stage-start', { stage: 1, arena: publicArena(room, true) });
@@ -379,7 +479,7 @@ function startNextStage(room) {
   room.effects = [];
   room.bossEvents = [];
   setArena(room);
-  for (const player of room.players.values()) resetPlayerForStage(player);
+  for (const player of room.players.values()) resetPlayerForStage(player, room);
   spawnBoss(room);
   io.to(room.code).emit('stage-start', { stage: room.stage, arena: publicArena(room, true) });
 }
@@ -474,7 +574,7 @@ function damageBoss(room, player, rawDamage, x, y, color = '#d7b46a', bypass = f
   boss.flash = 0.12;
   player.damageDone += damage;
   player.hitsLanded += 1;
-  if (!bypass && perkCount(player, 'momentum')) {
+  if (!bypass && (perkCount(player, 'momentum') || (player.classId === 'berserker' && perkCount(player, 'berserk_combo')))) {
     player.momentum = Math.min(6, (player.momentumTimer > 0 ? player.momentum : 0) + 1);
     player.momentumTimer = 2.2;
   }
@@ -495,6 +595,17 @@ function spawnPlayerWave(room, player, damage, options = {}) {
   });
 }
 
+function spawnMageBolt(room, player, damage, angleOffset = 0, scale = 1) {
+  const angle = (player.facing > 0 ? 0 : Math.PI) + angleOffset;
+  const speed = 690;
+  room.projectiles.push({
+    id: entitySequence++, kind: 'player_magic', style: 'magic', ownerId: player.id,
+    x: player.x + 21 + player.facing * 34, y: player.y + 24,
+    vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
+    r: 13 * scale, damage: Math.max(1, Math.round(damage * scale)), ttl: 2.2,
+  });
+}
+
 function isBackstab(player, boss) {
   return (player.x + player.w / 2 < boss.x + boss.w / 2 && boss.facing > 0)
     || (player.x + player.w / 2 > boss.x + boss.w / 2 && boss.facing < 0);
@@ -511,6 +622,7 @@ function attackBoss(room, player, type) {
     player.lightChain += 1;
     if (perkCount(player, 'echo_blade') && player.lightChain % 3 === 0) damage *= 2;
   }
+  if (type === 'heavy') player.heavyChain += 1;
   if (!player.onGround && perkCount(player, 'aerial_hunter')) damage *= Math.pow(1.3, perkCount(player, 'aerial_hunter'));
   if (player.stamina >= player.maxStamina * 0.85 && perkCount(player, 'full_focus')) damage *= Math.pow(1.22, perkCount(player, 'full_focus'));
   const livingAllies = Math.max(0, alivePlayers(room).length - 1);
@@ -526,18 +638,48 @@ function attackBoss(room, player, type) {
     if (type === 'light' && player.lightChain % 4 === 0 && perkCount(player, 'rogue_flurry')) damage *= 1 + perkCount(player, 'rogue_flurry') * 0.55;
     if (perkCount(player, 'rogue_gambit') && Math.random() < Math.min(0.48, perkCount(player, 'rogue_gambit') * 0.12)) damage *= 2;
   }
+  if (player.classId === 'spearman') {
+    if (type === 'heavy' && player.heavyChain % 3 === 0 && perkCount(player, 'spear_impale')) damage *= 1 + perkCount(player, 'spear_impale') * 0.7;
+    if (!player.onGround && perkCount(player, 'spear_vault')) damage *= Math.pow(1.4, perkCount(player, 'spear_vault'));
+  }
+  if (player.classId === 'berserker') {
+    if (player.hp === 1 && perkCount(player, 'berserk_fury')) damage *= Math.pow(1.7, perkCount(player, 'berserk_fury'));
+    if (perkCount(player, 'berserk_combo') && player.momentumTimer > 0) damage *= 1 + player.momentum * 0.08 * perkCount(player, 'berserk_combo');
+  }
+  if (player.classId === 'ashmage' && perkCount(player, 'mage_power')) damage *= Math.pow(1.2, perkCount(player, 'mage_power'));
   damage *= player.rollBuff;
 
   const colors = { iron: '#d7b46a', ember: '#e25f3f', moon: '#9eb7dd', abyss: '#9a70c5' };
+  if (CLASSES[player.classId].ranged) {
+    player.weaponHits += 1;
+    if (perkCount(player, 'precision') && player.weaponHits % 5 === 0) damage *= 1 + perkCount(player, 'precision') * 0.75;
+    spawnMageBolt(room, player, damage, 0, type === 'heavy' ? 1.25 : 1);
+    if (type === 'heavy' && perkCount(player, 'mage_split')) {
+      for (let index = 1; index <= perkCount(player, 'mage_split'); index += 1) {
+        spawnMageBolt(room, player, damage, 0.1 * index, 0.68);
+        spawnMageBolt(room, player, damage, -0.1 * index, 0.68);
+      }
+    }
+    if (type === 'light' && player.lightChain % 4 === 0 && perkCount(player, 'mage_barrage')) {
+      spawnMageBolt(room, player, damage, 0.15, 0.72 + perkCount(player, 'mage_barrage') * 0.08);
+      spawnMageBolt(room, player, damage, -0.15, 0.72 + perkCount(player, 'mage_barrage') * 0.08);
+    }
+    player.lastAttackType = type;
+    player.rollBuff = 1;
+    if (type === 'heavy' && perkCount(player, 'moonlight')) spawnPlayerWave(room, player, stats.heavyDamage * 0.55, { speed: 620, r: 18, ttl: 1.6 });
+    return;
+  }
   const hit = overlaps(hitbox, boss);
   if (hit) {
     player.weaponHits += 1;
     if (perkCount(player, 'precision') && player.weaponHits % 5 === 0) damage *= 1 + perkCount(player, 'precision') * 0.75;
     if (player.classId === 'rogue' && perkCount(player, 'rogue_venom') && player.weaponHits % 7 === 0) damage += perkCount(player, 'rogue_venom') * 40;
+    if (player.classId === 'berserker' && perkCount(player, 'berserk_roar') && player.weaponHits % 8 === 0) damage += 55 * perkCount(player, 'berserk_roar');
     damageBoss(room, player, damage, boss.x + 61, boss.y + 65, colors[player.skin]);
     if (room.status === 'playing') {
       player.stamina = Math.min(player.maxStamina, player.stamina + perkCount(player, 'stamina_strike') * 4);
       if (player.classId === 'greatsword' && type === 'heavy') player.stamina = Math.min(player.maxStamina, player.stamina + perkCount(player, 'great_endurance') * 18);
+      if (player.classId === 'spearman' && type === 'heavy') player.stamina = Math.min(player.maxStamina, player.stamina + perkCount(player, 'spear_recovery') * 14);
     }
   } else addEffect(room, type === 'heavy' ? 'heavy_slash' : 'slash', hitbox.x + hitbox.w / 2, player.y + 25, '#817562', 0.22, range * 0.65);
 
@@ -573,6 +715,7 @@ function startAction(player, action) {
     player.rollSpeed = stats.rollSpeed;
     player.vx = player.facing * stats.rollSpeed;
     if (player.classId === 'rogue' && perkCount(player, 'rogue_smoke')) player.rollBuff = Math.max(player.rollBuff, 1 + perkCount(player, 'rogue_smoke') * 0.45);
+    if (player.classId === 'spearman' && perkCount(player, 'spear_lunge')) player.rollBuff = Math.max(player.rollBuff, 1 + perkCount(player, 'spear_lunge') * 0.35);
   }
   return true;
 }
@@ -631,7 +774,10 @@ function updatePlayer(room, player) {
     const targetVx = direction * stats.speed * factor;
     player.vx += (targetVx - player.vx) * Math.min(1, 13 * DT);
   }
-  if (player.staminaDelay <= 0 && player.action === 'idle') player.stamina = Math.min(player.maxStamina, player.stamina + stats.staminaRegen * DT);
+  if (player.staminaDelay <= 0 && player.action === 'idle') {
+    const berserkRecovery = player.classId === 'berserker' && player.stamina < player.maxStamina * 0.35 ? Math.pow(2, perkCount(player, 'berserk_endurance')) : 1;
+    player.stamina = Math.min(player.maxStamina, player.stamina + stats.staminaRegen * berserkRecovery * DT);
+  }
 
   const previousBottom = player.y + player.h;
   player.vy += 1880 * DT;
@@ -651,9 +797,11 @@ function updatePlayer(room, player) {
     }
   }
   if (player.y > WORLD.height + 150) {
-    player.x = 225;
+    player.x = (room.arena?.bounds?.left || 0) + 72 + player.slot * 78;
     player.y = WORLD.floor - player.h;
-    damagePlayer(room, player, 1);
+    player.vx = player.vy = 0;
+    player.invulnerable = 0;
+    damagePlayer(room, player, 1, 0, 0);
   }
 }
 
@@ -724,7 +872,7 @@ function bossMelee(room, radius, parryable) {
   for (const player of alivePlayers(room)) {
     const playerCenter = player.x + 21;
     if (Math.abs(playerCenter - centerX) <= radius && Math.abs(player.y - room.boss.y) < 145) {
-      const result = damagePlayer(room, player, 1, Math.sign(playerCenter - centerX) * 380, -300, parryable, centerX);
+      const result = damagePlayer(room, player, room.boss.damage, Math.sign(playerCenter - centerX) * 380, -300, parryable, centerX);
       if (result === 'parried') { parried = true; break; }
     }
   }
@@ -741,7 +889,7 @@ function spawnBossOrb(room, target, offset = 0, options = {}) {
   room.projectiles.push({
     id: entitySequence++, kind: 'boss', style: options.style || 'orb', x, y,
     vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
-    r: options.r || 14 + Math.min(7, Math.floor(room.stage / 25)), damage: 1,
+    r: options.r || 14 + Math.min(7, Math.floor(room.stage / 25)), damage: options.damage || boss.damage,
     parryable: options.parryable !== false, ttl: options.ttl || 5,
   });
 }
@@ -774,7 +922,7 @@ function executeBossAttack(room, attack) {
     const radius = 145 + Math.min(90, room.stage * 0.7);
     for (const player of alivePlayers(room)) {
       const center = player.x + 21;
-      if (Math.abs(center - attack.targetX) < radius && player.y + player.h > WORLD.floor - 100) damagePlayer(room, player, 1, Math.sign(center - attack.targetX) * 420, -390);
+      if (Math.abs(center - attack.targetX) < radius && player.y + player.h > WORLD.floor - 100) damagePlayer(room, player, boss.damage, Math.sign(center - attack.targetX) * 420, -390);
     }
     addEffect(room, 'ground_slam', attack.targetX, WORLD.floor, '#7c2935', 0.48, radius * 2);
   }
@@ -787,7 +935,7 @@ function executeBossAttack(room, attack) {
       room.projectiles.push({
         id: entitySequence++, kind: 'boss', style: 'sky', x: targetX, y: -25 - index * 28,
         vx: index % 2 ? 35 : -35, vy: 570 + Math.min(260, room.stage * 3.2),
-        r: 17, damage: 1, parryable: false, ttl: 2.2,
+        r: 17, damage: boss.damage, parryable: false, ttl: 2.2,
       });
     }
   }
@@ -802,13 +950,15 @@ function executeBossAttack(room, attack) {
     const length = 760 + Math.min(420, room.stage * 4);
     const box = { x: direction > 0 ? boss.x + boss.w : boss.x - length, y: boss.y + 18, w: length, h: 94 };
     for (const player of alivePlayers(room)) {
-      if (overlaps(box, player)) damagePlayer(room, player, 1, direction * 510, -240);
+      if (overlaps(box, player)) damagePlayer(room, player, boss.damage, direction * 510, -240);
     }
     room.effects.push({ id: entitySequence++, type: 'beam', x: box.x, y: box.y, width: box.w, height: box.h, direction, color: '#b33754', ttl: 0.42, maxTtl: 0.42, size: box.w });
   }
   if (attack.type === 'blink' && target) {
     const side = target.facing || 1;
-    boss.x = clamp(target.x - side * 135, 70, WORLD.width - boss.w - 70);
+    const left = (room.arena?.bounds?.left || 0) + 30;
+    const right = (room.arena?.bounds?.right || WORLD.width) - boss.w - 30;
+    boss.x = nearestSafeBossX(room, clamp(target.x - side * 135, left, right), boss.w);
     boss.facing = target.x < boss.x ? -1 : 1;
     addEffect(room, 'blink', boss.x + 61, boss.y + 75, '#9a63b7', 0.38, 120);
     bossMelee(room, 150, true);
@@ -818,7 +968,7 @@ function executeBossAttack(room, attack) {
     for (const targetX of attack.targetXs || []) {
       for (const player of alivePlayers(room)) {
         const center = player.x + 21;
-        if (Math.abs(center - targetX) < radius && player.y + player.h > WORLD.floor - 125) damagePlayer(room, player, 1, Math.sign(center - targetX) * 360, -420);
+        if (Math.abs(center - targetX) < radius && player.y + player.h > WORLD.floor - 125) damagePlayer(room, player, boss.damage, Math.sign(center - targetX) * 360, -420);
       }
       addEffect(room, 'ground_slam', targetX, WORLD.floor, '#93406f', 0.5, radius * 2);
     }
@@ -828,31 +978,81 @@ function executeBossAttack(room, attack) {
     const direction = target ? Math.sign(target.x - boss.x) || -1 : -1;
     for (let index = 0; index < count; index += 1) room.waves.push({
       id: entitySequence++, x: boss.x + 61, y: WORLD.floor - 6,
-      vx: direction * (470 + room.stage * 2.4 + index * 45), w: 72, h: 38 + index * 6, damage: 1, ttl: 5, hit: [],
+      vx: direction * (470 + room.stage * 2.4 + index * 45), w: 72, h: 38 + index * 6, damage: boss.damage, ttl: 5, hit: [],
     });
   }
   if (attack.type === 'quake') {
     const count = room.stage >= 85 ? 2 : 1;
     for (const direction of [-1, 1]) for (let index = 0; index < count; index += 1) room.waves.push({
       id: entitySequence++, x: boss.x + 61 + direction * 30, y: WORLD.floor - 6,
-      vx: direction * (505 + room.stage * 2.7 + index * 70), w: 82, h: 48 + index * 7, damage: 1, ttl: 5, hit: [],
+      vx: direction * (505 + room.stage * 2.7 + index * 70), w: 82, h: 48 + index * 7, damage: boss.damage, ttl: 5, hit: [],
     });
   }
   if (attack.type === 'charge' && target) {
     const direction = Math.sign(target.x - boss.x) || boss.facing;
-    boss.x = clamp(boss.x + direction * (240 + Math.min(220, room.stage * 2)), 70, WORLD.width - boss.w - 70);
+    const left = (room.arena?.bounds?.left || 0) + 30;
+    const right = (room.arena?.bounds?.right || WORLD.width) - boss.w - 30;
+    boss.x = nearestSafeBossX(room, clamp(boss.x + direction * (240 + Math.min(220, room.stage * 2)), left, right), boss.w);
     bossMelee(room, 125, true);
   }
+}
+
+function integrateBossMotion(room, boss) {
+  const left = (room.arena?.bounds?.left || 0) + 30;
+  const right = (room.arena?.bounds?.right || WORLD.width) - boss.w - 30;
+  const previousX = boss.x;
+  const nextX = clamp(boss.x + boss.vx * DT, left, right);
+  const nextCenter = nextX + boss.w / 2;
+  if (boss.onGround && boss.vy >= 0 && !groundSupports(room, nextCenter)) {
+    boss.x = previousX;
+    boss.vx = 0;
+  } else boss.x = nextX;
+  boss.vy += 1680 * DT;
+  boss.y += boss.vy * DT;
+  const floorY = WORLD.floor - boss.h;
+  if (boss.y >= floorY && groundSupports(room, boss.x + boss.w / 2)) {
+    boss.y = floorY;
+    boss.vy = 0;
+    boss.onGround = true;
+  } else boss.onGround = false;
+  if (boss.y > WORLD.height + 80) {
+    boss.x = nearestSafeBossX(room, (room.arena?.bounds?.right || WORLD.width) - 360, boss.w);
+    boss.y = floorY;
+    boss.vx = boss.vy = 0;
+    boss.onGround = true;
+    addEffect(room, 'blink', boss.x + boss.w / 2, boss.y + boss.h / 2, '#9a63b7', 0.42, 130);
+  }
+}
+
+function gapAhead(room, boss, direction) {
+  if (!direction) return null;
+  const front = direction > 0 ? boss.x + boss.w : boss.x;
+  return (room.arena?.gaps || []).find((gap) => {
+    const distance = direction > 0 ? gap.x - front : front - (gap.x + gap.w);
+    return distance >= -8 && distance <= 70;
+  }) || null;
 }
 
 function updateBoss(room) {
   const boss = room.boss;
   if (!boss || boss.hp <= 0) return;
   boss.flash = Math.max(0, boss.flash - DT);
-  if (boss.stagger > 0) { boss.stagger -= DT; boss.vx *= 0.82; return; }
+  boss.dashCooldown = Math.max(0, boss.dashCooldown - DT);
+  boss.jumpCooldown = Math.max(0, boss.jumpCooldown - DT);
+  boss.gapLeapTimer = Math.max(0, boss.gapLeapTimer - DT);
+  boss.repositionTimer -= DT;
+  if (boss.dashTimer > 0) boss.dashTimer -= DT;
+  if (boss.stagger > 0) {
+    boss.stagger -= DT;
+    boss.vx *= 0.82;
+    integrateBossMotion(room, boss);
+    return;
+  }
   const target = nearestPlayer(room);
-  if (!target) return;
+  if (!target) { boss.vx *= 0.86; integrateBossMotion(room, boss); return; }
   if (boss.currentAttack) {
+    boss.vx *= boss.currentAttack.type === 'charge' ? 0.9 : 0.76;
+    integrateBossMotion(room, boss);
     const attack = boss.currentAttack;
     attack.timer -= DT;
     if (attack.phase === 'telegraph' && attack.timer <= 0) {
@@ -865,14 +1065,58 @@ function updateBoss(room) {
     }
     return;
   }
-  boss.facing = target.x < boss.x ? -1 : 1;
+  const predictedTargetX = target.x + target.w / 2 + clamp(target.vx * 0.32, -170, 170);
+  const bossCenterX = boss.x + boss.w / 2;
+  const distance = predictedTargetX - bossCenterX;
+  const absoluteDistance = Math.abs(distance);
+  boss.facing = distance < 0 ? -1 : 1;
   boss.attackCooldown -= DT;
-  const distance = target.x - boss.x;
-  if (Math.abs(distance) > 150) {
-    boss.vx = Math.sign(distance) * (75 + Math.min(155, room.stage * 1.65));
-    boss.x = clamp(boss.x + boss.vx * DT, 70, WORLD.width - boss.w - 70);
-  } else boss.vx *= 0.75;
-  if (boss.attackCooldown <= 0) chooseBossAttack(room, target);
+  const moveSpeed = 92 + Math.min(188, room.stage * 1.82);
+  const preferredDistance = room.stage >= 55 ? 195 : 165;
+
+  if (boss.repositionTimer <= 0) {
+    boss.repositionTimer = Math.max(0.72, 2.45 - room.stage * 0.013);
+    boss.moveDirection = Math.random() < 0.55 ? Math.sign(distance) || boss.facing : -(Math.sign(distance) || boss.facing);
+    const canDash = room.stage >= 12 && boss.dashCooldown <= 0 && absoluteDistance > 210 && absoluteDistance < 920;
+    if (canDash && Math.random() < 0.48 + Math.min(0.28, room.stage * 0.003)) {
+      boss.dashTimer = 0.16 + Math.min(0.1, room.stage * 0.001);
+      boss.dashDirection = Math.sign(distance) || boss.facing;
+      boss.dashCooldown = Math.max(1.15, 3.1 - room.stage * 0.017);
+      addEffect(room, 'blink', bossCenterX, boss.y + boss.h / 2, '#9b5261', 0.3, 105);
+    }
+    const wantsJump = room.stage >= 8 && boss.onGround && boss.jumpCooldown <= 0 && (target.y < boss.y - 45 || Math.random() < 0.32);
+    if (wantsJump) {
+      boss.vy = -(500 + Math.min(160, room.stage * 1.6));
+      boss.onGround = false;
+      boss.jumpCooldown = Math.max(1.35, 3.6 - room.stage * 0.018);
+    }
+  }
+
+  let desiredVx = 0;
+  if (boss.gapLeapTimer > 0) desiredVx = boss.gapDirection * (650 + Math.min(110, room.stage));
+  else if (boss.dashTimer > 0) desiredVx = boss.dashDirection * (moveSpeed * 2.85 + 120);
+  else if (absoluteDistance < 105) desiredVx = -Math.sign(distance || 1) * moveSpeed * 0.82;
+  else if (absoluteDistance > preferredDistance + 45) desiredVx = Math.sign(distance) * moveSpeed;
+  else desiredVx = boss.moveDirection * moveSpeed * 0.48;
+
+  const arenaLeft = room.arena?.bounds?.left || 0;
+  const arenaRight = room.arena?.bounds?.right || WORLD.width;
+  if (boss.x < arenaLeft + 115) desiredVx = Math.abs(desiredVx);
+  if (boss.x > arenaRight - boss.w - 115) desiredVx = -Math.abs(desiredVx);
+  const travelDirection = Math.sign(desiredVx);
+  if (boss.onGround && gapAhead(room, boss, travelDirection)) {
+    boss.vy = -(600 + Math.min(180, room.stage * 1.6));
+    boss.vx = travelDirection * Math.max(680, Math.abs(boss.vx));
+    boss.onGround = false;
+    boss.gapLeapTimer = 0.65;
+    boss.gapDirection = travelDirection;
+    boss.jumpCooldown = Math.max(boss.jumpCooldown, 1.1);
+    addEffect(room, 'ground_slam', boss.x + boss.w / 2, WORLD.floor, '#6f526f', 0.3, 90);
+  }
+  const acceleration = boss.gapLeapTimer > 0 ? 18 : boss.dashTimer > 0 ? 24 : 7.5;
+  boss.vx += (desiredVx - boss.vx) * Math.min(1, acceleration * DT);
+  integrateBossMotion(room, boss);
+  if (boss.attackCooldown <= 0 && boss.onGround) chooseBossAttack(room, target);
 }
 
 function circleHitsRect(circle, rect) {
@@ -889,13 +1133,16 @@ function updateProjectiles(room) {
     if (projectile.kind === 'boss') {
       for (const player of alivePlayers(room)) {
         if (circleHitsRect(projectile, player)) {
-          if (damagePlayer(room, player, 1, Math.sign(projectile.vx || 1) * 260, -240, projectile.parryable !== false, projectile.x, projectile) !== 'ignored') projectile.ttl = 0;
+          if (damagePlayer(room, player, projectile.damage, Math.sign(projectile.vx || 1) * 260, -240, projectile.parryable !== false, projectile.x, projectile) !== 'ignored') projectile.ttl = 0;
           break;
         }
       }
     } else if (room.boss && circleHitsRect(projectile, room.boss)) {
       const owner = room.players.get(projectile.ownerId);
-      if (owner) damageBoss(room, owner, projectile.damage, projectile.x, projectile.y, '#9eb7dd');
+      if (owner) {
+        damageBoss(room, owner, projectile.damage, projectile.x, projectile.y, projectile.kind === 'player_magic' ? '#b58bd6' : '#9eb7dd');
+        if (room.status === 'playing' && projectile.kind === 'player_magic') owner.stamina = Math.min(owner.maxStamina, owner.stamina + perkCount(owner, 'mage_mana') * 6 + perkCount(owner, 'stamina_strike') * 4);
+      }
       projectile.ttl = 0;
     }
     if (projectile.x < -100 || projectile.x > WORLD.width + 100 || projectile.y < -130 || projectile.y > WORLD.height + 130) projectile.ttl = 0;
@@ -911,7 +1158,7 @@ function updateWaves(room) {
     for (const player of alivePlayers(room)) {
       if (!wave.hit.includes(player.id) && overlaps(box, player)) {
         wave.hit.push(player.id);
-        damagePlayer(room, player, 1, Math.sign(wave.vx) * 390, -330);
+        damagePlayer(room, player, wave.damage, Math.sign(wave.vx) * 390, -330);
       }
     }
   }
@@ -1008,8 +1255,9 @@ function snapshot(room) {
     players: [...room.players.values()].map((player) => publicPlayer(player, room.hostId, true)),
     arena: publicArena(room),
     boss: boss ? {
-      x: Math.round(boss.x * 10) / 10, y: boss.y, w: boss.w, h: boss.h,
-      hp: Math.round(boss.hp), maxHp: boss.maxHp, facing: boss.facing, tier: boss.tier,
+      x: Math.round(boss.x * 10) / 10, y: Math.round(boss.y * 10) / 10, w: boss.w, h: boss.h,
+      vx: Math.round(boss.vx), vy: Math.round(boss.vy), onGround: boss.onGround,
+      hp: Math.round(boss.hp), maxHp: boss.maxHp, damage: boss.damage, facing: boss.facing, tier: boss.tier,
       flash: boss.flash > 0, stagger: boss.stagger > 0, currentAttack: boss.currentAttack,
     } : null,
     projectiles: room.projectiles, waves: room.waves, effects: room.effects,
@@ -1099,7 +1347,7 @@ io.on('connection', (socket) => {
       room.stage = clamp(Math.floor(Number(value) || 1), 1, MAX_STAGE);
       room.projectiles = []; room.waves = []; room.effects = []; room.bossEvents = [];
       setArena(room);
-      for (const player of room.players.values()) resetPlayerForStage(player);
+      for (const player of room.players.values()) resetPlayerForStage(player, room);
       spawnBoss(room);
       io.to(room.code).emit('stage-start', { stage: room.stage, arena: publicArena(room, true) });
     });
