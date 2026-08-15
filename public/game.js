@@ -38,6 +38,28 @@ const ARMOR_META = {
   moon:{name:'Луна',color:'#7189b7'}, violet:{name:'Пустота',color:'#8b63a0'}, ember:{name:'Угли',color:'#bc613b'}, void:{name:'Чернота',color:'#38333f'},
 };
 const AURA_META = { ash:{name:'Пепельный след',color:'#b5aa96'}, sparks:{name:'Искры',color:'#e38a4c'}, mist:{name:'Лунный туман',color:'#8baad2'}, runes:{name:'Руны пустоты',color:'#ae75c4'} };
+const LOOT_ITEMS = [
+  { id:'armor_ash_guard',type:'armor',rarity:'common',name:'Панцирь угасшей стражи',description:'+1 HP, но скорость ниже на 3%.' },
+  { id:'armor_duelist_coat',type:'armor',rarity:'rare',name:'Камзол серого дуэлянта',description:'+14 выносливости и +4% скорости.' },
+  { id:'armor_forgeplate',type:'armor',rarity:'rare',name:'Латы расколотой кузни',description:'+1 HP и +10% восстановления выносливости.' },
+  { id:'armor_moonveil',type:'armor',rarity:'epic',name:'Лунная завеса',description:'+3% скорости и +40 мс неуязвимости переката.' },
+  { id:'armor_stormmail',type:'armor',rarity:'epic',name:'Кольчуга сердца бури',description:'+20 выносливости, +12% её восстановления и +4% урона.' },
+  { id:'armor_void_regalia',type:'armor',rarity:'legendary',name:'Регалии пустого трона',description:'+1 HP, +8% урона и +25 мс окна парирования.' },
+  { id:'artifact_ember_talisman',type:'artifact',rarity:'common',name:'Талисман тлеющего угля',description:'+4% ко всему урону.' },
+  { id:'artifact_iron_lung',type:'artifact',rarity:'common',name:'Железное лёгкое',description:'+12 выносливости.' },
+  { id:'artifact_pilgrim_needle',type:'artifact',rarity:'common',name:'Игла пепельного странника',description:'+4% скорости движения.' },
+  { id:'artifact_funeral_bell',type:'artifact',rarity:'rare',name:'Малый погребальный колокол',description:'+25 мс к окну парирования.' },
+  { id:'artifact_hunter_eye',type:'artifact',rarity:'rare',name:'Око охотника',description:'+8% дальности и +4% тяжёлого урона.' },
+  { id:'artifact_ash_hourglass',type:'artifact',rarity:'rare',name:'Часы серого пепла',description:'+10% восстановления выносливости и +4% скорости атак.' },
+  { id:'artifact_moon_shard',type:'artifact',rarity:'epic',name:'Осколок мёртвой луны',description:'Перекаты дешевле на 8% и дают +40 мс неуязвимости.' },
+  { id:'artifact_colossus_nail',type:'artifact',rarity:'epic',name:'Гвоздь колосса',description:'+10% тяжёлого урона, но скорость ниже на 2%.' },
+  { id:'artifact_twin_fang',type:'artifact',rarity:'epic',name:'Парный клык разлома',description:'+9% лёгкого урона и +5% скорости атак.' },
+  { id:'artifact_sovereign_seal',type:'artifact',rarity:'legendary',name:'Печать владыки',description:'+8% ко всему урону.' },
+  { id:'artifact_last_lantern',type:'artifact',rarity:'legendary',name:'Последний фонарь',description:'+1 HP и +8% восстановления выносливости.' },
+  { id:'artifact_rift_compass',type:'artifact',rarity:'legendary',name:'Компас живого разлома',description:'+8% скорости и +10% дальности атак.' },
+];
+const LOOT_BY_ID = new Map(LOOT_ITEMS.map((item) => [item.id, item]));
+const LOOT_RARITY_LABEL = { common:'ОБЫЧНЫЙ',rare:'РЕДКИЙ',epic:'ЭПИЧЕСКИЙ',legendary:'ЛЕГЕНДАРНЫЙ' };
 const SPECIALIZATION_META = {
   swordsman: {
     duelist: { name: 'Дуэлянт', description: '+12% урона и +5% скорости.' },
@@ -124,8 +146,8 @@ const ACHIEVEMENTS = [
   {id:'damage_oath',name:'Тяжесть клятвы',description:'Нанеси суммарно 100 000 урона.',stat:'damage',goal:100000,reward:2200},
 ];
 
-const BOX_PRICE = 20000;
-const BOX_OPEN_TIME = 10 * 60 * 1000;
+const BOX_PRICE = 2000;
+const BOX_OPEN_TIME = 30 * 1000;
 const BOX_SLOT_COUNT = 3;
 const BOX_SKILL_VALUES = {
   hp: [1, 1, 1], stamina: [10, 18, 30], staminaRegen: [0.08, 0.14, 0.22],
@@ -224,10 +246,14 @@ const DEFAULT_PROFILE = {
   unlockedWeapons: Object.values(DEFAULT_WEAPON),
   selectedWeapons: { ...DEFAULT_WEAPON },
   classProgress: Object.fromEntries(Object.keys(CLASS_META).map((classId) => [classId, { xp: 0 }])),
+  classRebirths: Object.fromEntries(Object.keys(CLASS_META).map((classId) => [classId, 0])),
   weaponProgress: Object.fromEntries(Object.keys(WEAPON_META).map((weaponId) => [weaponId, { xp: 0, choices: {} }])),
   classSpecializations: {},
   bossTrophies: [],
   bossCodex: Object.fromEntries(BOSS_META.map((boss) => [boss.id, { seen: 0, wins: 0 }])),
+  ownedLoot: [],
+  gear: { armor:null, artifacts:[] },
+  lootPity: 0,
   ngPlusUnlocked: false,
   ngPlusWins: 0,
   appearance: { armor: 'ashen', aura: 'ash', title: 'wanderer' },
@@ -248,14 +274,14 @@ const dom = Object.fromEntries([
   'squadHud', 'playerVitals', 'heartsBar', 'staminaBar', 'controlsTip', 'toastStack',
   'perkOverlay', 'perkKicker', 'perkSubtitle', 'perkGrid', 'waitingPerks', 'shopButton', 'shopOverlay',
   'closeShopButton', 'currencyCount', 'shopCurrency', 'classShop', 'skinShop', 'boxBuyButton', 'boxSlots',
-  'skillClassTabs', 'skillCollection', 'skillCollectionCount', 'equippedSkillCount', 'weaponShop', 'classLevelText', 'appearanceShop',
+  'skillClassTabs', 'skillCollection', 'skillCollectionCount', 'equippedSkillCount', 'weaponShop', 'classLevelText', 'appearanceShop', 'lootLoadout', 'lootInventory', 'lootPityText',
   'challengeGrid', 'achievementGrid', 'routeOverlay', 'routeGrid', 'routeSubtitle', 'routeWaiting',
   'fusionOverlay', 'fusionGrid', 'fusionWaiting', 'contractOverlay', 'contractGrid', 'contractWaiting',
   'teamPowerBar', 'teamPowerText', 'modifierText', 'bossPhaseText', 'resultOverlay',
   'resultKicker', 'resultTitle', 'resultSubtitle', 'runSummary', 'resultStats', 'rematchButton', 'resultExitButton',
   'runDifficulty', 'runMode', 'publicRoomToggle', 'presetBar', 'trainingBossSelect', 'trainingAttackSelect', 'trainingPhaseSelect', 'trainingArenaSelect', 'trainingSpeedSelect', 'trainingDamageSelect', 'trainingStaminaToggle', 'startTrainingButton',
   'publicRoomsButton', 'publicRoomsList', 'bossPoiseBar', 'bossStatusText', 'trainingExitButton',
-  'dailyBoardButton', 'dailyBoard', 'masteryTree', 'specializationShop', 'bossCodex', 'settingsPanel',
+  'dailyBoardButton', 'dailyBoard', 'masteryTree', 'specializationShop', 'rebirthPanel', 'bossCodex', 'settingsPanel',
   'abilityBar', 'abilityLabel', 'spectatorPanel', 'spectatorTarget',
 ].map((id) => [id, document.querySelector(`#${id}`)]));
 
@@ -310,6 +336,12 @@ function freshDaily() { return { date: dateKey(), stages: 0, parries: 0, damage:
 function xpForLevel(level) { const steps = Math.max(0, level - 1); return steps * 100 + 40 * steps * (steps + 1); }
 function levelFromXp(xp) { let level = 1; while (level < 50 && xp >= xpForLevel(level + 1)) level += 1; return level; }
 function classLevel(classId) { return levelFromXp(profile.classProgress?.[classId]?.xp || 0); }
+function rebirthCount(classId = selectedClass) { return Math.min(Number.MAX_SAFE_INTEGER, Math.max(0, Math.floor(Number(profile.classRebirths?.[classId]) || 0))); }
+function rebirthXpMultiplier(classId = selectedClass) { return rebirthCount(classId) >= 53 ? Number.MAX_SAFE_INTEGER : 2 ** rebirthCount(classId); }
+function formatRebirthMultiplierCount(count) {
+  return count < 20 ? `×${(2 ** count).toLocaleString('ru-RU')}` : `×2^${count.toLocaleString('ru-RU')}`;
+}
+function formatRebirthMultiplier(classId = selectedClass) { return formatRebirthMultiplierCount(rebirthCount(classId)); }
 function masteryXpForLevel(level) { const steps = Math.max(0, level - 1); return steps * 80 + 26 * steps * (steps + 1); }
 function masteryLevel(weaponId) { const xp = profile.weaponProgress?.[weaponId]?.xp || 0; let level = 1; while (level < 20 && xp >= masteryXpForLevel(level + 1)) level += 1; return level; }
 
@@ -334,6 +366,7 @@ function loadProfile() {
     const unlockedSkins = Array.isArray(saved.unlockedSkins) ? saved.unlockedSkins.filter((id) => SKIN_META[id]) : [];
     const ownedSkills = [...new Set(Array.isArray(saved.ownedSkills) ? saved.ownedSkills.filter((id) => BOX_SKILL_BY_ID.has(id)) : [])];
     const classProgress = Object.fromEntries(Object.keys(CLASS_META).map((classId) => [classId, { xp: Math.max(0, Math.floor(Number(saved.classProgress?.[classId]?.xp) || 0)) }]));
+    const classRebirths = Object.fromEntries(Object.keys(CLASS_META).map((classId) => [classId, Math.min(Number.MAX_SAFE_INTEGER, Math.max(0, Math.floor(Number(saved.classRebirths?.[classId]) || 0)))]));
     const unlockedWeapons = Object.entries(WEAPON_META).filter(([, weapon]) => levelFromXp(classProgress[weapon.classId].xp) >= weapon.unlockLevel).map(([id]) => id);
     if (!unlockedClasses.includes('swordsman')) unlockedClasses.unshift('swordsman');
     if (!unlockedSkins.includes('iron')) unlockedSkins.unshift('iron');
@@ -345,7 +378,8 @@ function loadProfile() {
     const savedSlots = Array.isArray(saved.boxSlots) ? saved.boxSlots : [];
     const boxSlots = Array.from({ length: BOX_SLOT_COUNT }, (_, index) => {
       const endsAt = Number(savedSlots[index]?.endsAt);
-      return Number.isFinite(endsAt) && endsAt > 0 ? { endsAt } : null;
+      const classId = unlockedClasses.includes(savedSlots[index]?.classId) ? savedSlots[index].classId : (unlockedClasses[0] || 'swordsman');
+      return Number.isFinite(endsAt) && endsAt > 0 ? { endsAt, classId } : null;
     });
     const selectedWeapons = {};
     for (const classId of Object.keys(CLASS_META)) {
@@ -374,6 +408,10 @@ function loadProfile() {
       seen: Math.max(0, Math.floor(Number(saved.bossCodex?.[boss.id]?.seen) || 0)),
       wins: Math.max(0, Math.floor(Number(saved.bossCodex?.[boss.id]?.wins) || 0)),
     }]));
+    const ownedLoot = [...new Set(Array.isArray(saved.ownedLoot) ? saved.ownedLoot.map(String).filter((id) => LOOT_BY_ID.has(id)) : [])];
+    const equippedArmor = ownedLoot.includes(saved.gear?.armor) && LOOT_BY_ID.get(saved.gear.armor)?.type === 'armor' ? saved.gear.armor : null;
+    const equippedArtifacts = [...new Set(Array.isArray(saved.gear?.artifacts) ? saved.gear.artifacts.map(String) : [])]
+      .filter((id) => ownedLoot.includes(id) && LOOT_BY_ID.get(id)?.type === 'artifact').slice(0, 2);
     const savedTitle = String(saved.appearance?.title || 'wanderer');
     const appearance = {
       armor: ARMOR_META[saved.appearance?.armor] ? saved.appearance.armor : 'ashen',
@@ -428,10 +466,14 @@ function loadProfile() {
       unlockedWeapons,
       selectedWeapons,
       classProgress,
+      classRebirths,
       weaponProgress,
       classSpecializations,
       bossTrophies,
       bossCodex,
+      ownedLoot,
+      gear:{armor:equippedArmor,artifacts:equippedArtifacts},
+      lootPity:Math.min(16,Math.max(0,Math.floor(Number(saved.lootPity)||0))),
       ngPlusUnlocked: saved.ngPlusUnlocked === true,
       ngPlusWins: Math.max(0, Math.floor(Number(saved.ngPlusWins) || 0)),
       appearance,
@@ -469,6 +511,7 @@ function classPayload(classId = selectedClass) {
     classId, skin: profile.selectedSkin, weaponId, appearance: profile.appearance,
     equippedSkills: equippedForClass(classId), specialization: profile.classSpecializations[classId] || null,
     masteryChoices: profile.weaponProgress[weaponId]?.choices || {}, reconnectToken, nemesisAttack:profile.nemesisAttacks?.[classId]||null,
+    ownedLoot:profile.ownedLoot,gear:profile.gear,lootPity:profile.lootPity,rebirths:profile.classRebirths[classId]||0,
   };
 }
 
@@ -551,9 +594,9 @@ function chooseClass(id, notify = false) {
   if (notify && lobbyState) socket.emit('select-class', classPayload());
 }
 
-function availableBoxSkills() {
+function availableBoxSkills(classId = selectedClass) {
   const owned = new Set(profile.ownedSkills);
-  return BOX_SKILLS.filter((skill) => profile.unlockedClasses.includes(skill.classId) && !owned.has(skill.id));
+  return BOX_SKILLS.filter((skill) => skill.classId === classId && !owned.has(skill.id));
 }
 
 function formatCountdown(milliseconds) {
@@ -566,35 +609,37 @@ function renderBoxSlots() {
   const now = Date.now();
   dom.boxSlots.innerHTML = profile.boxSlots.map((slot, index) => {
     if (!slot) return `<article class="box-slot empty"><span>0${index + 1}</span><i>◇</i><strong>СВОБОДНЫЙ СЛОТ</strong><small>Ковчег можно открыть здесь</small></article>`;
+    const slotClass = CLASS_META[slot.classId] || CLASS_META.swordsman;
     const remaining = slot.endsAt - now;
     const ready = remaining <= 0;
     const progress = Math.max(0, Math.min(1, 1 - remaining / BOX_OPEN_TIME));
     return `<article class="box-slot ${ready ? 'ready' : 'opening'}"><span>0${index + 1}</span><i>◆</i><strong>${ready ? 'КОВЧЕГ ГОТОВ' : formatCountdown(remaining)}</strong>
-      <small>${ready ? 'Внутри гарантирован новый навык' : 'Распечатывание продолжается'}</small><div class="box-progress"><b style="width:${progress * 100}%"></b></div>
+      <small>${slotClass.label} · ${ready ? 'новый навык готов' : 'распечатывание продолжается'}</small><div class="box-progress"><b style="width:${progress * 100}%"></b></div>
       ${ready ? `<button type="button" data-claim-box="${index}">ЗАБРАТЬ НАВЫК</button>` : ''}</article>`;
   }).join('');
   const freeSlot = profile.boxSlots.some((slot) => !slot);
-  const hasRewards = availableBoxSkills().length > 0;
+  const remainingClassSkills = availableBoxSkills(selectedClass).length;
+  const hasRewards = remainingClassSkills > 0;
   dom.boxBuyButton.disabled = profile.currency < BOX_PRICE || !freeSlot || !hasRewards;
-  dom.boxBuyButton.innerHTML = hasRewards ? `<span>КУПИТЬ КОВЧЕГ</span><b>${BOX_PRICE} ¤</b>` : '<span>КОЛЛЕКЦИЯ СОБРАНА</span><b>216 / 216</b>';
+  dom.boxBuyButton.innerHTML = hasRewards ? `<span>КОВЧЕГ: ${CLASS_META[selectedClass].label}</span><b>${BOX_PRICE} ¤</b>` : `<span>${CLASS_META[selectedClass].label}: СОБРАНО</span><b>36 / 36</b>`;
   dom.boxSlots.querySelectorAll('[data-claim-box]').forEach((button) => button.addEventListener('click', () => claimBox(Number(button.dataset.claimBox))));
 }
 
 function purchaseBox() {
   const slotIndex = profile.boxSlots.findIndex((slot) => !slot);
   if (slotIndex < 0) return toast('Все три слота уже заняты', 'warn');
-  if (profile.currency < BOX_PRICE) return toast('Нужно 20 000 пепла', 'warn');
-  if (!availableBoxSkills().length) return toast('Все доступные навыки уже собраны', 'gold');
+  if (profile.currency < BOX_PRICE) return toast('Нужно 2 000 пепла', 'warn');
+  if (!availableBoxSkills(selectedClass).length) return toast(`Все навыки класса «${CLASS_META[selectedClass].label}» уже собраны`, 'gold');
   profile.currency -= BOX_PRICE;
-  profile.boxSlots[slotIndex] = { endsAt: Date.now() + BOX_OPEN_TIME };
+  profile.boxSlots[slotIndex] = { endsAt: Date.now() + BOX_OPEN_TIME, classId: selectedClass };
   saveProfile();
-  toast(`Ковчег помещён в слот ${slotIndex + 1}`, 'gold');
+  toast(`${CLASS_META[selectedClass].label}: ковчег помещён в слот ${slotIndex + 1}`, 'gold');
 }
 
 function claimBox(slotIndex) {
   const slot = profile.boxSlots[slotIndex];
   if (!slot || slot.endsAt > Date.now()) return;
-  const candidates = availableBoxSkills();
+  const candidates = availableBoxSkills(slot.classId);
   profile.boxSlots[slotIndex] = null;
   if (!candidates.length) {
     profile.currency += BOX_PRICE;
@@ -650,10 +695,11 @@ function toggleSkill(id) {
 function renderWeapons() {
   if (!dom.weaponShop) return;
   const level = classLevel(selectedClass);
+  const rebirths = rebirthCount(selectedClass);
   const xp = profile.classProgress[selectedClass]?.xp || 0;
   const currentFloor = xpForLevel(level);
   const nextFloor = level < 50 ? xpForLevel(level + 1) : currentFloor;
-  if (dom.classLevelText) dom.classLevelText.textContent = level >= 50 ? `УРОВЕНЬ ${level} · МАКС.` : `УРОВЕНЬ ${level} · ${xp - currentFloor} / ${nextFloor - currentFloor} XP`;
+  if (dom.classLevelText) dom.classLevelText.textContent = `${level >= 50 ? `УРОВЕНЬ ${level} · МАКС.` : `УРОВЕНЬ ${level} · ${xp - currentFloor} / ${nextFloor - currentFloor} XP`} · РЕБЕРС ${rebirths.toLocaleString('ru-RU')}`;
   dom.weaponShop.innerHTML = Object.entries(WEAPON_META).filter(([, weapon]) => weapon.classId === selectedClass).map(([id, weapon]) => {
     const unlocked = level >= weapon.unlockLevel;
     const selected = profile.selectedWeapons[selectedClass] === id;
@@ -704,6 +750,41 @@ function renderSpecializations() {
   }));
 }
 
+function renderRebirth() {
+  if (!dom.rebirthPanel) return;
+  const classId = selectedClass;
+  const count = rebirthCount(classId);
+  const level = classLevel(classId);
+  const currentStatBonus = count * 20;
+  const nextStatBonus = (count + 1) * 20;
+  dom.rebirthPanel.innerHTML = `<div class="rebirth-sigil">${CLASS_META[classId].icon}</div><div class="rebirth-copy">
+    <span>${CLASS_META[classId].label} · РЕБЕРС ${count.toLocaleString('ru-RU')}</span><strong>${formatRebirthMultiplier(classId)} XP · +${currentStatBonus.toLocaleString('ru-RU')}% К БАЗОВЫМ СТАТАМ</strong>
+    <small>На 50-м уровне можно начать заново. Сбросятся уровень класса, оружие, мастерство, специализация, активные навыки и пресеты этого класса. Купленные классы, найденные навыки, валюта и трофеи сохранятся.</small>
+  </div><aside><b>ПОСЛЕ СЛЕДУЮЩЕГО</b><strong>XP ${formatRebirthMultiplierCount(count + 1)} · +${nextStatBonus.toLocaleString('ru-RU')}%</strong><button type="button" data-rebirth="${classId}" ${level >= 50 ? '' : 'disabled'}>${level >= 50 ? 'СДЕЛАТЬ РЕБЕРС' : `НУЖЕН УРОВЕНЬ 50 · СЕЙЧАС ${level}`}</button></aside>`;
+  dom.rebirthPanel.querySelector('[data-rebirth]')?.addEventListener('click', () => performRebirth(classId));
+}
+
+function performRebirth(classId) {
+  if (!CLASS_META[classId] || classLevel(classId) < 50) return toast('Для реберса нужен 50-й уровень класса', 'warn');
+  const nextCount = rebirthCount(classId) + 1;
+  const confirmed = window.confirm(`Сделать реберс класса «${CLASS_META[classId].label}»?\n\nУровень, оружие, мастерство, специализация, активные навыки и пресеты этого класса будут сброшены. Коллекция найденных навыков, валюта и трофеи сохранятся.`);
+  if (!confirmed) return;
+  profile.classRebirths[classId] = Math.min(Number.MAX_SAFE_INTEGER, nextCount);
+  profile.classProgress[classId] = { xp: 0 };
+  for (const [weaponId, weapon] of Object.entries(WEAPON_META)) {
+    if (weapon.classId === classId) profile.weaponProgress[weaponId] = { xp: 0, choices: {} };
+  }
+  profile.selectedWeapons[classId] = DEFAULT_WEAPON[classId];
+  profile.equippedSkills[classId] = [];
+  delete profile.classSpecializations[classId];
+  profile.loadoutPresets = profile.loadoutPresets.map((preset) => preset?.classId === classId ? null : preset);
+  profile.unlockedWeapons = Object.entries(WEAPON_META).filter(([, weapon]) => classLevel(weapon.classId) >= weapon.unlockLevel).map(([id]) => id);
+  saveProfile();
+  if (lobbyState) socket.emit('select-class', classPayload(classId));
+  renderShop();
+  toast(`${CLASS_META[classId].label}: реберс ${profile.classRebirths[classId]} · ${formatRebirthMultiplier(classId)} XP · +${profile.classRebirths[classId] * 20}% к базовым статам`, 'gold');
+}
+
 function renderBossCodex() {
   if (!dom.bossCodex) return;
   dom.bossCodex.innerHTML = BOSS_META.map((boss, index) => {
@@ -743,6 +824,40 @@ function renderAppearance() {
   dom.appearanceShop.querySelectorAll('[data-title]').forEach((button) => button.addEventListener('click', () => { profile.appearance.title = button.dataset.title; saveProfile(); if (lobbyState) socket.emit('select-class', classPayload()); }));
 }
 
+function renderLootGear() {
+  if (!dom.lootLoadout || !dom.lootInventory) return;
+  const armor = LOOT_BY_ID.get(profile.gear.armor);
+  const artifacts = profile.gear.artifacts.map((id) => LOOT_BY_ID.get(id)).filter(Boolean);
+  const slots = [
+    { label:'БРОНЯ',item:armor },
+    { label:'АРТЕФАКТ I',item:artifacts[0] },
+    { label:'АРТЕФАКТ II',item:artifacts[1] },
+  ];
+  dom.lootPityText.textContent = `${profile.ownedLoot.length} / ${LOOT_ITEMS.length} · НАКОПЛЕННЫЙ ШАНС +${Math.round(profile.lootPity * 1.25 * 10) / 10}%`;
+  dom.lootLoadout.innerHTML = slots.map(({label,item}) => `<article class="loot-slot ${item ? item.rarity : 'empty'}">
+    <span>${label}</span><i>${item ? (item.type === 'armor' ? '♜' : '◆') : '◇'}</i><strong>${item?.name || 'ПУСТО'}</strong><small>${item?.description || 'Выберите найденный трофей ниже.'}</small>
+  </article>`).join('');
+  const owned = LOOT_ITEMS.filter((item) => profile.ownedLoot.includes(item.id));
+  dom.lootInventory.innerHTML = owned.length ? owned.map((item) => {
+    const equipped = profile.gear.armor === item.id || profile.gear.artifacts.includes(item.id);
+    return `<button type="button" class="loot-item ${item.rarity} ${equipped ? 'equipped' : ''}" data-loot-gear="${item.id}">
+      <i>${item.type === 'armor' ? '♜' : '◆'}</i><span><b>${item.name}</b><small>${item.description}</small></span><em>${LOOT_RARITY_LABEL[item.rarity]} · ${item.type === 'armor' ? 'БРОНЯ' : 'АРТЕФАКТ'}</em><strong>${equipped ? 'СНЯТЬ' : 'НАДЕТЬ'}</strong>
+    </button>`;
+  }).join('') : '<div class="loot-empty"><b>ТРОФЕЕВ ПОКА НЕТ</b><span>После победы над любым боссом есть небольшой шанс найти постоянную броню или артефакт. Серия побед постепенно повышает шанс.</span></div>';
+  dom.lootInventory.querySelectorAll('[data-loot-gear]').forEach((button) => button.addEventListener('click', () => {
+    const id = button.dataset.lootGear;
+    const item = LOOT_BY_ID.get(id);
+    if (!item || !profile.ownedLoot.includes(id)) return;
+    if (item.type === 'armor') profile.gear.armor = profile.gear.armor === id ? null : id;
+    else if (profile.gear.artifacts.includes(id)) profile.gear.artifacts = profile.gear.artifacts.filter((ownedId) => ownedId !== id);
+    else if (profile.gear.artifacts.length < 2) profile.gear.artifacts.push(id);
+    else profile.gear.artifacts = [profile.gear.artifacts[1], id];
+    saveProfile();
+    if (lobbyState) socket.emit('select-class', classPayload());
+    toast(`${item.name}: ${profile.gear.armor === id || profile.gear.artifacts.includes(id) ? 'экипировано' : 'снято'}`, 'gold');
+  }));
+}
+
 function dailyTasks() {
   return [
     { id:'stages', name:'Разрушитель печатей', description:'Пройди суммарно 8 стадий сегодня.', goal:8, value:profile.daily.stages, reward:500 },
@@ -780,14 +895,19 @@ function applyRunProgress(data) {
   profile.daily.parries += me.parries || 0;
   profile.daily.damage += me.damageDone || 0;
   if(me.lastDamageAttack)profile.nemesisAttacks[me.classId]=me.lastDamageAttack;
+  for (const id of Array.isArray(me.lootDrops) ? me.lootDrops : []) if (LOOT_BY_ID.has(id) && !profile.ownedLoot.includes(id)) profile.ownedLoot.push(id);
+  profile.lootPity = Math.min(16,Math.max(0,Math.floor(Number(me.lootPity) || 0)));
   const oldLevel = classLevel(me.classId);
-  const xpEarned = (me.bossesDefeated || 0) * 180 + Math.floor((me.damageDone || 0) / 125) + (data.result === 'victory' ? 500 : 0);
-  profile.classProgress[me.classId].xp += xpEarned;
+  const xpMultiplier = rebirthXpMultiplier(me.classId);
+  const baseXpEarned = (me.bossesDefeated || 0) * 180 + Math.floor((me.damageDone || 0) / 125) + (data.result === 'victory' ? 500 : 0);
+  const xpEarned = Math.min(Number.MAX_SAFE_INTEGER, baseXpEarned * xpMultiplier);
+  profile.classProgress[me.classId].xp = Math.min(Number.MAX_SAFE_INTEGER, profile.classProgress[me.classId].xp + xpEarned);
   const newLevel = classLevel(me.classId);
   const weaponId = WEAPON_META[me.weaponId] ? me.weaponId : DEFAULT_WEAPON[me.classId];
   const oldMastery = masteryLevel(weaponId);
-  const masteryXp = (me.bossesDefeated || 0) * 115 + Math.floor((me.damageDone || 0) / 175) + (data.result === 'victory' ? 350 : 0);
-  profile.weaponProgress[weaponId].xp += masteryXp;
+  const baseMasteryXp = (me.bossesDefeated || 0) * 115 + Math.floor((me.damageDone || 0) / 175) + (data.result === 'victory' ? 350 : 0);
+  const masteryXp = Math.min(Number.MAX_SAFE_INTEGER, baseMasteryXp * xpMultiplier);
+  profile.weaponProgress[weaponId].xp = Math.min(Number.MAX_SAFE_INTEGER, profile.weaponProgress[weaponId].xp + masteryXp);
   const newMastery = masteryLevel(weaponId);
   if (data.result === 'victory' && data.difficulty === 'normal') profile.ngPlusUnlocked = true;
   if (data.result === 'victory' && data.difficulty === 'ngplus') profile.ngPlusWins += 1;
@@ -802,8 +922,8 @@ function applyRunProgress(data) {
     if (task.value >= task.goal && !profile.daily.claimed.includes(task.id)) { profile.daily.claimed.push(task.id); profile.currency += task.reward; }
   }
   saveProfile();
-  toast(`${CLASS_META[me.classId].label}: +${xpEarned} XP${newLevel > oldLevel ? ` · УРОВЕНЬ ${newLevel}` : ''}`, 'gold');
-  toast(`${WEAPON_META[weaponId].name}: +${masteryXp} мастерства${newMastery > oldMastery ? ` · УРОВЕНЬ ${newMastery}` : ''}`, 'gold');
+  toast(`${CLASS_META[me.classId].label}: +${xpEarned.toLocaleString('ru-RU')} XP · ${formatRebirthMultiplier(me.classId)}${newLevel > oldLevel ? ` · УРОВЕНЬ ${newLevel}` : ''}`, 'gold');
+  toast(`${WEAPON_META[weaponId].name}: +${masteryXp.toLocaleString('ru-RU')} мастерства${newMastery > oldMastery ? ` · УРОВЕНЬ ${newMastery}` : ''}`, 'gold');
   if (data.result === 'victory' && data.difficulty === 'normal') toast('Открыта «Новая игра+»', 'gold');
   if (unlockedNow.length) toast(`Достижение: ${unlockedNow.join(', ')}`, 'gold');
 }
@@ -858,6 +978,8 @@ function renderShop() {
   renderWeapons();
   renderMastery();
   renderSpecializations();
+  renderRebirth();
+  renderLootGear();
   renderAppearance();
   renderProgression();
   renderBoxSlots();
@@ -1172,7 +1294,7 @@ function showResults(data) {
   dom.runSummary.innerHTML = `<div class="summary-box"><strong>${data.stagesCleared}</strong><span>СТАДИЙ ПРОЙДЕНО</span></div><div class="summary-box"><strong>${formatTime(data.elapsed)}</strong><span>ВРЕМЯ ЗАБЕГА</span></div><div class="summary-box"><strong>${data.mode==='daily'?'ДЕНЬ':data.difficulty === 'ngplus' ? 'NG+' : 'I'}</strong><span>СЛОЖНОСТЬ</span></div>`;
   dom.resultStats.innerHTML = data.players.map((player, index) => {
     const parryRate = player.parryAttempts ? Math.round((player.parries || 0) / player.parryAttempts * 100) : 0;
-    return `<div class="result-row postmortem"><span>#${index + 1}</span><strong>${escapeHtml(player.name)} · ${CLASS_META[player.classId].label}</strong><div><b>${player.damageDone} УРОНА · ФОРМА ${String(player.weaponEvolution||'unformed').toUpperCase()}</b><small>${player.parries || 0}/${player.parryAttempts || 0} ПАРИРОВАНИЙ · ${parryRate}% · ${player.perfectDodges||0} ИДЕАЛЬНЫХ УКЛОНЕНИЙ</small><small>${player.poiseDamage || 0} УРОНА СТОЙКОСТИ · ${player.hitsTaken || 0} ПОПАДАНИЙ ПОЛУЧЕНО · ${(player.fusions||[]).length} СПЛАВОВ · ${player.trialMarks||0} ИСПЫТАНИЙ</small><em>ПОСЛЕДНЯЯ ОПАСНОСТЬ: ${escapeHtml(player.lastDamageSource || 'неизвестно')}</em></div></div>`;
+    return `<div class="result-row postmortem"><span>#${index + 1}</span><strong>${escapeHtml(player.name)} · ${CLASS_META[player.classId].label}</strong><div><b>${player.damageDone} УРОНА · ФОРМА ${String(player.weaponEvolution||'unformed').toUpperCase()}</b><small>${player.parries || 0}/${player.parryAttempts || 0} ПАРИРОВАНИЙ · ${parryRate}% · ${player.perfectDodges||0} ИДЕАЛЬНЫХ УКЛОНЕНИЙ</small><small>${player.poiseDamage || 0} УРОНА СТОЙКОСТИ · ${player.hitsTaken || 0} ПОПАДАНИЙ ПОЛУЧЕНО · ${(player.fusions||[]).length} СПЛАВОВ · ${(player.lootDrops||[]).length} ТРОФЕЕВ</small><em>ПОСЛЕДНЯЯ ОПАСНОСТЬ: ${escapeHtml(player.lastDamageSource || 'неизвестно')}</em></div></div>`;
   }).join('')+(data.dailyLeaderboard?.length?`<h3>ЛУЧШИЕ ПОПЫТКИ ДНЯ · ${data.teamSize} ИГР.</h3>${data.dailyLeaderboard.map((entry,index)=>`<div class="result-row"><span>#${index+1}</span><strong>${escapeHtml(entry.names)}</strong><b>${entry.stages} · ${formatTime(entry.elapsed)}</b></div>`).join('')}`:'');
   const host = lobbyState?.hostId === socket.id;
   dom.rematchButton.disabled = !host;
@@ -1580,6 +1702,14 @@ socket.on('contract-chosen',(contract)=>toast(`Контракт принят: ${
 socket.on('perfect-dodge',({playerId,name,focus,riposteReady})=>{if(playerId===socket.id){playSound('parry');toast(riposteReady?'ИДЕАЛЬНОЕ УКЛОНЕНИЕ · КОНТРАТАКА ГОТОВА':`ИДЕАЛЬНОЕ УКЛОНЕНИЕ · ФОКУС ${focus}/3`,'gold');}else toast(`${name}: идеальное уклонение`,'gold');});
 socket.on('ability-used',({playerId,name})=>{if(playerId===socket.id)toast(`${name} активирован`,'gold');});
 socket.on('boss-phase',({phase,name})=>{screenShake=20*profile.settings.screenShake;playSound('phase');toast(`${name} · ФАЗА ${phase}`,'danger');});
+socket.on('loot-pity',({value})=>{profile.lootPity=Math.min(16,Math.max(0,Math.floor(Number(value)||0)));saveProfile();});
+socket.on('boss-loot',({item,pity})=>{
+  if(!item||!LOOT_BY_ID.has(item.id))return;
+  if(!profile.ownedLoot.includes(item.id))profile.ownedLoot.push(item.id);
+  profile.lootPity=Math.min(16,Math.max(0,Math.floor(Number(pity)||0)));
+  saveProfile();playSound('phase');
+  toast(`ТРОФЕЙ ${LOOT_RARITY_LABEL[item.rarity]}: ${item.name}`,'gold');
+});
 socket.on('currency-earned',({amount,stage})=>{profile.currency+=Math.max(0,Math.floor(amount));saveProfile();toast(`+${amount} пепла за стадию ${stage}`,'gold');});
 socket.on('training-reset',(payload)=>toast(payload.text||'Тренировка перезапущена','gold'));
 socket.on('toast',(payload)=>toast(payload.text,payload.tone));socket.on('game-over',showResults);

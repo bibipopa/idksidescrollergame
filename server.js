@@ -194,6 +194,28 @@ const SECRET_BOSSES = [
 const ALL_BOSSES = [...BOSSES, ...SECRET_BOSSES];
 const BOSS_REWARDS = Object.fromEntries(ALL_BOSSES.map((boss, index) => [boss.id, { title: `title_${boss.id}`, name: boss.title, currency: 500 + index * 175 }]));
 const BOSS_TITLE_IDS = new Set(['wanderer', ...Object.values(BOSS_REWARDS).map((reward) => reward.title)]);
+const LOOT_ITEMS = [
+  { id:'armor_ash_guard',type:'armor',rarity:'common',name:'Панцирь угасшей стражи',description:'+1 HP, но скорость ниже на 3%.',minTier:1,stats:{hp:1,speed:-0.03} },
+  { id:'armor_duelist_coat',type:'armor',rarity:'rare',name:'Камзол серого дуэлянта',description:'+14 выносливости и +4% скорости.',minTier:2,stats:{stamina:14,speed:0.04} },
+  { id:'armor_forgeplate',type:'armor',rarity:'rare',name:'Латы расколотой кузни',description:'+1 HP и +10% восстановления выносливости.',minTier:3,stats:{hp:1,staminaRegen:0.1} },
+  { id:'armor_moonveil',type:'armor',rarity:'epic',name:'Лунная завеса',description:'+3% скорости и +40 мс неуязвимости переката.',minTier:5,stats:{speed:0.03,rollInvulnerability:0.04} },
+  { id:'armor_stormmail',type:'armor',rarity:'epic',name:'Кольчуга сердца бури',description:'+20 выносливости, +12% её восстановления и +4% урона.',minTier:7,stats:{stamina:20,staminaRegen:0.12,damage:0.04} },
+  { id:'armor_void_regalia',type:'armor',rarity:'legendary',name:'Регалии пустого трона',description:'+1 HP, +8% урона и +25 мс окна парирования.',minTier:9,stats:{hp:1,damage:0.08,parryWindow:0.025} },
+  { id:'artifact_ember_talisman',type:'artifact',rarity:'common',name:'Талисман тлеющего угля',description:'+4% ко всему урону.',minTier:1,stats:{damage:0.04} },
+  { id:'artifact_iron_lung',type:'artifact',rarity:'common',name:'Железное лёгкое',description:'+12 выносливости.',minTier:1,stats:{stamina:12} },
+  { id:'artifact_pilgrim_needle',type:'artifact',rarity:'common',name:'Игла пепельного странника',description:'+4% скорости движения.',minTier:1,stats:{speed:0.04} },
+  { id:'artifact_funeral_bell',type:'artifact',rarity:'rare',name:'Малый погребальный колокол',description:'+25 мс к окну парирования.',minTier:2,stats:{parryWindow:0.025} },
+  { id:'artifact_hunter_eye',type:'artifact',rarity:'rare',name:'Око охотника',description:'+8% дальности и +4% тяжёлого урона.',minTier:3,stats:{range:0.08,heavyDamage:0.04} },
+  { id:'artifact_ash_hourglass',type:'artifact',rarity:'rare',name:'Часы серого пепла',description:'+10% восстановления выносливости и +4% скорости атак.',minTier:3,stats:{staminaRegen:0.1,attackSpeed:0.04} },
+  { id:'artifact_moon_shard',type:'artifact',rarity:'epic',name:'Осколок мёртвой луны',description:'Перекаты дешевле на 8% и дают +40 мс неуязвимости.',minTier:5,stats:{rollCost:0.08,rollInvulnerability:0.04} },
+  { id:'artifact_colossus_nail',type:'artifact',rarity:'epic',name:'Гвоздь колосса',description:'+10% тяжёлого урона, но скорость ниже на 2%.',minTier:6,stats:{heavyDamage:0.1,speed:-0.02} },
+  { id:'artifact_twin_fang',type:'artifact',rarity:'epic',name:'Парный клык разлома',description:'+9% лёгкого урона и +5% скорости атак.',minTier:6,stats:{lightDamage:0.09,attackSpeed:0.05} },
+  { id:'artifact_sovereign_seal',type:'artifact',rarity:'legendary',name:'Печать владыки',description:'+8% ко всему урону.',minTier:8,stats:{damage:0.08} },
+  { id:'artifact_last_lantern',type:'artifact',rarity:'legendary',name:'Последний фонарь',description:'+1 HP и +8% восстановления выносливости.',minTier:8,stats:{hp:1,staminaRegen:0.08} },
+  { id:'artifact_rift_compass',type:'artifact',rarity:'legendary',name:'Компас живого разлома',description:'+8% скорости и +10% дальности атак.',minTier:9,stats:{speed:0.08,range:0.1} },
+];
+const LOOT_BY_ID = new Map(LOOT_ITEMS.map((item) => [item.id, item]));
+const LOOT_RARITY_WEIGHT = { common:64, rare:26, epic:8, legendary:2 };
 const ATTACK_LABELS = { slash:'Взмах',cleave:'Широкий удар',slam:'Удар по земле',volley:'Залп',wave:'Волна',charge:'Рывок',twin_slash:'Двойной удар',skyfall:'Падение сверху',blink:'Телепортация',ring_burst:'Кольцевой залп',beam:'Луч',quake:'Землетрясение',marked:'Метка',projectile:'Снаряд',hazard:'Опасность арены' };
 
 const BOSS_MUTATIONS = [
@@ -478,6 +500,7 @@ function cleanMasteryChoices(value) {
   return choices;
 }
 function cleanReconnectToken(value) { return String(value || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64); }
+function cleanRebirths(value) { return clamp(Math.floor(Number(value) || 0), 0, Number.MAX_SAFE_INTEGER); }
 function cleanDifficulty(value) { return value === 'ngplus' ? 'ngplus' : 'normal'; }
 function cleanAppearance(value) {
   return {
@@ -486,9 +509,23 @@ function cleanAppearance(value) {
     title: BOSS_TITLE_IDS.has(value?.title) ? value.title : 'wanderer',
   };
 }
+function cleanOwnedLoot(value) {
+  return [...new Set(Array.isArray(value) ? value.map(String) : [])].filter((id) => LOOT_BY_ID.has(id)).slice(0, LOOT_ITEMS.length);
+}
+function cleanGear(value, ownedLoot = []) {
+  const owned = new Set(ownedLoot);
+  const armor = owned.has(value?.armor) && LOOT_BY_ID.get(value.armor)?.type === 'armor' ? value.armor : null;
+  const artifacts = [...new Set(Array.isArray(value?.artifacts) ? value.artifacts.map(String) : [])]
+    .filter((id) => owned.has(id) && LOOT_BY_ID.get(id)?.type === 'artifact').slice(0, 2);
+  return { armor, artifacts };
+}
 function cleanEquippedSkills(value, classId) {
   const unique = [...new Set(Array.isArray(value) ? value.map(String) : [])];
   return unique.filter((id) => BOX_SKILLS.get(id)?.classId === classId).slice(0, 3);
+}
+function gearStat(player, stat) {
+  const ids = [player.gear?.armor, ...(player.gear?.artifacts || [])].filter(Boolean);
+  return ids.reduce((sum, id) => sum + (LOOT_BY_ID.get(id)?.stats?.[stat] || 0), 0);
 }
 function perkCount(player, id) { const count=player.perks[id]||0;return player.corruptedPerk===id?count*2:count; }
 function relicSetPieces(player, setId) { return (RELIC_SETS[setId] || []).filter((id) => perkCount(player, id) > 0).length; }
@@ -603,32 +640,38 @@ function derivedStats(player) {
   const woundSpeed = Math.pow(0.9, wounds.slow || 0);
   const woundRegen = Math.pow(0.82, wounds.fatigue || 0);
   const corruptionPower = 1;
+  const gearDamage = gearStat(player, 'damage');
+  const gearAttackSpeed = gearStat(player, 'attackSpeed');
+  const rebirthScale = 1 + cleanRebirths(player.rebirths) * 0.2;
   return {
-    maxHp: Math.max(1, base.maxHp + (specialization.hp || 0) + (player.stageHpModifier || 0) + skillTotal(player, 'hp') + perkCount(player, 'vitality') - perkCount(player, 'glass_edge') + (isGreatsword ? perkCount(player, 'great_colossus') : 0) + (isBerserker ? perkCount(player, 'berserk_resolve') : 0)),
-    maxStamina: Math.max(45, base.maxStamina + (specialization.stamina || 0) + skillTotal(player, 'stamina') + perkCount(player, 'endurance') * 25 - perkCount(player, 'curse_bearer') * 10),
-    staminaRegen: base.staminaRegen * Math.pow(1.28, perkCount(player, 'lungs')) * (1 + skillTotal(player, 'staminaRegen')) * (player.staminaRegenMultiplier || 1) * (law.staminaRegen || 1) * woundRegen * (player.corruptedPerk ? 0.82 : 1) * (pilgrimPieces>=2?1.12:1),
-    speed: base.speed * speedScale * (specialization.speed || 1) * stance.speed * (law.playerSpeed || 1) * woundSpeed * roadSpeed * (evolution === 'shadow' ? 1.08 : 1) * (pilgrimPieces>=3?1.05:1),
-    jump: base.jump * Math.pow(1.12, perkCount(player, 'high_jump')) * (1 + skillTotal(player, 'jump')) * (law.jump || 1),
-    lightDamage: base.lightDamage * weapon.lightDamage * damageScale * masteryDamage * (specialization.damage || 1) * (1 + skillTotal(player, 'lightDamage')) * (player.damageMultiplier || 1) * stance.light * woundPower * setDamage * (1 + constellation) * corruptionPower * (evolution === 'tempo' ? 1.12 : 1),
-    heavyDamage: base.heavyDamage * weapon.heavyDamage * damageScale * masteryDamage * (mastery[15] === 'execution' ? 1.15 : 1) * (specialization.heavy || specialization.damage || 1) * (1 + skillTotal(player, 'heavyDamage')) * Math.pow(1.35, perkCount(player, 'heavy_mastery')) * (isGreatsword ? Math.pow(1.3, perkCount(player, 'great_mass')) : 1) * (isBerserker ? Math.pow(1.3, perkCount(player, 'berserk_heavy')) : 1) * (player.damageMultiplier || 1) * stance.heavy * (law.heavy || 1) * woundPower * setDamage * (1 + constellation) * corruptionPower * (evolution === 'crusher' ? 1.2 : 1),
+    maxHp: Math.max(1, Math.round(base.maxHp * rebirthScale) + (specialization.hp || 0) + (player.stageHpModifier || 0) + skillTotal(player, 'hp') + gearStat(player, 'hp') + perkCount(player, 'vitality') - perkCount(player, 'glass_edge') + (isGreatsword ? perkCount(player, 'great_colossus') : 0) + (isBerserker ? perkCount(player, 'berserk_resolve') : 0)),
+    maxStamina: Math.max(45, base.maxStamina * rebirthScale + (specialization.stamina || 0) + skillTotal(player, 'stamina') + gearStat(player, 'stamina') + perkCount(player, 'endurance') * 25 - perkCount(player, 'curse_bearer') * 10),
+    staminaRegen: base.staminaRegen * rebirthScale * Math.pow(1.28, perkCount(player, 'lungs')) * (1 + skillTotal(player, 'staminaRegen')) * (1 + gearStat(player, 'staminaRegen')) * (player.staminaRegenMultiplier || 1) * (law.staminaRegen || 1) * woundRegen * (player.corruptedPerk ? 0.82 : 1) * (pilgrimPieces>=2?1.12:1),
+    speed: base.speed * rebirthScale * speedScale * (specialization.speed || 1) * stance.speed * (law.playerSpeed || 1) * (1 + gearStat(player, 'speed')) * woundSpeed * roadSpeed * (evolution === 'shadow' ? 1.08 : 1) * (pilgrimPieces>=3?1.05:1),
+    jump: base.jump * rebirthScale * Math.pow(1.12, perkCount(player, 'high_jump')) * (1 + skillTotal(player, 'jump')) * (law.jump || 1),
+    lightDamage: base.lightDamage * rebirthScale * weapon.lightDamage * damageScale * masteryDamage * (specialization.damage || 1) * (1 + skillTotal(player, 'lightDamage')) * (1 + gearDamage + gearStat(player, 'lightDamage')) * (player.damageMultiplier || 1) * stance.light * woundPower * setDamage * (1 + constellation) * corruptionPower * (evolution === 'tempo' ? 1.12 : 1),
+    heavyDamage: base.heavyDamage * rebirthScale * weapon.heavyDamage * damageScale * masteryDamage * (mastery[15] === 'execution' ? 1.15 : 1) * (specialization.heavy || specialization.damage || 1) * (1 + skillTotal(player, 'heavyDamage')) * (1 + gearDamage + gearStat(player, 'heavyDamage')) * Math.pow(1.35, perkCount(player, 'heavy_mastery')) * (isGreatsword ? Math.pow(1.3, perkCount(player, 'great_mass')) : 1) * (isBerserker ? Math.pow(1.3, perkCount(player, 'berserk_heavy')) : 1) * (player.damageMultiplier || 1) * stance.heavy * (law.heavy || 1) * woundPower * setDamage * (1 + constellation) * corruptionPower * (evolution === 'crusher' ? 1.2 : 1),
     lightCost: base.lightCost * masteryCost * Math.max(0.45, 1 - skillTotal(player, 'lightCost')) * Math.pow(0.82, perkCount(player, 'light_mastery')) * discipline * spellCost * stance.cost,
     heavyCost: base.heavyCost * masteryCost * Math.max(0.45, 1 - skillTotal(player, 'heavyCost')) * discipline * spellCost * stance.cost,
-    rollCost: base.rollCost * masteryCost * Math.max(0.45, 1 - skillTotal(player, 'rollCost')) * Math.pow(0.75, perkCount(player, 'feather_roll')) * rogueRoll,
+    rollCost: base.rollCost * masteryCost * Math.max(0.45, 1 - skillTotal(player, 'rollCost')) * Math.max(0.7, 1 - gearStat(player, 'rollCost')) * Math.pow(0.75, perkCount(player, 'feather_roll')) * rogueRoll,
     parryCost: base.parryCost,
-    lightTime: base.lightTime * weapon.lightTime * masteryTempo * (specialization.lightTime || 1) * Math.pow(0.86, perkCount(player, 'light_mastery')),
-    heavyTime: base.heavyTime * weapon.heavyTime * masteryTempo,
-    attackRange: base.attackRange * weapon.range * masteryRange * (specialization.range || 1) * (1 + skillTotal(player, 'range')) * (isSpearman ? Math.pow(1.18, perkCount(player, 'spear_reach')) : 1),
-    parryWindow: Math.max(0.07, (base.parryWindow + weapon.parry + (specialization.parry || 0) + (mastery[15] === 'finesse' ? 0.04 : 0) + skillTotal(player, 'parryWindow') + perkCount(player, 'parry_master') * 0.055 + (isSwordsman ? perkCount(player, 'sword_guard') * 0.04 : 0) + (isSpearman ? perkCount(player, 'spear_guard') * 0.05 : 0) + (stance.parry || 0) + (evolution === 'guard' ? 0.045 : 0)) * (player.parryWindowMultiplier || 1)),
-    rollSpeed: 710 * Math.pow(1.12, perkCount(player, 'long_roll')),
-    rollInvulnerability: 0.3 + (specialization.rollInvulnerability || 0) + skillTotal(player, 'rollInvulnerability') + perkCount(player, 'safe_roll') * 0.08 + (isMage ? perkCount(player, 'mage_phase') * 0.1 : 0) + (eclipsePieces>=2?0.06:0),
+    lightTime: base.lightTime * weapon.lightTime * masteryTempo * (specialization.lightTime || 1) * Math.pow(0.86, perkCount(player, 'light_mastery')) / ((1 + gearAttackSpeed) * rebirthScale),
+    heavyTime: base.heavyTime * weapon.heavyTime * masteryTempo / ((1 + gearAttackSpeed) * rebirthScale),
+    attackRange: base.attackRange * rebirthScale * weapon.range * masteryRange * (specialization.range || 1) * (1 + skillTotal(player, 'range')) * (1 + gearStat(player, 'range')) * (isSpearman ? Math.pow(1.18, perkCount(player, 'spear_reach')) : 1),
+    parryWindow: Math.max(0.07, (base.parryWindow * rebirthScale + weapon.parry + (specialization.parry || 0) + (mastery[15] === 'finesse' ? 0.04 : 0) + skillTotal(player, 'parryWindow') + gearStat(player, 'parryWindow') + perkCount(player, 'parry_master') * 0.055 + (isSwordsman ? perkCount(player, 'sword_guard') * 0.04 : 0) + (isSpearman ? perkCount(player, 'spear_guard') * 0.05 : 0) + (stance.parry || 0) + (evolution === 'guard' ? 0.045 : 0)) * (player.parryWindowMultiplier || 1)),
+    rollSpeed: 710 * rebirthScale * Math.pow(1.12, perkCount(player, 'long_roll')),
+    rollInvulnerability: 0.3 * rebirthScale + (specialization.rollInvulnerability || 0) + skillTotal(player, 'rollInvulnerability') + gearStat(player, 'rollInvulnerability') + perkCount(player, 'safe_roll') * 0.08 + (isMage ? perkCount(player, 'mage_phase') * 0.1 : 0) + (eclipsePieces>=2?0.06:0),
   };
 }
 
 function makePlayer(id, name, classId, skin, slot, equippedSkills = [], weaponId, appearance, progression = {}) {
   const base = CLASSES[classId];
+  const ownedLoot = cleanOwnedLoot(progression.ownedLoot);
+  const gear = cleanGear(progression.gear, ownedLoot);
   return {
     id, name, classId, skin, slot, weaponId: cleanWeapon(weaponId, classId), appearance: cleanAppearance(appearance), equippedSkills: cleanEquippedSkills(equippedSkills, classId),
     specialization: cleanSpecialization(progression.specialization, classId), masteryChoices: cleanMasteryChoices(progression.masteryChoices),
+    ownedLoot, gear, lootPity:clamp(Math.floor(Number(progression.lootPity) || 0), 0, 16), runLoot:[], rebirths:cleanRebirths(progression.rebirths),
     reconnectToken: cleanReconnectToken(progression.reconnectToken), connected: true, disconnectDeadline: 0, pendingCurrency: 0,
     x: 220 + slot * 76, y: WORLD.floor - 60, w: 42, h: 60, vx: 0, vy: 0, facing: 1,
     hp: base.maxHp, maxHp: base.maxHp, stamina: base.maxStamina, maxStamina: base.maxStamina,
@@ -651,7 +694,7 @@ function makePlayer(id, name, classId, skin, slot, equippedSkills = [], weaponId
 }
 
 function publicPlayer(player, hostId, inGame = false) {
-  const base = { id: player.id, name: player.name, classId: player.classId, skin: player.skin, weaponId: player.weaponId, appearance: player.appearance, slot: player.slot, equippedSkills: player.equippedSkills, specialization: player.specialization, connected: player.connected, isHost: player.id === hostId };
+  const base = { id: player.id, name: player.name, classId: player.classId, skin: player.skin, weaponId: player.weaponId, appearance: player.appearance, gear:player.gear, rebirths:player.rebirths, slot: player.slot, equippedSkills: player.equippedSkills, specialization: player.specialization, connected: player.connected, isHost: player.id === hostId };
   if (!inGame) return base;
   return {
     ...base, x: Math.round(player.x * 10) / 10, y: Math.round(player.y * 10) / 10,
@@ -777,6 +820,7 @@ function resetPlayerForStage(player, room, fullHeal = false) {
 
 function resetPlayerForRun(player, room) {
   player.perks = {};
+  player.runLoot = [];
   player.damageDone = 0;
   player.nextHitMultiplier = 1;
   player.lightChain = 0;
@@ -813,13 +857,17 @@ function resetPlayerForRun(player, room) {
 }
 
 function bossHealth(stage, count) {
-  const base = 250 + count * 115;
-  const step = difficultyStage(stage) - 1;
-  const growth = step * 0.082 + Math.pow(step / 12, 1.55) * 0.22;
-  return Math.round(base * (1 + growth * 5));
+  const safeStage = clamp(Math.floor(Number(stage) || 1), 1, MAX_STAGE);
+  const bossIndex = Math.floor((safeStage - 1) / STAGES_PER_BOSS);
+  const stageInsideBoss = ((safeStage - 1) % STAGES_PER_BOSS) + 1;
+  const activeGrowthStep = Math.min(stageInsideBoss, 3) - 1;
+  const partyBase = 220 + clamp(count, 1, MAX_PLAYERS) * 95;
+  const bossBaseScale = 1 + bossIndex * 0.17;
+  const localScale = [1, 1.28, 1.58][activeGrowthStep];
+  return Math.round(partyBase * bossBaseScale * localScale);
 }
 
-function bossDamage(stage) { return 1 + Math.floor((difficultyStage(stage) - 1) / 20); }
+function bossDamage(stage) { return 1 + Math.floor((Math.max(1, stage) - 1) / 20); }
 
 function groundSupports(room, centerX) {
   return (room.arena?.platforms || [GROUND]).some((platform) => platform.y === WORLD.floor && centerX >= platform.x && centerX <= platform.x + platform.w);
@@ -2058,6 +2106,42 @@ function resolveTeamVow(room) {
   room.vowProgress={parries:0,hits:0,time:0,stages:0};
 }
 
+function chooseBossLoot(room, player) {
+  const tier = Math.min(10, Math.floor((room.stage - 1) / STAGES_PER_BOSS) + 1);
+  const owned = new Set(player.ownedLoot || []);
+  const candidates = LOOT_ITEMS.filter((item) => item.minTier <= tier && !owned.has(item.id));
+  if (!candidates.length) return null;
+  const totalWeight = candidates.reduce((sum, item) => sum + (LOOT_RARITY_WEIGHT[item.rarity] || 1), 0);
+  let roll = roomRandom(room) * totalWeight;
+  for (const item of candidates) {
+    roll -= LOOT_RARITY_WEIGHT[item.rarity] || 1;
+    if (roll <= 0) return item;
+  }
+  return candidates[candidates.length - 1];
+}
+
+function rollBossLoot(room, player, secretVictory = false) {
+  const pity = clamp(Math.floor(player.lootPity || 0), 0, 16);
+  const chance = Math.min(0.28, 0.045 + pity * 0.0125 + (room.stage % STAGES_PER_BOSS === 0 ? 0.035 : 0) + (secretVictory ? 0.05 : 0) + (room.difficulty === 'ngplus' ? 0.015 : 0));
+  if (roomRandom(room) > chance) {
+    player.lootPity = Math.min(16, pity + 1);
+    if (player.connected) io.to(player.id).emit('loot-pity', { value:player.lootPity, chance:Math.round(chance * 1000) / 10 });
+    return null;
+  }
+  const item = chooseBossLoot(room, player);
+  player.lootPity = 0;
+  if (!item) {
+    const salvage = 900 + room.stage * 20;
+    if (player.connected) io.to(player.id).emit('currency-earned', { amount:salvage, stage:room.stage, source:'salvage' });
+    else player.pendingCurrency += salvage;
+    return null;
+  }
+  player.ownedLoot.push(item.id);
+  player.runLoot.push(item.id);
+  if (player.connected) io.to(player.id).emit('boss-loot', { item, pity:0, stage:room.stage });
+  return item;
+}
+
 function clearStage(room) {
   if (room.status !== 'playing') return;
   if (room.training) {
@@ -2095,6 +2179,7 @@ function clearStage(room) {
       * (room.modifier?.reward || 1));
     if (player.connected) io.to(player.id).emit('currency-earned', { amount: reward, stage: room.stage });
     else player.pendingCurrency += reward;
+    rollBossLoot(room, player, secretVictory);
   }
   resolveTeamVow(room);
   io.to(room.code).emit('stage-cleared', { stage: room.stage, bossId: defeatedBossId });
@@ -2238,6 +2323,7 @@ function finishRun(room, result) {
     perfectDodges: player.perfectDodges, hitsTaken: player.hitsTaken, lastDamageSource: player.lastDamageSource, lastDamageAttack:player.lastDamageAttack, poiseDamage: player.poiseDamage,
     bossesDefeated: player.bossesDefeated, noHitStages: player.noHitStages, weaponId: player.weaponId, fusions: player.fusions,
     weaponEvolution:player.weaponEvolution,wounds:player.wounds,trialMarks:player.trialMarks,relicSets:Object.fromEntries(Object.keys(RELIC_SETS).map((id)=>[id,relicSetPieces(player,id)])),
+    lootDrops:[...(player.runLoot || [])],lootPity:player.lootPity,gear:player.gear,
   })).sort((a, b) => b.damageDone - a.damageDone);
   const ending = result!=='victory'?null:room.secretBossesDefeated.length>=3&&room.bossEvolution.stolenPhases.length>=3&&room.vowBlessing
     ?{id:'unbound',title:'ПЕПЕЛ БЕЗ ВЛАДЫК',description:'Отряд разрушил правила разлома и вышел из вечного цикла.'}
@@ -2340,7 +2426,7 @@ io.on('connection', (socket) => {
   socket.on('create-room', (payload, reply = () => {}) => {
     leaveCurrentRoom(socket);
     const classId = cleanClass(payload?.classId);
-    const progression = { specialization: payload?.specialization, masteryChoices: payload?.masteryChoices, reconnectToken: payload?.reconnectToken, nemesisAttack:payload?.nemesisAttack };
+    const progression = { specialization: payload?.specialization, masteryChoices: payload?.masteryChoices, reconnectToken: payload?.reconnectToken, nemesisAttack:payload?.nemesisAttack, ownedLoot:payload?.ownedLoot, gear:payload?.gear, lootPity:payload?.lootPity, rebirths:payload?.rebirths };
     const room = createRoom(socket, cleanName(payload?.name), classId, cleanSkin(payload?.skin), payload?.equippedSkills, cleanWeapon(payload?.weaponId, classId), payload?.appearance, progression, { difficulty: payload?.difficulty, mode: payload?.mode, isPublic: payload?.isPublic });
     socket.data.roomCode = room.code;
     socket.join(room.code);
@@ -2355,7 +2441,7 @@ io.on('connection', (socket) => {
     if (room.players.size >= MAX_PLAYERS) return reply({ ok: false, error: 'В комнате уже 4 игрока' });
     leaveCurrentRoom(socket);
     const classId = cleanClass(payload?.classId);
-    room.players.set(socket.id, makePlayer(socket.id, cleanName(payload?.name), classId, cleanSkin(payload?.skin), room.players.size, payload?.equippedSkills, cleanWeapon(payload?.weaponId, classId), payload?.appearance, { specialization: payload?.specialization, masteryChoices: payload?.masteryChoices, reconnectToken: payload?.reconnectToken, nemesisAttack:payload?.nemesisAttack }));
+    room.players.set(socket.id, makePlayer(socket.id, cleanName(payload?.name), classId, cleanSkin(payload?.skin), room.players.size, payload?.equippedSkills, cleanWeapon(payload?.weaponId, classId), payload?.appearance, { specialization: payload?.specialization, masteryChoices: payload?.masteryChoices, reconnectToken: payload?.reconnectToken, nemesisAttack:payload?.nemesisAttack, ownedLoot:payload?.ownedLoot, gear:payload?.gear, lootPity:payload?.lootPity, rebirths:payload?.rebirths }));
     socket.data.roomCode = room.code;
     socket.join(room.code);
     reply({ ok: true, room: lobbyState(room), playerId: socket.id });
@@ -2373,6 +2459,10 @@ io.on('connection', (socket) => {
     player.specialization = cleanSpecialization(payload?.specialization, player.classId);
     player.masteryChoices = cleanMasteryChoices(payload?.masteryChoices);
     player.nemesisAttack=String(payload?.nemesisAttack||'').slice(0,24);
+    player.ownedLoot=cleanOwnedLoot(payload?.ownedLoot);
+    player.gear=cleanGear(payload?.gear,player.ownedLoot);
+    player.lootPity=clamp(Math.floor(Number(payload?.lootPity)||0),0,16);
+    player.rebirths=cleanRebirths(payload?.rebirths);
     emitLobby(room);
   });
   socket.on('start-training', (payload, reply = () => {}) => {
@@ -2384,7 +2474,7 @@ io.on('connection', (socket) => {
     const speed = clamp(Number(payload?.speed) || 1, 0.65, 1.35);
     const arenaIndex = clamp(Math.floor(Number(payload?.arenaIndex) || 0), 0, ARENAS.length - 1);
     const damageMode = ['harmless','normal','lethal'].includes(payload?.damageMode) ? payload.damageMode : 'normal';
-    const progression = { specialization: payload?.specialization, masteryChoices: payload?.masteryChoices, reconnectToken: payload?.reconnectToken, nemesisAttack:payload?.nemesisAttack };
+    const progression = { specialization: payload?.specialization, masteryChoices: payload?.masteryChoices, reconnectToken: payload?.reconnectToken, nemesisAttack:payload?.nemesisAttack, ownedLoot:payload?.ownedLoot, gear:payload?.gear, lootPity:payload?.lootPity, rebirths:payload?.rebirths };
     const room = createRoom(socket, cleanName(payload?.name), classId, cleanSkin(payload?.skin), payload?.equippedSkills, cleanWeapon(payload?.weaponId, classId), payload?.appearance, progression, { training: { bossIndex, attack, phase, speed, arenaIndex, damageMode, infiniteStamina: payload?.infiniteStamina === true }, difficulty: 'normal', isPublic: false });
     socket.data.roomCode = room.code; socket.join(room.code); startRun(room);
     reply({ ok: true, code: room.code });
@@ -2507,6 +2597,14 @@ io.on('connection', (socket) => {
       if (!player || !perk || (perk.classId && perk.classId !== player.classId)) return;
       if (perkCount(player, perk.id) >= (perk.maxStacks || Infinity)) return;
       applyPerk(player, perk.id);
+    });
+    socket.on('debug-grant-loot', (id) => {
+      const room = socketRoom(socket);
+      const player = room?.players.get(socket.id);
+      const item = LOOT_BY_ID.get(String(id));
+      if (!player || !item || player.ownedLoot.includes(item.id)) return;
+      player.ownedLoot.push(item.id); player.runLoot.push(item.id); player.lootPity = 0;
+      io.to(player.id).emit('boss-loot', { item, pity:0, stage:room.stage });
     });
     socket.on('debug-place-player', (x) => {
       const room = socketRoom(socket);
