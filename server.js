@@ -122,6 +122,42 @@ const PERKS = [
   { id: 'moonlight', name: 'Лунный разрез', description: 'Тяжёлая атака выпускает дальнюю волну.', rarity: 'legendary', icon: '☾' },
   { id: 'thorns', name: 'Шипы возмездия', description: 'Парирование ранит и дольше оглушает босса.', rarity: 'legendary', icon: '✥' },
   { id: 'greed', name: 'Знак алчности', description: '+50% к валюте за следующие стадии.', rarity: 'rare', icon: '¤' },
+  { id: 'iron_skin', name: 'Пепельный оберег', description: 'Поглощает первый удар на каждой стадии. Максимум 2 заряда.', rarity: 'epic', icon: '◈', maxStacks: 2 },
+  { id: 'glass_edge', name: 'Стеклянная кромка', description: '+35% урона, но −1 к максимуму здоровья.', rarity: 'epic', icon: '♢', maxStacks: 2 },
+  { id: 'precision', name: 'Пятая печать', description: 'Каждое пятое попадание наносит на 75% больше урона.', rarity: 'rare', icon: 'Ⅴ' },
+  { id: 'momentum', name: 'Неослабевающий натиск', description: 'Быстрые последовательные попадания постепенно усиливают урон.', rarity: 'rare', icon: '↟' },
+  { id: 'battle_trance', name: 'Боевой транс', description: 'Успешное парирование восстанавливает ещё 35 выносливости.', rarity: 'rare', icon: '◎', maxStacks: 2 },
+  { id: 'long_roll', name: 'Длинный перекат', description: '+12% к дальности и скорости переката.', rarity: 'common', icon: '➟', maxStacks: 4 },
+  { id: 'aerial_hunter', name: 'Охотник над землёй', description: 'Атаки в воздухе наносят на 30% больше урона.', rarity: 'rare', icon: '⌃' },
+  { id: 'stamina_strike', name: 'Ритм стали', description: 'Каждое попадание возвращает 4 выносливости.', rarity: 'common', icon: '∿' },
+  { id: 'stagger_bane', name: 'Разрушитель стойки', description: '+30% урона по оглушённому боссу.', rarity: 'epic', icon: '✸' },
+  { id: 'revenge', name: 'Ответный гнев', description: 'После полученного удара следующая атака наносит на 45% больше урона.', rarity: 'rare', icon: '↶' },
+  { id: 'curse_bearer', name: 'Печать истощения', description: 'Уменьшает здоровье босса на 4%, но отнимает 10 максимальной выносливости.', rarity: 'epic', icon: '⊘', maxStacks: 4 },
+  { id: 'fellowship', name: 'Клятва отряда', description: '+8% урона за каждого живого союзника.', rarity: 'rare', icon: '♧' },
+  { id: 'full_focus', name: 'Чистый разум', description: '+22% урона, пока заполнено не меньше 85% выносливости.', rarity: 'rare', icon: '◉' },
+  { id: 'safe_roll', name: 'Между ударами', description: 'Окно неуязвимости переката становится длиннее на 0,08 секунды.', rarity: 'epic', icon: '◌', maxStacks: 3 },
+  { id: 'high_jump', name: 'Лёгкость пепла', description: '+12% к высоте прыжка.', rarity: 'common', icon: '↑', maxStacks: 4 },
+
+  { id: 'sword_flow', classId: 'swordsman', name: 'Переменный ритм', description: 'Чередование лёгкой и тяжёлой атак даёт +30% урона.', rarity: 'rare', icon: '⇄' },
+  { id: 'sword_riposte', classId: 'swordsman', name: 'Рипост', description: 'Успешное парирование немедленно наносит боссу 32 урона.', rarity: 'epic', icon: '⟲' },
+  { id: 'sword_discipline', classId: 'swordsman', name: 'Школа клинка', description: 'Лёгкие и тяжёлые атаки расходуют на 12% меньше выносливости.', rarity: 'common', icon: '⌁' },
+  { id: 'sword_wind', classId: 'swordsman', name: 'Четвёртый разрез', description: 'Каждая четвёртая лёгкая атака выпускает режущую волну.', rarity: 'legendary', icon: 'Ⅳ', maxStacks: 3 },
+  { id: 'sword_duelist', classId: 'swordsman', name: 'Дистанция дуэли', description: '+18% урона в ближнем бою с боссом.', rarity: 'rare', icon: '⚔' },
+  { id: 'sword_guard', classId: 'swordsman', name: 'Стойка мастера', description: 'Увеличивает окно парирования и даёт краткую защиту после успеха.', rarity: 'epic', icon: '⛊' },
+
+  { id: 'great_mass', classId: 'greatsword', name: 'Чудовищная масса', description: '+30% урона тяжёлой атаки, но −5% скорости движения.', rarity: 'rare', icon: '▰' },
+  { id: 'great_endurance', classId: 'greatsword', name: 'Обратная отдача', description: 'Попадание тяжёлой атакой возвращает 18 выносливости.', rarity: 'common', icon: '↲' },
+  { id: 'great_quake', classId: 'greatsword', name: 'Раскол земли', description: 'Каждая тяжёлая атака выпускает короткую ударную волну.', rarity: 'legendary', icon: '≋', maxStacks: 3 },
+  { id: 'great_unshaken', classId: 'greatsword', name: 'Неостановимый замах', description: 'Полученный удар больше не прерывает подготовку тяжёлой атаки.', rarity: 'epic', icon: '■', maxStacks: 1 },
+  { id: 'great_crusher', classId: 'greatsword', name: 'Крушитель доспехов', description: 'Тяжёлые атаки наносят ещё +55% урона оглушённому боссу.', rarity: 'epic', icon: '✹' },
+  { id: 'great_colossus', classId: 'greatsword', name: 'Шаг колосса', description: '+1 здоровье, но −8% скорости движения.', rarity: 'rare', icon: '▣', maxStacks: 2 },
+
+  { id: 'rogue_backstab', classId: 'rogue', name: 'Удар в спину', description: 'Атака со спины босса наносит на 60% больше урона.', rarity: 'rare', icon: '☽' },
+  { id: 'rogue_flurry', classId: 'rogue', name: 'Шквал кинжалов', description: 'Каждая четвёртая лёгкая атака наносит дополнительный удар.', rarity: 'epic', icon: '⁙' },
+  { id: 'rogue_smoke', classId: 'rogue', name: 'Дымный след', description: 'После переката следующая атака наносит на 45% больше урона.', rarity: 'epic', icon: '☁' },
+  { id: 'rogue_lightfeet', classId: 'rogue', name: 'Беззвучный шаг', description: 'Перекат дешевле на 20%, скорость движения выше на 5%.', rarity: 'common', icon: '⋔' },
+  { id: 'rogue_venom', classId: 'rogue', name: 'Седьмой надрез', description: 'Каждое седьмое попадание наносит 40 дополнительного урона.', rarity: 'rare', icon: 'Ⅶ' },
+  { id: 'rogue_gambit', classId: 'rogue', name: 'Грязный приём', description: 'Даёт 12% шанс нанести двойной урон.', rarity: 'legendary', icon: '※', maxStacks: 4 },
 ];
 
 const rooms = new Map();
@@ -175,22 +211,33 @@ function makeRoomCode() {
 
 function derivedStats(player) {
   const base = CLASSES[player.classId];
+  const isSwordsman = player.classId === 'swordsman';
+  const isGreatsword = player.classId === 'greatsword';
+  const isRogue = player.classId === 'rogue';
+  const damageScale = Math.pow(1.16, perkCount(player, 'sharpened')) * Math.pow(1.35, perkCount(player, 'glass_edge'));
+  const discipline = isSwordsman ? Math.pow(0.88, perkCount(player, 'sword_discipline')) : 1;
+  const rogueRoll = isRogue ? Math.pow(0.8, perkCount(player, 'rogue_lightfeet')) : 1;
+  const speedScale = Math.pow(1.09, perkCount(player, 'quickstep'))
+    * (isRogue ? Math.pow(1.05, perkCount(player, 'rogue_lightfeet')) : 1)
+    * (isGreatsword ? Math.pow(0.95, perkCount(player, 'great_mass')) * Math.pow(0.92, perkCount(player, 'great_colossus')) : 1);
   return {
-    maxHp: base.maxHp + perkCount(player, 'vitality'),
-    maxStamina: base.maxStamina + perkCount(player, 'endurance') * 25,
+    maxHp: Math.max(1, base.maxHp + perkCount(player, 'vitality') - perkCount(player, 'glass_edge') + (isGreatsword ? perkCount(player, 'great_colossus') : 0)),
+    maxStamina: Math.max(45, base.maxStamina + perkCount(player, 'endurance') * 25 - perkCount(player, 'curse_bearer') * 10),
     staminaRegen: base.staminaRegen * Math.pow(1.28, perkCount(player, 'lungs')),
-    speed: base.speed * Math.pow(1.09, perkCount(player, 'quickstep')),
-    jump: base.jump,
-    lightDamage: base.lightDamage * Math.pow(1.16, perkCount(player, 'sharpened')),
-    heavyDamage: base.heavyDamage * Math.pow(1.16, perkCount(player, 'sharpened')) * Math.pow(1.35, perkCount(player, 'heavy_mastery')),
-    lightCost: base.lightCost * Math.pow(0.82, perkCount(player, 'light_mastery')),
-    heavyCost: base.heavyCost,
-    rollCost: base.rollCost * Math.pow(0.75, perkCount(player, 'feather_roll')),
+    speed: base.speed * speedScale,
+    jump: base.jump * Math.pow(1.12, perkCount(player, 'high_jump')),
+    lightDamage: base.lightDamage * damageScale,
+    heavyDamage: base.heavyDamage * damageScale * Math.pow(1.35, perkCount(player, 'heavy_mastery')) * (isGreatsword ? Math.pow(1.3, perkCount(player, 'great_mass')) : 1),
+    lightCost: base.lightCost * Math.pow(0.82, perkCount(player, 'light_mastery')) * discipline,
+    heavyCost: base.heavyCost * discipline,
+    rollCost: base.rollCost * Math.pow(0.75, perkCount(player, 'feather_roll')) * rogueRoll,
     parryCost: base.parryCost,
     lightTime: base.lightTime * Math.pow(0.86, perkCount(player, 'light_mastery')),
     heavyTime: base.heavyTime,
     attackRange: base.attackRange,
-    parryWindow: base.parryWindow + perkCount(player, 'parry_master') * 0.055,
+    parryWindow: base.parryWindow + perkCount(player, 'parry_master') * 0.055 + (isSwordsman ? perkCount(player, 'sword_guard') * 0.04 : 0),
+    rollSpeed: 710 * Math.pow(1.12, perkCount(player, 'long_roll')),
+    rollInvulnerability: 0.3 + perkCount(player, 'safe_roll') * 0.08,
   };
 }
 
@@ -202,7 +249,9 @@ function makePlayer(id, name, classId, skin, slot) {
     hp: base.maxHp, maxHp: base.maxHp, stamina: base.maxStamina, maxStamina: base.maxStamina,
     staminaDelay: 0, downed: false, onGround: false, invulnerable: 0,
     action: 'idle', actionTimer: 0, actionDuration: 0, actionHit: false, parryActive: 0, rollHit: false,
-    nextHitMultiplier: 1, lightChain: 0, hitsLanded: 0, secondWindUsed: false, damageDone: 0,
+    nextHitMultiplier: 1, lightChain: 0, hitsLanded: 0, weaponHits: 0,
+    momentum: 0, momentumTimer: 0, wardCharges: 0, rollBuff: 1, lastAttackType: null,
+    secondWindUsed: false, damageDone: 0,
     perks: {}, perkOffer: [], perkChosen: false,
     input: { left: false, right: false, jump: false, light: false, heavy: false, parry: false, roll: false },
     held: { jump: false, light: false, heavy: false, parry: false, roll: false },
@@ -273,7 +322,9 @@ function resetPlayerForStage(player) {
     x: 225 + player.slot * 78, y: WORLD.floor - player.h, vx: 0, vy: 0, facing: 1,
     downed: false, onGround: false, invulnerable: 1, staminaDelay: 0,
     action: 'idle', actionTimer: 0, parryActive: 0,
-    secondWindUsed: false, perkOffer: [], perkChosen: false,
+    secondWindUsed: false, wardCharges: Math.min(2, perkCount(player, 'iron_skin')),
+    momentum: 0, momentumTimer: 0, rollBuff: 1, lastAttackType: null,
+    perkOffer: [], perkChosen: false,
     input: { left: false, right: false, jump: false, light: false, heavy: false, parry: false, roll: false },
     held: { jump: false, light: false, heavy: false, parry: false, roll: false },
   });
@@ -285,6 +336,11 @@ function resetPlayerForRun(player) {
   player.nextHitMultiplier = 1;
   player.lightChain = 0;
   player.hitsLanded = 0;
+  player.weaponHits = 0;
+  player.momentum = 0;
+  player.momentumTimer = 0;
+  player.rollBuff = 1;
+  player.lastAttackType = null;
   resetPlayerForStage(player);
 }
 
@@ -295,7 +351,8 @@ function bossHealth(stage, count) {
 }
 
 function spawnBoss(room) {
-  const maxHp = bossHealth(room.stage, room.players.size);
+  const curseStacks = [...room.players.values()].reduce((sum, player) => sum + perkCount(player, 'curse_bearer'), 0);
+  const maxHp = Math.max(1, Math.round(bossHealth(room.stage, room.players.size) * (1 - Math.min(0.32, curseStacks * 0.04))));
   room.boss = {
     x: 2250, y: WORLD.floor - 150, w: 122, h: 150, vx: 0,
     hp: maxHp, maxHp, facing: -1, tier: Math.min(10, Math.ceil(room.stage / 10)),
@@ -341,12 +398,14 @@ function onParry(room, player, sourceX, projectile) {
   player.parryActive = 0;
   player.action = 'parry_success';
   player.actionTimer = player.actionDuration = 0.36;
-  player.stamina = Math.min(player.maxStamina, player.stamina + 28);
+  player.stamina = Math.min(player.maxStamina, player.stamina + 28 + perkCount(player, 'battle_trance') * 35);
+  if (player.classId === 'swordsman' && perkCount(player, 'sword_guard')) player.invulnerable = Math.max(player.invulnerable, 0.48 + perkCount(player, 'sword_guard') * 0.08);
   if (perkCount(player, 'perfect_guard')) player.nextHitMultiplier = Math.max(2, player.nextHitMultiplier);
   if (boss) {
     boss.currentAttack = null;
     boss.stagger = Math.max(boss.stagger, 1.25 + perkCount(player, 'thorns') * 0.55);
     if (perkCount(player, 'thorns')) damageBoss(room, player, 28 * perkCount(player, 'thorns'), boss.x + boss.w / 2, boss.y + 70, '#d7b46a', true);
+    if (room.status === 'playing' && room.boss && player.classId === 'swordsman' && perkCount(player, 'sword_riposte')) damageBoss(room, player, 32 * perkCount(player, 'sword_riposte'), boss.x + boss.w / 2, boss.y + 70, '#e8d19a', true);
   }
   if (projectile) projectile.ttl = 0;
   addEffect(room, 'parry', sourceX, player.y + 25, '#f0d28d', 0.48, 125);
@@ -359,6 +418,16 @@ function damagePlayer(room, player, damage = 1, knockX = 0, knockY = -220, parry
     onParry(room, player, sourceX, projectile);
     return 'parried';
   }
+  if (player.wardCharges > 0) {
+    player.wardCharges -= 1;
+    player.invulnerable = 0.55;
+    if (projectile) projectile.ttl = 0;
+    addEffect(room, 'ward', player.x + 21, player.y + 28, '#a9c8d6', 0.55, 105);
+    return 'warded';
+  }
+  player.momentum = 0;
+  player.momentumTimer = 0;
+  if (perkCount(player, 'revenge')) player.nextHitMultiplier = Math.max(player.nextHitMultiplier, 1 + perkCount(player, 'revenge') * 0.45);
   if (player.hp - damage <= 0 && perkCount(player, 'second_wind') && !player.secondWindUsed) {
     player.secondWindUsed = true;
     player.hp = 1;
@@ -366,12 +435,15 @@ function damagePlayer(room, player, damage = 1, knockX = 0, knockY = -220, parry
     addEffect(room, 'second_wind', player.x + 21, player.y + 30, '#e7c477', 0.75, 150);
     return 'saved';
   }
+  const unshaken = player.classId === 'greatsword' && player.action === 'heavy' && perkCount(player, 'great_unshaken');
   player.hp -= damage;
-  player.vx += knockX;
-  player.vy = Math.min(player.vy, knockY);
+  player.vx += knockX * (unshaken ? 0.25 : 1);
+  player.vy = Math.min(player.vy, knockY * (unshaken ? 0.35 : 1));
   player.invulnerable = 0.72;
-  player.action = 'hurt';
-  player.actionTimer = player.actionDuration = 0.35;
+  if (!unshaken) {
+    player.action = 'hurt';
+    player.actionTimer = player.actionDuration = 0.35;
+  }
   addEffect(room, 'hit', player.x + 21, player.y + 30, '#8f2638', 0.35, 65);
   if (player.hp <= 0) {
     player.hp = 0;
@@ -391,21 +463,41 @@ function damageBoss(room, player, rawDamage, x, y, color = '#d7b46a', bypass = f
   if (!bypass) {
     if (boss.hp / boss.maxHp < 0.3 && perkCount(player, 'executioner')) damage *= 1.7;
     if (player.hp === 1 && perkCount(player, 'last_stand')) damage *= 1.45;
+    const momentum = player.momentumTimer > 0 ? player.momentum : 0;
+    damage *= 1 + momentum * 0.07 * perkCount(player, 'momentum');
     damage *= player.nextHitMultiplier;
     player.nextHitMultiplier = 1;
   }
-  if (boss.stagger > 0) damage *= 1.45;
+  if (boss.stagger > 0) damage *= 1.45 * Math.pow(1.3, perkCount(player, 'stagger_bane'));
   damage = Math.max(1, Math.round(damage));
   boss.hp = Math.max(0, boss.hp - damage);
   boss.flash = 0.12;
   player.damageDone += damage;
   player.hitsLanded += 1;
+  if (!bypass && perkCount(player, 'momentum')) {
+    player.momentum = Math.min(6, (player.momentumTimer > 0 ? player.momentum : 0) + 1);
+    player.momentumTimer = 2.2;
+  }
   if (perkCount(player, 'blood_oath') && player.hitsLanded % 8 === 0) {
     player.hp = Math.min(player.maxHp, player.hp + 1);
     addEffect(room, 'heal', player.x + 21, player.y, '#8faa72', 0.45, 70);
   }
   addEffect(room, 'slash', x, y, color, 0.3, 95);
   if (boss.hp === 0) clearStage(room);
+}
+
+function spawnPlayerWave(room, player, damage, options = {}) {
+  room.projectiles.push({
+    id: entitySequence++, kind: options.kind || 'player_wave', ownerId: player.id,
+    x: player.x + 21 + player.facing * 30, y: player.y + 28,
+    vx: player.facing * (options.speed || 620), vy: 0, r: options.r || 18,
+    damage: Math.max(1, Math.round(damage)), ttl: options.ttl || 1.6,
+  });
+}
+
+function isBackstab(player, boss) {
+  return (player.x + player.w / 2 < boss.x + boss.w / 2 && boss.facing > 0)
+    || (player.x + player.w / 2 > boss.x + boss.w / 2 && boss.facing < 0);
 }
 
 function attackBoss(room, player, type) {
@@ -419,16 +511,48 @@ function attackBoss(room, player, type) {
     player.lightChain += 1;
     if (perkCount(player, 'echo_blade') && player.lightChain % 3 === 0) damage *= 2;
   }
+  if (!player.onGround && perkCount(player, 'aerial_hunter')) damage *= Math.pow(1.3, perkCount(player, 'aerial_hunter'));
+  if (player.stamina >= player.maxStamina * 0.85 && perkCount(player, 'full_focus')) damage *= Math.pow(1.22, perkCount(player, 'full_focus'));
+  const livingAllies = Math.max(0, alivePlayers(room).length - 1);
+  if (livingAllies && perkCount(player, 'fellowship')) damage *= 1 + livingAllies * 0.08 * perkCount(player, 'fellowship');
+
+  if (player.classId === 'swordsman') {
+    if (player.lastAttackType && player.lastAttackType !== type && perkCount(player, 'sword_flow')) damage *= Math.pow(1.3, perkCount(player, 'sword_flow'));
+    if (Math.abs(player.x + 21 - (boss.x + 61)) <= 190 && perkCount(player, 'sword_duelist')) damage *= Math.pow(1.18, perkCount(player, 'sword_duelist'));
+  }
+  if (player.classId === 'greatsword' && type === 'heavy' && boss.stagger > 0 && perkCount(player, 'great_crusher')) damage *= Math.pow(1.55, perkCount(player, 'great_crusher'));
+  if (player.classId === 'rogue') {
+    if (isBackstab(player, boss) && perkCount(player, 'rogue_backstab')) damage *= Math.pow(1.6, perkCount(player, 'rogue_backstab'));
+    if (type === 'light' && player.lightChain % 4 === 0 && perkCount(player, 'rogue_flurry')) damage *= 1 + perkCount(player, 'rogue_flurry') * 0.55;
+    if (perkCount(player, 'rogue_gambit') && Math.random() < Math.min(0.48, perkCount(player, 'rogue_gambit') * 0.12)) damage *= 2;
+  }
+  damage *= player.rollBuff;
+
   const colors = { iron: '#d7b46a', ember: '#e25f3f', moon: '#9eb7dd', abyss: '#9a70c5' };
-  if (overlaps(hitbox, boss)) damageBoss(room, player, damage, boss.x + 61, boss.y + 65, colors[player.skin]);
-  else addEffect(room, type === 'heavy' ? 'heavy_slash' : 'slash', hitbox.x + hitbox.w / 2, player.y + 25, '#817562', 0.22, range * 0.65);
+  const hit = overlaps(hitbox, boss);
+  if (hit) {
+    player.weaponHits += 1;
+    if (perkCount(player, 'precision') && player.weaponHits % 5 === 0) damage *= 1 + perkCount(player, 'precision') * 0.75;
+    if (player.classId === 'rogue' && perkCount(player, 'rogue_venom') && player.weaponHits % 7 === 0) damage += perkCount(player, 'rogue_venom') * 40;
+    damageBoss(room, player, damage, boss.x + 61, boss.y + 65, colors[player.skin]);
+    if (room.status === 'playing') {
+      player.stamina = Math.min(player.maxStamina, player.stamina + perkCount(player, 'stamina_strike') * 4);
+      if (player.classId === 'greatsword' && type === 'heavy') player.stamina = Math.min(player.maxStamina, player.stamina + perkCount(player, 'great_endurance') * 18);
+    }
+  } else addEffect(room, type === 'heavy' ? 'heavy_slash' : 'slash', hitbox.x + hitbox.w / 2, player.y + 25, '#817562', 0.22, range * 0.65);
+
+  player.lastAttackType = type;
+  player.rollBuff = 1;
+
+  if (room.status === 'playing' && player.classId === 'swordsman' && type === 'light' && perkCount(player, 'sword_wind') && player.lightChain % 4 === 0) {
+    spawnPlayerWave(room, player, stats.lightDamage * 0.42 * perkCount(player, 'sword_wind'), { speed: 690, r: 13, ttl: 1.25 });
+  }
 
   if (room.status === 'playing' && type === 'heavy' && perkCount(player, 'moonlight')) {
-    room.projectiles.push({
-      id: entitySequence++, kind: 'player_wave', ownerId: player.id,
-      x: player.x + 21 + player.facing * 30, y: player.y + 28,
-      vx: player.facing * 620, vy: 0, r: 18, damage: Math.round(stats.heavyDamage * 0.55), ttl: 1.6,
-    });
+    spawnPlayerWave(room, player, stats.heavyDamage * 0.55, { speed: 620, r: 18, ttl: 1.6 });
+  }
+  if (room.status === 'playing' && player.classId === 'greatsword' && type === 'heavy' && perkCount(player, 'great_quake')) {
+    spawnPlayerWave(room, player, stats.heavyDamage * 0.34 * perkCount(player, 'great_quake'), { kind: 'player_quake', speed: 510, r: 22, ttl: 1.8 });
   }
 }
 
@@ -444,9 +568,11 @@ function startAction(player, action) {
   player.actionTimer = player.actionDuration;
   if (action === 'parry') player.parryActive = stats.parryWindow;
   if (action === 'roll') {
-    player.invulnerable = 0.3;
+    player.invulnerable = stats.rollInvulnerability;
     player.rollHit = false;
-    player.vx = player.facing * 710;
+    player.rollSpeed = stats.rollSpeed;
+    player.vx = player.facing * stats.rollSpeed;
+    if (player.classId === 'rogue' && perkCount(player, 'rogue_smoke')) player.rollBuff = Math.max(player.rollBuff, 1 + perkCount(player, 'rogue_smoke') * 0.45);
   }
   return true;
 }
@@ -464,7 +590,7 @@ function updatePlayerAction(room, player) {
     attackBoss(room, player, 'heavy');
   }
   if (player.action === 'roll') {
-    player.vx = player.facing * 710;
+    player.vx = player.facing * (player.rollSpeed || 710);
     if (!player.rollHit && perkCount(player, 'ember_step') && room.boss && overlaps(player, room.boss)) {
       player.rollHit = true;
       damageBoss(room, player, 24 * perkCount(player, 'ember_step'), room.boss.x + 61, room.boss.y + 75, '#d95d3e', true);
@@ -483,6 +609,8 @@ function updatePlayer(room, player) {
   player.maxStamina = stats.maxStamina;
   player.invulnerable = Math.max(0, player.invulnerable - DT);
   player.staminaDelay = Math.max(0, player.staminaDelay - DT);
+  player.momentumTimer = Math.max(0, player.momentumTimer - DT);
+  if (player.momentumTimer === 0) player.momentum = 0;
   if (player.downed) return;
   const input = player.input;
   const direction = Number(input.right) - Number(input.left);
@@ -724,7 +852,6 @@ function updateBoss(room) {
   if (boss.stagger > 0) { boss.stagger -= DT; boss.vx *= 0.82; return; }
   const target = nearestPlayer(room);
   if (!target) return;
-  boss.facing = target.x < boss.x ? -1 : 1;
   if (boss.currentAttack) {
     const attack = boss.currentAttack;
     attack.timer -= DT;
@@ -738,6 +865,7 @@ function updateBoss(room) {
     }
     return;
   }
+  boss.facing = target.x < boss.x ? -1 : 1;
   boss.attackCooldown -= DT;
   const distance = target.x - boss.x;
   if (Math.abs(distance) > 150) {
@@ -797,18 +925,22 @@ function updateEffects(room) {
 
 function randomPerkOffer(player) {
   const weights = { common: 48, rare: 31, epic: 16, legendary: 5 };
-  const candidates = [...PERKS];
+  const candidates = PERKS.filter((perk) => (!perk.classId || perk.classId === player.classId) && perkCount(player, perk.id) < (perk.maxStacks || Infinity));
   const selected = [];
-  while (selected.length < 3) {
-    const weighted = candidates.map((perk) => ({ perk, weight: weights[perk.rarity] / (1 + perkCount(player, perk.id) * 0.7) }));
+  const pickFrom = (pool) => {
+    const weighted = pool.map((perk) => ({ perk, weight: weights[perk.rarity] / (1 + perkCount(player, perk.id) * 0.7) }));
     const total = weighted.reduce((sum, item) => sum + item.weight, 0);
     let roll = Math.random() * total;
     let chosen = weighted[0].perk;
     for (const item of weighted) { roll -= item.weight; if (roll <= 0) { chosen = item.perk; break; } }
     selected.push(chosen);
-    candidates.splice(candidates.findIndex((perk) => perk.id === chosen.id), 1);
+  };
+  const classPool = candidates.filter((perk) => perk.classId === player.classId);
+  if (classPool.length) pickFrom(classPool);
+  while (selected.length < 3) {
+    pickFrom(candidates.filter((perk) => !selected.includes(perk)));
   }
-  return selected;
+  return selected.sort(() => Math.random() - 0.5);
 }
 
 function applyPerk(player, id) {
@@ -979,6 +1111,29 @@ io.on('connection', (socket) => {
       room.boss.currentAttack = attack;
       executeBossAttack(room, attack);
       if (room.boss) room.boss.currentAttack = null;
+    });
+    socket.on('debug-grant-perk', (id) => {
+      const room = socketRoom(socket);
+      const player = room?.players.get(socket.id);
+      const perk = PERKS.find((item) => item.id === id);
+      if (!player || !perk || (perk.classId && perk.classId !== player.classId)) return;
+      if (perkCount(player, perk.id) >= (perk.maxStacks || Infinity)) return;
+      applyPerk(player, perk.id);
+    });
+    socket.on('debug-place-player', (x) => {
+      const room = socketRoom(socket);
+      const player = room?.players.get(socket.id);
+      if (!player || room.status !== 'playing') return;
+      player.x = clamp(Number(x) || 0, 0, WORLD.width - player.w);
+      player.y = WORLD.floor - player.h;
+      player.vx = player.vy = 0;
+      player.facing = room.boss && player.x < room.boss.x ? 1 : -1;
+    });
+    socket.on('debug-player-attack', (type) => {
+      const room = socketRoom(socket);
+      const player = room?.players.get(socket.id);
+      if (!player || room.status !== 'playing' || !['light', 'heavy'].includes(type)) return;
+      attackBoss(room, player, type);
     });
     socket.on('debug-down-player', (playerId) => {
       const room = socketRoom(socket);

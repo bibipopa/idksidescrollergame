@@ -327,8 +327,8 @@ function showPerks(state) {
   dom.perkSubtitle.textContent = 'Остальные карты обратятся в пепел.';
   dom.waitingPerks.textContent = 'СДЕЛАЙ ВЫБОР';
   const rarityNames = { common: 'Обычный', rare: 'Редкий', epic: 'Эпический', legendary: 'Легендарный' };
-  dom.perkGrid.innerHTML = me.perkOffer.map((perk) => `<button class="perk-card ${perk.rarity}" type="button" data-perk="${perk.id}">
-    <span class="perk-rarity">${rarityNames[perk.rarity]}</span><span class="perk-icon">${perk.icon}</span>
+  dom.perkGrid.innerHTML = me.perkOffer.map((perk) => `<button class="perk-card ${perk.rarity}${perk.classId ? ' class-perk' : ''}" type="button" data-perk="${perk.id}">
+    <span class="perk-topline"><span class="perk-rarity">${rarityNames[perk.rarity]}</span>${perk.classId ? `<span class="perk-class">ТОЛЬКО: ${CLASS_META[perk.classId].label}</span>` : ''}</span><span class="perk-icon">${perk.icon}</span>
     <h3>${perk.name}</h3><p>${perk.description}</p>${me.perks[perk.id] ? `<span class="perk-stack">УЖЕ: ×${me.perks[perk.id]}</span>` : ''}</button>`).join('');
   dom.perkGrid.querySelectorAll('[data-perk]').forEach((button) => button.addEventListener('click', () => {
     dom.perkGrid.querySelectorAll('button').forEach((item) => { item.disabled = true; });
