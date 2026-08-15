@@ -157,6 +157,21 @@ const WEAPONS = {
 const DEFAULT_WEAPON = Object.fromEntries(Object.keys(CLASSES).map((classId) => [classId, Object.keys(WEAPONS).find((id) => WEAPONS[id].classId === classId)]));
 const ARMOR_COLORS = new Set(['ashen', 'ivory', 'crimson', 'moss', 'moon', 'violet', 'ember', 'void']);
 const AURA_STYLES = new Set(['ash', 'sparks', 'mist', 'runes']);
+const RECONNECT_GRACE_MS = 75_000;
+const SPECIALIZATIONS = {
+  swordsman: { duelist: { damage: 1.12, speed: 1.05 }, guardian: { hp: 1, parry: 0.045 } },
+  greatsword: { juggernaut: { hp: 1, heavy: 1.12 }, reaper: { speed: 1.1, lightTime: 0.9 } },
+  rogue: { assassin: { backstab: 1.3, damage: 1.06 }, thrower: { projectile: 1.25, stamina: 12 } },
+  spearman: { sentinel: { parry: 0.04, range: 1.08 }, vanguard: { aerial: 1.35, heavy: 1.1 } },
+  berserker: { fury: { lowHp: 1.35, speed: 1.06 }, breaker: { poise: 1.45, heavy: 1.08 } },
+  ashmage: { flame: { projectile: 1.2, damage: 1.08 }, void: { stamina: 18, rollInvulnerability: 0.06 } },
+};
+const SPECIALIZATION_IDS = new Set(Object.values(SPECIALIZATIONS).flatMap((items) => Object.keys(items)));
+const MASTERY_CHOICES = {
+  5: new Set(['tempo', 'force']),
+  10: new Set(['reach', 'economy']),
+  15: new Set(['finesse', 'execution']),
+};
 
 const BOSSES = [
   { id: 'grave_knight', name: 'МОГИЛЬНЫЙ РЫЦАРЬ', title: 'Хранитель первых врат', color: '#74634b', eye: '#e0b65e', speed: 1.05, attackRate: 0.92, near: ['slash','twin_slash','cleave','charge'], far: ['charge','wave','volley','slam'], phase2: ['blink','marked'], phase3: ['quake','ring_burst'] },
@@ -170,6 +185,45 @@ const BOSSES = [
   { id: 'void_apostle', name: 'АПОСТОЛ ПУСТОТЫ', title: 'Тень последней клятвы', color: '#713c7d', eye: '#efb8ff', speed: 1.26, attackRate: 0.66, near: ['blink','ring_burst','twin_slash','marked'], far: ['beam','skyfall','volley','quake'], phase2: ['charge','cleave'], phase3: ['wave','slam'] },
   { id: 'ashen_king', name: 'ПЕПЕЛЬНЫЙ КОРОЛЬ', title: 'Владелец последней печати', color: '#9a7444', eye: '#fff0b0', speed: 1.34, attackRate: 0.62, near: ['slash','twin_slash','blink','cleave','quake'], far: ['beam','marked','ring_burst','skyfall','charge','volley'], phase2: ['wave','slam'], phase3: ['blink','beam','marked','quake','ring_burst'] },
 ];
+const SECRET_BOSSES = [
+  { id:'mirror_saint',name:'ЗЕРКАЛЬНЫЙ СВЯТОЙ',title:'Отражение забытой клятвы',color:'#7b879b',eye:'#eef5ff',speed:1.32,attackRate:0.58,near:['twin_slash','blink','ring_burst','charge'],far:['beam','volley','marked','skyfall'],phase2:['quake','wave'],phase3:['blink','twin_slash','beam'] },
+  { id:'rootless_beast',name:'БЕЗКОРНЕВОЙ ЗВЕРЬ',title:'Голод живых руин',color:'#66784c',eye:'#d9ec91',speed:1.45,attackRate:0.55,near:['charge','cleave','slam','twin_slash'],far:['wave','skyfall','marked','charge'],phase2:['quake','ring_burst'],phase3:['blink','volley'] },
+  { id:'clockwork_mourner',name:'ЧАСОВОЙ ПЛАКАЛЬЩИК',title:'Последняя минута колокольни',color:'#806b55',eye:'#ffe0a1',speed:1.22,attackRate:0.52,near:['slash','quake','ring_burst','blink'],far:['beam','volley','skyfall','marked'],phase2:['charge','twin_slash'],phase3:['beam','quake','ring_burst'] },
+];
+const ALL_BOSSES = [...BOSSES, ...SECRET_BOSSES];
+const BOSS_REWARDS = Object.fromEntries(ALL_BOSSES.map((boss, index) => [boss.id, { title: `title_${boss.id}`, name: boss.title, currency: 500 + index * 175 }]));
+const BOSS_TITLE_IDS = new Set(['wanderer', ...Object.values(BOSS_REWARDS).map((reward) => reward.title)]);
+const ATTACK_LABELS = { slash:'Взмах',cleave:'Широкий удар',slam:'Удар по земле',volley:'Залп',wave:'Волна',charge:'Рывок',twin_slash:'Двойной удар',skyfall:'Падение сверху',blink:'Телепортация',ring_burst:'Кольцевой залп',beam:'Луч',quake:'Землетрясение',marked:'Метка',projectile:'Снаряд',hazard:'Опасность арены' };
+
+const BOSS_MUTATIONS = [
+  { id:'relentless',name:'НЕУТОМИМЫЙ',description:'Атаки и перемещение быстрее.',attackRate:0.82,moveRate:1.18 },
+  { id:'stoneheart',name:'КАМЕННОЕ СЕРДЦЕ',description:'Больше стойкости и её постоянное восстановление.',poise:1.45,poiseRegen:7 },
+  { id:'arcane_shell',name:'ЗЕРКАЛЬНЫЙ ПАНЦИРЬ',description:'Дальние атаки наносят меньше урона.',projectileResistance:0.55 },
+  { id:'vengeful',name:'МСТИТЕЛЬНЫЙ',description:'Ниже 30% HP становится значительно быстрее.',lowHpHaste:0.7 },
+  { id:'twin_dash',name:'ДВОЙНОЙ РЫВОК',description:'Босс чаще выполняет резкие перемещения.',dashRate:1.75 },
+  { id:'unstable',name:'НЕСТАБИЛЬНЫЙ',description:'После слома стойкости выпускает кольцевую волну.',breakBurst:true },
+];
+const CONTRACTS = [
+  { id:'none',name:'БЕЗ КОНТРАКТА',description:'Следующая стадия без дополнительного риска.',reward:1 },
+  { id:'swift',name:'КЛЯТВА СКОРОСТИ',description:'Босс атакует на 25% быстрее.',attackRate:0.75,reward:1.55 },
+  { id:'iron',name:'ЖЕЛЕЗНАЯ ПЕЧАТЬ',description:'У босса на 45% больше HP.',hp:1.45,reward:1.65 },
+  { id:'abyss',name:'КРАЙ БЕЗДНЫ',description:'На арене появляется дополнительный разлом.',extraGap:true,reward:1.7 },
+  { id:'no_heal',name:'СУХОЙ ОГОНЬ',description:'Лечение в бою отключено.',noHealing:true,reward:1.45 },
+  { id:'early_fury',name:'РАННЯЯ ЯРОСТЬ',description:'Вторая и третья фазы начинаются раньше.',earlyPhases:true,reward:1.6 },
+];
+const FUSIONS = [
+  { id:'storm_step',requires:['quickstep','safe_roll'],name:'ГРОЗОВОЙ ШАГ',description:'Идеальный перекат выпускает волну и даёт выносливость.' },
+  { id:'royal_edge',requires:['sharpened','heavy_mastery'],name:'КОРОЛЕВСКАЯ КРОМКА',description:'Тяжёлые атаки сильнее ломают стойкость.' },
+  { id:'endless_guard',requires:['parry_master','battle_trance'],name:'БЕСКОНЕЧНАЯ ГАРДА',description:'Парирование быстрее заряжает способность класса.' },
+  { id:'ashen_heart',requires:['vitality','last_stand'],name:'ПЕПЕЛЬНОЕ СЕРДЦЕ',description:'При 1 HP идеальный перекат сразу готовит контратаку.' },
+  { id:'moon_echo',requires:['moonlight','echo_blade'],name:'ЛУННОЕ ЭХО',description:'Каждая третья лёгкая атака выпускает волну.' },
+  { id:'oathbreaker',requires:['stagger_bane','perfect_guard'],name:'КЛЯТВОЛОМ',description:'Ответный удар по сломанной стойкости наносит больше урона.' },
+];
+const ABILITY_META = {
+  swordsman:{name:'ОТВЕТНЫЙ ВЫПАД',cooldown:18},greatsword:{name:'НЕСОКРУШИМАЯ СТОЙКА',cooldown:24},rogue:{name:'ТЕНЕВОЙ СКАЧОК',cooldown:16},
+  spearman:{name:'БРОСОК КОПЬЯ',cooldown:20},berserker:{name:'ПЕПЕЛЬНАЯ ЯРОСТЬ',cooldown:25},ashmage:{name:'ПЕЧАТЬ ПУСТОТЫ',cooldown:22},
+};
+const PING_TYPES = new Set(['attack','retreat','poise','heal']);
 
 const ROUTES = [
   { id: 'sanctuary', name: 'Затихший костёр', description: 'Защитная печать каждому игроку, но награда ниже.', hp: 0.9, attackRate: 1.04, reward: 0.75, ward: 1 },
@@ -328,13 +382,22 @@ const PERKS = [
 ];
 
 const rooms = new Map();
+const dailyLeaderboard = new Map();
 let entitySequence = 1;
 
 app.disable('x-powered-by');
 app.use(express.static(path.join(__dirname, 'public')));
-app.get('/health', (_req, res) => res.json({ ok: true, rooms: rooms.size }));
+app.get(['/health', '/healthz'], (_req, res) => res.json({ ok: true, rooms: rooms.size }));
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+function hashSeed(value) { let hash = 2166136261; for (const char of String(value)) { hash ^= char.charCodeAt(0); hash = Math.imul(hash, 16777619); } return hash >>> 0; }
+function roomRandom(room) {
+  if (room.mode !== 'daily') return Math.random();
+  room.rngState = (room.rngState + 0x6D2B79F5) >>> 0;
+  let value = room.rngState; value = Math.imul(value ^ value >>> 15, value | 1); value ^= value + Math.imul(value ^ value >>> 7, value | 61);
+  return ((value ^ value >>> 14) >>> 0) / 4294967296;
+}
+function shuffled(room, values) { return values.slice().sort(() => roomRandom(room) - 0.5); }
 const difficultyStage = (stage) => 1 + (Math.max(1, stage) - 1) * 2;
 const overlaps = (a, b) => a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
 function cleanName(value) {
@@ -343,10 +406,19 @@ function cleanName(value) {
 function cleanClass(value) { return Object.hasOwn(CLASSES, value) ? value : 'swordsman'; }
 function cleanSkin(value) { return SKINS.has(value) ? value : 'iron'; }
 function cleanWeapon(value, classId) { return WEAPONS[value]?.classId === classId ? value : DEFAULT_WEAPON[classId]; }
+function cleanSpecialization(value, classId) { return Object.hasOwn(SPECIALIZATIONS[classId] || {}, value) ? value : null; }
+function cleanMasteryChoices(value) {
+  const choices = {};
+  for (const [level, allowed] of Object.entries(MASTERY_CHOICES)) if (allowed.has(value?.[level])) choices[level] = value[level];
+  return choices;
+}
+function cleanReconnectToken(value) { return String(value || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64); }
+function cleanDifficulty(value) { return value === 'ngplus' ? 'ngplus' : 'normal'; }
 function cleanAppearance(value) {
   return {
     armor: ARMOR_COLORS.has(value?.armor) ? value.armor : 'ashen',
     aura: AURA_STYLES.has(value?.aura) ? value.aura : 'ash',
+    title: BOSS_TITLE_IDS.has(value?.title) ? value.title : 'wanderer',
   };
 }
 function cleanEquippedSkills(value, classId) {
@@ -363,13 +435,15 @@ function skillTotal(player, stat) {
 function arenaForStage(stage) { return ARENAS[Math.min(ARENAS.length - 1, Math.floor((stage - 1) / STAGES_PER_BOSS))]; }
 
 function setArena(room) {
-  const source = arenaForStage(room.stage);
+  const source = room.training?.arenaIndex !== undefined ? ARENAS[clamp(room.training.arenaIndex, 0, ARENAS.length - 1)] : arenaForStage(room.stage);
   const tier = Math.min(10, Math.floor((room.stage - 1) / STAGES_PER_BOSS) + 1);
   const edgeInset = [0, 60, 100, 140, 180, 220, 250, 280, 310, 340][tier - 1];
   const rightEdge = WORLD.width - edgeInset;
   const gaps = ARENA_GAPS[tier - 1]
     .map((gap) => ({ x: clamp(gap.x, edgeInset + 260, rightEdge - 260), w: gap.w }))
     .filter((gap) => gap.x + gap.w < rightEdge - 210);
+  if (room.contractEffect?.extraGap && !gaps.some((gap) => Math.abs(gap.x - 1400) < 180)) gaps.push({ x: 1370, w: 125 });
+  gaps.sort((a, b) => a.x - b.x);
   const floorPlatforms = [];
   let floorStart = edgeInset;
   for (const gap of gaps) {
@@ -415,6 +489,12 @@ function makeRoomCode() {
 function derivedStats(player) {
   const base = CLASSES[player.classId];
   const weapon = WEAPONS[player.weaponId] || WEAPONS[DEFAULT_WEAPON[player.classId]];
+  const specialization = SPECIALIZATIONS[player.classId]?.[player.specialization] || {};
+  const mastery = player.masteryChoices || {};
+  const masteryDamage = mastery[5] === 'force' ? 1.1 : 1;
+  const masteryTempo = mastery[5] === 'tempo' ? 0.92 : 1;
+  const masteryRange = mastery[10] === 'reach' ? 1.12 : 1;
+  const masteryCost = mastery[10] === 'economy' ? 0.9 : 1;
   const isSwordsman = player.classId === 'swordsman';
   const isGreatsword = player.classId === 'greatsword';
   const isRogue = player.classId === 'rogue';
@@ -431,46 +511,50 @@ function derivedStats(player) {
     * (1 + skillTotal(player, 'speed'));
   const spellCost = isMage ? Math.pow(0.85, perkCount(player, 'mage_focus')) : 1;
   return {
-    maxHp: Math.max(1, base.maxHp + (player.stageHpModifier || 0) + skillTotal(player, 'hp') + perkCount(player, 'vitality') - perkCount(player, 'glass_edge') + (isGreatsword ? perkCount(player, 'great_colossus') : 0) + (isBerserker ? perkCount(player, 'berserk_resolve') : 0)),
-    maxStamina: Math.max(45, base.maxStamina + skillTotal(player, 'stamina') + perkCount(player, 'endurance') * 25 - perkCount(player, 'curse_bearer') * 10),
+    maxHp: Math.max(1, base.maxHp + (specialization.hp || 0) + (player.stageHpModifier || 0) + skillTotal(player, 'hp') + perkCount(player, 'vitality') - perkCount(player, 'glass_edge') + (isGreatsword ? perkCount(player, 'great_colossus') : 0) + (isBerserker ? perkCount(player, 'berserk_resolve') : 0)),
+    maxStamina: Math.max(45, base.maxStamina + (specialization.stamina || 0) + skillTotal(player, 'stamina') + perkCount(player, 'endurance') * 25 - perkCount(player, 'curse_bearer') * 10),
     staminaRegen: base.staminaRegen * Math.pow(1.28, perkCount(player, 'lungs')) * (1 + skillTotal(player, 'staminaRegen')) * (player.staminaRegenMultiplier || 1),
-    speed: base.speed * speedScale,
+    speed: base.speed * speedScale * (specialization.speed || 1),
     jump: base.jump * Math.pow(1.12, perkCount(player, 'high_jump')) * (1 + skillTotal(player, 'jump')),
-    lightDamage: base.lightDamage * weapon.lightDamage * damageScale * (1 + skillTotal(player, 'lightDamage')) * (player.damageMultiplier || 1),
-    heavyDamage: base.heavyDamage * weapon.heavyDamage * damageScale * (1 + skillTotal(player, 'heavyDamage')) * Math.pow(1.35, perkCount(player, 'heavy_mastery')) * (isGreatsword ? Math.pow(1.3, perkCount(player, 'great_mass')) : 1) * (isBerserker ? Math.pow(1.3, perkCount(player, 'berserk_heavy')) : 1) * (player.damageMultiplier || 1),
-    lightCost: base.lightCost * Math.max(0.45, 1 - skillTotal(player, 'lightCost')) * Math.pow(0.82, perkCount(player, 'light_mastery')) * discipline * spellCost,
-    heavyCost: base.heavyCost * Math.max(0.45, 1 - skillTotal(player, 'heavyCost')) * discipline * spellCost,
-    rollCost: base.rollCost * Math.max(0.45, 1 - skillTotal(player, 'rollCost')) * Math.pow(0.75, perkCount(player, 'feather_roll')) * rogueRoll,
+    lightDamage: base.lightDamage * weapon.lightDamage * damageScale * masteryDamage * (specialization.damage || 1) * (1 + skillTotal(player, 'lightDamage')) * (player.damageMultiplier || 1),
+    heavyDamage: base.heavyDamage * weapon.heavyDamage * damageScale * masteryDamage * (mastery[15] === 'execution' ? 1.15 : 1) * (specialization.heavy || specialization.damage || 1) * (1 + skillTotal(player, 'heavyDamage')) * Math.pow(1.35, perkCount(player, 'heavy_mastery')) * (isGreatsword ? Math.pow(1.3, perkCount(player, 'great_mass')) : 1) * (isBerserker ? Math.pow(1.3, perkCount(player, 'berserk_heavy')) : 1) * (player.damageMultiplier || 1),
+    lightCost: base.lightCost * masteryCost * Math.max(0.45, 1 - skillTotal(player, 'lightCost')) * Math.pow(0.82, perkCount(player, 'light_mastery')) * discipline * spellCost,
+    heavyCost: base.heavyCost * masteryCost * Math.max(0.45, 1 - skillTotal(player, 'heavyCost')) * discipline * spellCost,
+    rollCost: base.rollCost * masteryCost * Math.max(0.45, 1 - skillTotal(player, 'rollCost')) * Math.pow(0.75, perkCount(player, 'feather_roll')) * rogueRoll,
     parryCost: base.parryCost,
-    lightTime: base.lightTime * weapon.lightTime * Math.pow(0.86, perkCount(player, 'light_mastery')),
-    heavyTime: base.heavyTime * weapon.heavyTime,
-    attackRange: base.attackRange * weapon.range * (1 + skillTotal(player, 'range')) * (isSpearman ? Math.pow(1.18, perkCount(player, 'spear_reach')) : 1),
-    parryWindow: Math.max(0.07, (base.parryWindow + weapon.parry + skillTotal(player, 'parryWindow') + perkCount(player, 'parry_master') * 0.055 + (isSwordsman ? perkCount(player, 'sword_guard') * 0.04 : 0) + (isSpearman ? perkCount(player, 'spear_guard') * 0.05 : 0)) * (player.parryWindowMultiplier || 1)),
+    lightTime: base.lightTime * weapon.lightTime * masteryTempo * (specialization.lightTime || 1) * Math.pow(0.86, perkCount(player, 'light_mastery')),
+    heavyTime: base.heavyTime * weapon.heavyTime * masteryTempo,
+    attackRange: base.attackRange * weapon.range * masteryRange * (specialization.range || 1) * (1 + skillTotal(player, 'range')) * (isSpearman ? Math.pow(1.18, perkCount(player, 'spear_reach')) : 1),
+    parryWindow: Math.max(0.07, (base.parryWindow + weapon.parry + (specialization.parry || 0) + (mastery[15] === 'finesse' ? 0.04 : 0) + skillTotal(player, 'parryWindow') + perkCount(player, 'parry_master') * 0.055 + (isSwordsman ? perkCount(player, 'sword_guard') * 0.04 : 0) + (isSpearman ? perkCount(player, 'spear_guard') * 0.05 : 0)) * (player.parryWindowMultiplier || 1)),
     rollSpeed: 710 * Math.pow(1.12, perkCount(player, 'long_roll')),
-    rollInvulnerability: 0.3 + skillTotal(player, 'rollInvulnerability') + perkCount(player, 'safe_roll') * 0.08 + (isMage ? perkCount(player, 'mage_phase') * 0.1 : 0),
+    rollInvulnerability: 0.3 + (specialization.rollInvulnerability || 0) + skillTotal(player, 'rollInvulnerability') + perkCount(player, 'safe_roll') * 0.08 + (isMage ? perkCount(player, 'mage_phase') * 0.1 : 0),
   };
 }
 
-function makePlayer(id, name, classId, skin, slot, equippedSkills = [], weaponId, appearance) {
+function makePlayer(id, name, classId, skin, slot, equippedSkills = [], weaponId, appearance, progression = {}) {
   const base = CLASSES[classId];
   return {
     id, name, classId, skin, slot, weaponId: cleanWeapon(weaponId, classId), appearance: cleanAppearance(appearance), equippedSkills: cleanEquippedSkills(equippedSkills, classId),
+    specialization: cleanSpecialization(progression.specialization, classId), masteryChoices: cleanMasteryChoices(progression.masteryChoices),
+    reconnectToken: cleanReconnectToken(progression.reconnectToken), connected: true, disconnectDeadline: 0, pendingCurrency: 0,
     x: 220 + slot * 76, y: WORLD.floor - 60, w: 42, h: 60, vx: 0, vy: 0, facing: 1,
     hp: base.maxHp, maxHp: base.maxHp, stamina: base.maxStamina, maxStamina: base.maxStamina,
     staminaDelay: 0, downed: false, onGround: false, invulnerable: 0,
     action: 'idle', actionTimer: 0, actionDuration: 0, actionHit: false, parryActive: 0, rollHit: false,
     nextHitMultiplier: 1, lightChain: 0, heavyChain: 0, hitsLanded: 0, weaponHits: 0,
     momentum: 0, momentumTimer: 0, wardCharges: 0, rollBuff: 1, lastAttackType: null,
-    secondWindUsed: false, damageDone: 0, aggro: 0, parries: 0, bossesDefeated: 0, noHitStages: 0, stageHitsTaken: 0,
+    secondWindUsed: false, damageDone: 0, poiseDamage: 0, aggro: 0, parries: 0, parryAttempts: 0, hitsTaken: 0, lastDamageSource: '—', bossesDefeated: 0, noHitStages: 0, stageHitsTaken: 0,
     damageMultiplier: 1, staminaRegenMultiplier: 1, parryWindowMultiplier: 1,
-    perks: {}, perkOffer: [], perkChosen: false,
-    input: { left: false, right: false, jump: false, light: false, heavy: false, parry: false, roll: false, team: false },
-    held: { jump: false, light: false, heavy: false, parry: false, roll: false, team: false },
+    perks: {}, perkOffer: [], perkChosen: false, fusions: [],
+    perfectWindow: 0, perfectDodgeCooldown: 0, perfectDodges: 0, focus: 0, riposteReady: false,
+    abilityCooldown: 0, abilityBuff: 0, abilityGuard: 0, pingsRemaining: 3,
+    input: { left: false, right: false, jump: false, light: false, heavy: false, parry: false, roll: false, team: false, ability: false },
+    held: { jump: false, light: false, heavy: false, parry: false, roll: false, team: false, ability: false },
   };
 }
 
 function publicPlayer(player, hostId, inGame = false) {
-  const base = { id: player.id, name: player.name, classId: player.classId, skin: player.skin, weaponId: player.weaponId, appearance: player.appearance, slot: player.slot, equippedSkills: player.equippedSkills, isHost: player.id === hostId };
+  const base = { id: player.id, name: player.name, classId: player.classId, skin: player.skin, weaponId: player.weaponId, appearance: player.appearance, slot: player.slot, equippedSkills: player.equippedSkills, specialization: player.specialization, connected: player.connected, isHost: player.id === hostId };
   if (!inGame) return base;
   return {
     ...base, x: Math.round(player.x * 10) / 10, y: Math.round(player.y * 10) / 10,
@@ -480,48 +564,76 @@ function publicPlayer(player, hostId, inGame = false) {
     downed: player.downed, invulnerable: player.invulnerable > 0,
     action: player.action, actionTimer: player.actionTimer, actionDuration: player.actionDuration,
     parryActive: player.parryActive > 0, damageDone: Math.round(player.damageDone), aggro: Math.round(player.aggro), parries: player.parries,
-    perks: player.perks, perkOffer: player.perkOffer, perkChosen: player.perkChosen,
+    perks: player.perks, perkOffer: player.perkOffer, perkChosen: player.perkChosen, fusions: player.fusions,
+    perfectDodges: player.perfectDodges, focus: player.focus, riposteReady: player.riposteReady,
+    abilityCooldown: Math.round(player.abilityCooldown * 10) / 10, abilityMaxCooldown: ABILITY_META[player.classId].cooldown,
+    abilityName: ABILITY_META[player.classId].name, pingsRemaining: player.pingsRemaining,
   };
 }
 
-function createRoom(socket, name, classId, skin, equippedSkills, weaponId, appearance) {
+function createRoom(socket, name, classId, skin, equippedSkills, weaponId, appearance, progression = {}, options = {}) {
   const code = makeRoomCode();
   const room = {
     code, hostId: socket.id, status: 'lobby', createdAt: Date.now(), players: new Map(),
     stage: 1, stagesCleared: 0, elapsed: 0, boss: null,
     projectiles: [], waves: [], effects: [], bossEvents: [], arena: null, arenaTime: 0,
     stateSequence: 0, nextStageTimer: null, routeOffer: [], routeVotes: {}, routeEffect: null,
+    contractOffer: [], contractVotes: {}, contractEffect: null, fusionOffers: {}, pings: [],
     modifier: null, teamPower: 0, lastParryAt: 0, lastParryId: null, nextHealingOfferStage: 3,
+    difficulty: cleanDifficulty(options.difficulty), mode: options.mode === 'daily' ? 'daily' : 'standard', isPublic: options.isPublic === true, training: options.training || null,
+    dailyKey: new Date().toISOString().slice(0, 10), rngState: 0, secretBossesDefeated: [],
   };
-  room.players.set(socket.id, makePlayer(socket.id, name, classId, skin, 0, equippedSkills, weaponId, appearance));
+  room.rngState = hashSeed(`rift-raid-${room.dailyKey}`);
+  room.players.set(socket.id, makePlayer(socket.id, name, classId, skin, 0, equippedSkills, weaponId, appearance, progression));
   rooms.set(code, room);
   return room;
 }
 
 function lobbyState(room) {
-  return { code: room.code, status: room.status, hostId: room.hostId, maxPlayers: MAX_PLAYERS, players: [...room.players.values()].map((p) => publicPlayer(p, room.hostId)) };
+  return { code: room.code, status: room.status, hostId: room.hostId, maxPlayers: MAX_PLAYERS, difficulty: room.difficulty, mode: room.mode, isPublic: room.isPublic, players: [...room.players.values()].map((p) => publicPlayer(p, room.hostId)) };
 }
 function emitLobby(room) { io.to(room.code).emit('lobby-state', lobbyState(room)); }
 function socketRoom(socket) { return rooms.get(socket.data.roomCode); }
 
-function leaveCurrentRoom(socket) {
-  const room = socketRoom(socket);
-  if (!room) return;
-  room.players.delete(socket.id);
-  socket.leave(room.code);
-  socket.data.roomCode = null;
+function removePlayerNow(room, playerId) {
+  const player = room.players.get(playerId);
+  if (!player) return;
+  if (player.reconnectTimer) clearTimeout(player.reconnectTimer);
+  room.players.delete(playerId);
   if (!room.players.size) {
     if (room.nextStageTimer) clearTimeout(room.nextStageTimer);
     rooms.delete(room.code);
     return;
   }
-  if (room.hostId === socket.id) room.hostId = room.players.keys().next().value;
+  if (room.hostId === playerId) room.hostId = room.players.keys().next().value;
   let slot = 0;
   for (const player of room.players.values()) player.slot = slot++;
   if (room.status === 'lobby') emitLobby(room);
   else if (room.status === 'perk') checkPerkSelections(room);
   else if (room.status === 'route') checkRouteVotes(room);
+  else if (room.status === 'fusion' && [...room.players.values()].every((candidate) => candidate.perkChosen || !(room.fusionOffers[candidate.id] || []).length)) beginContractVote(room);
+  else if (room.status === 'contract') checkContractVotes(room);
   else checkTeamWipe(room);
+}
+
+function leaveCurrentRoom(socket) {
+  const room = socketRoom(socket);
+  if (!room) return;
+  socket.leave(room.code);
+  socket.data.roomCode = null;
+  removePlayerNow(room, socket.id);
+}
+
+function handleDisconnect(socket) {
+  const room = socketRoom(socket);
+  const player = room?.players.get(socket.id);
+  if (!room || !player) return;
+  if (room.status === 'lobby' || room.training || !player.reconnectToken) return removePlayerNow(room, socket.id);
+  player.connected = false;
+  player.disconnectDeadline = Date.now() + RECONNECT_GRACE_MS;
+  player.input = { left:false,right:false,jump:false,light:false,heavy:false,parry:false,roll:false,team:false,ability:false };
+  player.reconnectTimer = setTimeout(() => removePlayerNow(room, player.id), RECONNECT_GRACE_MS);
+  io.to(room.code).emit('toast', { text: `${player.name} потерял связь. Место сохранено на 75 секунд.`, tone: 'warn' });
 }
 
 function addEffect(room, type, x, y, color = '#c8a86b', ttl = 0.35, size = 80) {
@@ -545,11 +657,12 @@ function resetPlayerForStage(player, room, fullHeal = false) {
     x: spawnX, y: WORLD.floor - player.h, vx: 0, vy: 0, facing: 1,
     downed: false, onGround: false, invulnerable: 1, staminaDelay: 0,
     action: 'idle', actionTimer: 0, parryActive: 0,
-    secondWindUsed: false, wardCharges: Math.min(3, perkCount(player, 'iron_skin') + (route.ward || 0)), stageHitsTaken: 0,
+    secondWindUsed: false, wardCharges: Math.min(3, perkCount(player, 'iron_skin') + (route.ward || 0) + (perkCount(player, 'vitality') >= 3 ? 1 : 0)), stageHitsTaken: 0,
     momentum: 0, momentumTimer: 0, rollBuff: 1, lastAttackType: null,
-    perkOffer: [], perkChosen: false,
-    input: { left: false, right: false, jump: false, light: false, heavy: false, parry: false, roll: false, team: false },
-    held: { jump: false, light: false, heavy: false, parry: false, roll: false, team: false },
+    perkOffer: [], perkChosen: false, perfectWindow: 0, perfectDodgeCooldown: 0, focus: 0, riposteReady: false,
+    abilityCooldown: 0, abilityBuff: 0, abilityGuard: 0, pingsRemaining: 3,
+    input: { left: false, right: false, jump: false, light: false, heavy: false, parry: false, roll: false, team: false, ability: false },
+    held: { jump: false, light: false, heavy: false, parry: false, roll: false, team: false, ability: false },
   });
 }
 
@@ -567,6 +680,12 @@ function resetPlayerForRun(player, room) {
   player.lastAttackType = null;
   player.aggro = 0;
   player.parries = 0;
+  player.parryAttempts = 0;
+  player.hitsTaken = 0;
+  player.lastDamageSource = '—';
+  player.poiseDamage = 0;
+  player.perfectDodges = 0;
+  player.fusions = [];
   player.bossesDefeated = 0;
   player.noHitStages = 0;
   resetPlayerForStage(player, room, true);
@@ -599,20 +718,35 @@ function nearestSafeBossX(room, desiredX, bossWidth = 122) {
 
 function spawnBoss(room) {
   const threatStage = difficultyStage(room.stage);
-  const archetype = BOSSES[Math.min(BOSSES.length - 1, Math.floor((room.stage - 1) / STAGES_PER_BOSS))];
+  const secret = room.routeEffect?.secretBossId ? SECRET_BOSSES.find((boss) => boss.id === room.routeEffect.secretBossId) : null;
+  const trainingBoss = room.training ? ALL_BOSSES[clamp(room.training.bossIndex, 0, ALL_BOSSES.length - 1)] : null;
+  const archetype = trainingBoss || secret || BOSSES[Math.min(BOSSES.length - 1, Math.floor((room.stage - 1) / STAGES_PER_BOSS))];
   const route = room.routeEffect || {};
   const modifier = room.modifier || {};
+  const contract = room.contractEffect || {};
+  const mutationCount = room.training ? 0 : Math.min(3, 1 + Math.floor((room.stage - 1) / 20));
+  const mutations = shuffled(room, BOSS_MUTATIONS).slice(0, mutationCount);
+  const mutationStats = mutations.reduce((stats, mutation) => ({
+    attackRate: stats.attackRate * (mutation.attackRate || 1), moveRate: stats.moveRate * (mutation.moveRate || 1),
+    poise: stats.poise * (mutation.poise || 1), poiseRegen: stats.poiseRegen + (mutation.poiseRegen || 0),
+    projectileResistance: stats.projectileResistance * (mutation.projectileResistance || 1), lowHpHaste: Math.min(stats.lowHpHaste, mutation.lowHpHaste || 1),
+    dashRate: stats.dashRate * (mutation.dashRate || 1), breakBurst: stats.breakBurst || mutation.breakBurst === true,
+  }), { attackRate:1, moveRate:1, poise:1, poiseRegen:0, projectileResistance:1, lowHpHaste:1, dashRate:1, breakBurst:false });
   const curseStacks = [...room.players.values()].reduce((sum, player) => sum + perkCount(player, 'curse_bearer'), 0);
-  const maxHp = Math.max(1, Math.round(bossHealth(room.stage, room.players.size) * (1 - Math.min(0.32, curseStacks * 0.04)) * (route.hp || 1) * (modifier.bossHp || 1)));
+  const difficultyHp = room.difficulty === 'ngplus' ? 1.65 : 1;
+  const maxHp = Math.max(1, Math.round(bossHealth(room.stage, room.players.size) * difficultyHp * (1 - Math.min(0.32, curseStacks * 0.04)) * (route.hp || 1) * (contract.hp || 1) * (modifier.bossHp || 1)));
+  const maxPoise = Math.round((105 + threatStage * 2.1 + room.players.size * 28) * mutationStats.poise);
   const spawnX = nearestSafeBossX(room, Math.min(2250, (room.arena?.bounds?.right || WORLD.width) - 360));
   room.boss = {
     x: spawnX, y: WORLD.floor - 150, w: 122, h: 150, vx: 0, vy: 0, onGround: true,
     hp: maxHp, maxHp, facing: -1, tier: Math.min(10, Math.ceil(room.stage / STAGES_PER_BOSS)), bossId: archetype.id,
     name: archetype.name, title: archetype.title, color: archetype.color, eye: archetype.eye, profile: archetype,
-    phase: 1, phaseFlash: 0, targetId: null,
-    damage: Math.max(1, Math.ceil(bossDamage(room.stage) * (modifier.bossDamage || 1))),
-    attackRate: archetype.attackRate * (route.attackRate || 1) * (modifier.attackRate || 1),
-    moveRate: archetype.speed, projectileRate: modifier.projectileSpeed || 1,
+    phase: room.training?.phase || 1, phaseFlash: 0, targetId: null, poise: maxPoise, maxPoise, exposed: 0, arcaneMark: 0, breached: 0,
+    damage: room.training?.damageMode === 'harmless' ? 0 : Math.max(1, Math.ceil(bossDamage(room.stage) * (modifier.bossDamage || 1)) + (room.difficulty === 'ngplus' ? 1 : 0) + (room.training?.damageMode === 'lethal' ? 1 : 0)),
+    attackRate: archetype.attackRate * (route.attackRate || 1) * (contract.attackRate || 1) * (modifier.attackRate || 1) * (room.difficulty === 'ngplus' ? 0.88 : 1) * mutationStats.attackRate / (room.training?.speed || 1),
+    moveRate: archetype.speed * mutationStats.moveRate * (room.training?.speed || 1), projectileRate: (modifier.projectileSpeed || 1) * (room.training?.speed || 1),
+    mutations, poiseRegen: mutationStats.poiseRegen, projectileResistance: mutationStats.projectileResistance,
+    lowHpHaste: mutationStats.lowHpHaste, dashRate: mutationStats.dashRate, breakBurst: mutationStats.breakBurst,
     attackCooldown: Math.max(0.48, (1.48 - threatStage * 0.008) * archetype.attackRate), currentAttack: null,
     lastAttack: null, stagger: 0, flash: 0,
     dashTimer: 0, dashCooldown: 1.8, jumpCooldown: 1.2, repositionTimer: 0.8,
@@ -621,17 +755,26 @@ function spawnBoss(room) {
 }
 
 function startRun(room) {
-  const modifier = RUN_MODIFIERS[Math.floor(Math.random() * RUN_MODIFIERS.length)];
-  Object.assign(room, { status: 'playing', stage: 1, stagesCleared: 0, elapsed: 0, projectiles: [], waves: [], effects: [], bossEvents: [], routeOffer: [], routeVotes: {}, routeEffect: null, modifier, teamPower: 0, lastParryAt: 0, lastParryId: null, nextHealingOfferStage: 3 + Math.floor(Math.random() * 3) });
+  if (room.mode === 'daily') room.rngState = hashSeed(`rift-raid-${room.dailyKey}`);
+  const modifier = RUN_MODIFIERS[Math.floor(roomRandom(room) * RUN_MODIFIERS.length)];
+  const startStage = room.training ? clamp(room.training.bossIndex * STAGES_PER_BOSS + 1, 1, MAX_STAGE) : 1;
+  Object.assign(room, {
+    status: 'playing', stage: startStage, stagesCleared: 0, elapsed: 0,
+    projectiles: [], waves: [], effects: [], bossEvents: [], pings: [],
+    routeOffer: [], routeVotes: {}, routeEffect: null,
+    fusionOffers: {}, contractOffer: [], contractVotes: {}, contractEffect: null,
+    modifier: room.training ? null : modifier, teamPower: 0, lastParryAt: 0, lastParryId: null,
+    nextHealingOfferStage: 3 + Math.floor(roomRandom(room) * 3), secretBossesDefeated: [],
+  });
   setArena(room);
   for (const player of room.players.values()) resetPlayerForRun(player, room);
   spawnBoss(room);
-  io.to(room.code).emit('game-start', { world: WORLD, arena: publicArena(room, true), maxStage: MAX_STAGE, modifier });
-  io.to(room.code).emit('stage-start', { stage: 1, arena: publicArena(room, true) });
+  io.to(room.code).emit('game-start', { world: WORLD, arena: publicArena(room, true), maxStage: MAX_STAGE, modifier: room.modifier, difficulty: room.difficulty, mode: room.mode, dailyKey: room.dailyKey, training: room.training });
+  io.to(room.code).emit('stage-start', { stage: room.stage, arena: publicArena(room, true), boss: { id: room.boss.bossId, name: room.boss.name } });
 }
 
 function startNextStage(room) {
-  if (room.status !== 'route' || !rooms.has(room.code)) return;
+  if (!['route', 'contract'].includes(room.status) || !rooms.has(room.code)) return;
   room.status = 'playing';
   room.stage += 1;
   room.projectiles = [];
@@ -640,11 +783,15 @@ function startNextStage(room) {
   room.bossEvents = [];
   room.routeOffer = [];
   room.routeVotes = {};
+  room.fusionOffers = {};
+  room.contractOffer = [];
+  room.contractVotes = {};
+  room.pings = [];
   room.teamPower = room.routeEffect?.teamPower || 0;
   setArena(room);
   for (const player of room.players.values()) resetPlayerForStage(player, room);
   spawnBoss(room);
-  io.to(room.code).emit('stage-start', { stage: room.stage, arena: publicArena(room, true) });
+  io.to(room.code).emit('stage-start', { stage: room.stage, arena: publicArena(room, true), boss: { id: room.boss.bossId, name: room.boss.name } });
 }
 
 function alivePlayers(room) { return [...room.players.values()].filter((player) => !player.downed); }
@@ -664,6 +811,8 @@ function onParry(room, player, sourceX, projectile) {
   player.actionTimer = player.actionDuration = 0.36;
   player.stamina = Math.min(player.maxStamina, player.stamina + 28 + perkCount(player, 'battle_trance') * 35);
   player.parries += 1;
+  if (perkCount(player, 'parry_master') >= 3) player.abilityCooldown = Math.max(0, player.abilityCooldown - 4);
+  if (player.fusions.includes('endless_guard')) player.abilityCooldown = Math.max(0, player.abilityCooldown - 6);
   const now = Date.now();
   const modifierGain = (room.modifier?.teamGain || 1) * (room.modifier?.parryGain || 1);
   const resonant = room.lastParryId && room.lastParryId !== player.id && now - room.lastParryAt <= 480;
@@ -677,6 +826,7 @@ function onParry(room, player, sourceX, projectile) {
     boss.stagger = Math.max(boss.stagger, (resonant ? 2.15 : 1.15) + perkCount(player, 'thorns') * 0.55);
     if (perkCount(player, 'thorns')) damageBoss(room, player, 28 * perkCount(player, 'thorns'), boss.x + boss.w / 2, boss.y + 70, '#d7b46a', true);
     if (room.status === 'playing' && room.boss && player.classId === 'swordsman' && perkCount(player, 'sword_riposte')) damageBoss(room, player, 32 * perkCount(player, 'sword_riposte'), boss.x + boss.w / 2, boss.y + 70, '#e8d19a', true);
+    damageBossPoise(room, player, resonant ? 48 : 28);
   }
   if (projectile) projectile.ttl = 0;
   addEffect(room, 'parry', sourceX, player.y + 25, '#f0d28d', 0.48, 125);
@@ -684,12 +834,25 @@ function onParry(room, player, sourceX, projectile) {
   io.to(room.code).emit('toast', { text: `${player.name}: ИДЕАЛЬНОЕ ПАРИРОВАНИЕ`, tone: 'gold' });
 }
 
-function damagePlayer(room, player, damage = 1, knockX = 0, knockY = -220, parryable = false, sourceX = 0, projectile = null) {
-  if (player.downed || player.invulnerable > 0 || room.status !== 'playing') return 'ignored';
+function damagePlayer(room, player, damage = 1, knockX = 0, knockY = -220, parryable = false, sourceX = 0, projectile = null, source = null) {
+  if (player.downed || room.status !== 'playing') return 'ignored';
+  if (player.invulnerable > 0) {
+    if (player.action === 'roll' && player.perfectWindow > 0 && player.perfectDodgeCooldown <= 0) {
+      player.perfectDodgeCooldown = 0.28; player.perfectDodges += 1; player.focus = Math.min(3, player.focus + 1);
+      if (player.fusions.includes('storm_step')) { player.stamina = Math.min(player.maxStamina, player.stamina + 24); spawnPlayerWave(room, player, 34, { speed:720, r:15, ttl:1.1 }); }
+      if (player.hp === 1 && player.fusions.includes('ashen_heart')) player.focus = 3;
+      if (player.focus >= 3) { player.riposteReady = true; io.to(player.id).emit('toast', { text:'КОНТРАТАКА ГОТОВА', tone:'gold' }); }
+      addEffect(room, 'perfect_dodge', player.x + 21, player.y + 30, '#91d9ee', 0.5, 110);
+      io.to(room.code).emit('perfect-dodge', { playerId:player.id, name:player.name, focus:player.focus, riposteReady:player.riposteReady });
+    }
+    return 'ignored';
+  }
+  if (player.abilityGuard > 0) { player.abilityGuard = 0; player.invulnerable = 0.65; addEffect(room,'ward',player.x+21,player.y+28,'#e0c98d',0.55,120); return 'guarded'; }
   if (parryable && player.parryActive > 0) {
     onParry(room, player, sourceX, projectile);
     return 'parried';
   }
+  if (damage <= 0) { player.invulnerable = 0.45; addEffect(room,'ward',player.x+21,player.y+28,'#7899a8',0.35,80); return 'training'; }
   if (player.wardCharges > 0) {
     player.wardCharges -= 1;
     player.invulnerable = 0.55;
@@ -700,6 +863,8 @@ function damagePlayer(room, player, damage = 1, knockX = 0, knockY = -220, parry
   player.momentum = 0;
   player.momentumTimer = 0;
   player.stageHitsTaken += 1;
+  player.hitsTaken += 1;
+  player.lastDamageSource = String(source || ATTACK_LABELS[room.activeAttackType] || 'Атака босса').slice(0, 40);
   if (perkCount(player, 'revenge')) player.nextHitMultiplier = Math.max(player.nextHitMultiplier, 1 + perkCount(player, 'revenge') * 0.45);
   if (player.hp - damage <= 0 && perkCount(player, 'second_wind') && !player.secondWindUsed) {
     player.secondWindUsed = true;
@@ -729,10 +894,31 @@ function damagePlayer(room, player, damage = 1, knockX = 0, knockY = -220, parry
   return 'hit';
 }
 
-function damageBoss(room, player, rawDamage, x, y, color = '#d7b46a', bypass = false) {
+function damageBossPoise(room, player, rawAmount) {
+  const boss = room.boss;
+  if (!boss || boss.exposed > 0 || boss.hp <= 0) return;
+  const specialization = SPECIALIZATIONS[player.classId]?.[player.specialization] || {};
+  let amount = rawAmount * (specialization.poise || 1);
+  if (boss.breached > 0) amount *= 1.35;
+  amount = Math.max(1, Math.round(amount));
+  boss.poise = Math.max(0, boss.poise - amount);
+  player.poiseDamage += amount;
+  if (boss.poise === 0) {
+    boss.exposed = 3;
+    boss.stagger = Math.max(boss.stagger, 3);
+    boss.currentAttack = null;
+    addEffect(room, 'phase', boss.x + boss.w / 2, boss.y + boss.h / 2, '#e6d4aa', 0.7, 220);
+    io.to(room.code).emit('toast', { text: 'СТОЙКОСТЬ БОССА СЛОМЛЕНА · ОКНО УЯЗВИМОСТИ', tone: 'gold' });
+    if (boss.breakBurst) for (let index = 0; index < 8; index += 1) spawnBossOrb(room, alivePlayers(room)[0] || player, 0, { angle: Math.PI * 2 * index / 8, speed: 360, r: 12, parryable: true, style: 'ring' });
+  }
+}
+
+function damageBoss(room, player, rawDamage, x, y, color = '#d7b46a', bypass = false, ranged = false) {
   const boss = room.boss;
   if (!boss || boss.hp <= 0 || room.status !== 'playing') return;
   let damage = rawDamage;
+  const attackKind = player.currentAttackKind || player.lastAttackType || 'light';
+  const specialization = SPECIALIZATIONS[player.classId]?.[player.specialization] || {};
   if (!bypass) {
     if (boss.hp / boss.maxHp < 0.3 && perkCount(player, 'executioner')) damage *= 1.7;
     if (player.hp === 1 && perkCount(player, 'last_stand')) damage *= 1.45;
@@ -740,8 +926,22 @@ function damageBoss(room, player, rawDamage, x, y, color = '#d7b46a', bypass = f
     damage *= 1 + momentum * 0.07 * perkCount(player, 'momentum');
     damage *= player.nextHitMultiplier;
     player.nextHitMultiplier = 1;
+    if (player.riposteReady) { damage *= 1.8; player.riposteReady = false; player.focus = 0; }
   }
+  if (ranged) damage *= boss.projectileResistance || 1;
+  if (player.abilityBuff > 0) damage *= 1.35;
+  if (player.fusions.includes('oathbreaker') && boss.exposed > 0) damage *= 1.35;
   if (boss.stagger > 0) damage *= 1.45 * Math.pow(1.3, perkCount(player, 'stagger_bane'));
+  if (boss.exposed > 0) damage *= 1.35;
+  if (player.classId === 'rogue' && specialization.backstab && isBackstab(player, boss)) damage *= specialization.backstab;
+  if (player.classId === 'berserker' && player.hp === 1) damage *= specialization.lowHp || 1;
+  if (specialization.projectile && ['ashmage', 'rogue'].includes(player.classId)) damage *= specialization.projectile;
+  let synergy = '';
+  if (player.classId === 'ashmage') { boss.arcaneMark = 3.5; synergy = 'МЕТКА ПЕПЛА'; }
+  if (player.classId === 'rogue' && boss.arcaneMark > 0) { damage *= 1.4; boss.arcaneMark = 0; room.teamPower = clamp(room.teamPower + 12, 0, 100); synergy = 'МЕТКА РАСКРЫТА'; }
+  if (player.classId === 'spearman' && attackKind === 'heavy') { boss.breached = 3; synergy = 'БРОНЯ ПРОБИТА'; }
+  if (player.classId === 'greatsword' && attackKind === 'heavy' && boss.breached > 0) { damage *= 1.3; boss.breached = 0; synergy = 'СОКРУШАЮЩАЯ СВЯЗКА'; }
+  if (player.classId === 'berserker' && attackKind === 'heavy' && boss.exposed > 0) boss.exposed = Math.min(4, boss.exposed + 0.35);
   damage = Math.max(1, Math.round(damage));
   boss.hp = Math.max(0, boss.hp - damage);
   boss.flash = 0.12;
@@ -749,11 +949,13 @@ function damageBoss(room, player, rawDamage, x, y, color = '#d7b46a', bypass = f
   player.aggro += damage * 0.42;
   room.teamPower = clamp(room.teamPower + Math.min(2.2, damage / Math.max(20, boss.maxHp) * 90) * (room.modifier?.teamGain || 1), 0, 100);
   player.hitsLanded += 1;
+  if (!bypass) damageBossPoise(room, player, (attackKind === 'heavy' ? 18 : 6) * (player.fusions.includes('royal_edge') && attackKind === 'heavy' ? 1.7 : 1));
+  if (synergy) addEffect(room, 'oath', boss.x + boss.w / 2, boss.y + 40, '#d8b879', 0.42, 95);
   if (!bypass && (perkCount(player, 'momentum') || (player.classId === 'berserker' && perkCount(player, 'berserk_combo')))) {
     player.momentum = Math.min(6, (player.momentumTimer > 0 ? player.momentum : 0) + 1);
     player.momentumTimer = 2.2;
   }
-  if (perkCount(player, 'blood_oath') && player.hitsLanded % 8 === 0) {
+  if (!room.contractEffect?.noHealing && perkCount(player, 'blood_oath') && player.hitsLanded % 8 === 0) {
     player.hp = Math.min(player.maxHp, player.hp + 1);
     addEffect(room, 'heal', player.x + 21, player.y, '#8faa72', 0.45, 70);
   }
@@ -790,6 +992,7 @@ function isBackstab(player, boss) {
 function attackBoss(room, player, type) {
   const boss = room.boss;
   if (!boss) return;
+  player.currentAttackKind = type;
   const stats = derivedStats(player);
   const weapon = WEAPONS[player.weaponId] || WEAPONS[DEFAULT_WEAPON[player.classId]];
   const range = stats.attackRange + (type === 'heavy' ? 30 : 0);
@@ -798,6 +1001,9 @@ function attackBoss(room, player, type) {
   if (type === 'light') {
     player.lightChain += 1;
     if (perkCount(player, 'echo_blade') && player.lightChain % 3 === 0) damage *= 2;
+    if ((perkCount(player, 'echo_blade') >= 3 || player.fusions.includes('moon_echo')) && player.lightChain % 3 === 0) {
+      spawnPlayerWave(room, player, stats.lightDamage * 0.75, { speed: 760, r: 16, ttl: 1.45 });
+    }
   }
   if (type === 'heavy') player.heavyChain += 1;
   if (weapon.trait === 'iai' && type === 'heavy') player.x = clamp(player.x + player.facing * 92, 0, WORLD.width - player.w);
@@ -822,7 +1028,7 @@ function attackBoss(room, player, type) {
     if (isBackstab(player, boss) && perkCount(player, 'rogue_backstab')) damage *= Math.pow(1.6, perkCount(player, 'rogue_backstab'));
     if (isBackstab(player, boss) && legacyPower) damage *= 1 + legacyPower;
     if (type === 'light' && player.lightChain % 4 === 0 && perkCount(player, 'rogue_flurry')) damage *= 1 + perkCount(player, 'rogue_flurry') * 0.55;
-    if (perkCount(player, 'rogue_gambit') && Math.random() < Math.min(0.48, perkCount(player, 'rogue_gambit') * 0.12)) damage *= 2;
+    if (perkCount(player, 'rogue_gambit') && roomRandom(room) < Math.min(0.48, perkCount(player, 'rogue_gambit') * 0.12)) damage *= 2;
   }
   if (player.classId === 'spearman') {
     if (type === 'heavy' && player.heavyChain % 3 === 0 && perkCount(player, 'spear_impale')) damage *= 1 + perkCount(player, 'spear_impale') * 0.7;
@@ -876,6 +1082,8 @@ function attackBoss(room, player, type) {
     if (player.classId === 'berserker' && perkCount(player, 'berserk_roar') && player.weaponHits % 8 === 0) damage += 55 * perkCount(player, 'berserk_roar');
     damageBoss(room, player, damage, boss.x + 61, boss.y + 65, colors[player.skin]);
     if (room.status === 'playing') {
+      if (perkCount(player, 'sharpened') >= 3 && player.weaponHits % 6 === 0) damageBossPoise(room, player, 22);
+      if (perkCount(player, 'heavy_mastery') >= 3 && type === 'heavy') damageBossPoise(room, player, 20);
       if (['breaker', 'crusher'].includes(weapon.trait) && type === 'heavy') boss.stagger = Math.max(boss.stagger, weapon.trait === 'crusher' ? 0.8 : 0.62);
       player.stamina = Math.min(player.maxStamina, player.stamina + perkCount(player, 'stamina_strike') * 4);
       if (player.classId === 'greatsword' && type === 'heavy') player.stamina = Math.min(player.maxStamina, player.stamina + perkCount(player, 'great_endurance') * 18);
@@ -920,6 +1128,28 @@ function activateTeamOath(room, player) {
   return true;
 }
 
+function activateClassAbility(room, player) {
+  if (player.abilityCooldown > 0 || player.downed || !room.boss || room.status !== 'playing') return false;
+  const meta = ABILITY_META[player.classId];
+  player.abilityCooldown = meta.cooldown;
+  if (player.classId === 'swordsman') {
+    player.parryActive = Math.max(player.parryActive, 0.55); player.action = 'parry'; player.actionTimer = player.actionDuration = 0.65; player.nextHitMultiplier = Math.max(player.nextHitMultiplier, 1.6);
+  } else if (player.classId === 'greatsword') {
+    player.abilityGuard = 1; player.invulnerable = Math.max(player.invulnerable, 0.4); player.nextHitMultiplier = Math.max(player.nextHitMultiplier, 1.35);
+  } else if (player.classId === 'rogue') {
+    player.invulnerable = Math.max(player.invulnerable, 0.55); player.x = clamp(player.x + player.facing * 230, 0, WORLD.width - player.w); player.riposteReady = true;
+  } else if (player.classId === 'spearman') {
+    spawnPlayerWave(room, player, derivedStats(player).heavyDamage * 1.15, { speed:900, r:20, ttl:1.8 });
+  } else if (player.classId === 'berserker') {
+    player.abilityBuff = 5.5; player.stamina = player.maxStamina;
+  } else if (player.classId === 'ashmage') {
+    room.boss.arcaneMark = 7; damageBossPoise(room, player, 55); for (const angle of [-0.18,0,0.18]) spawnMageBolt(room, player, derivedStats(player).heavyDamage * 0.55, angle, 1);
+  }
+  addEffect(room,'oath',player.x+21,player.y+28,'#d7b46a',0.65,145);
+  io.to(room.code).emit('ability-used',{playerId:player.id,name:meta.name});
+  return true;
+}
+
 function startAction(player, action) {
   const stats = derivedStats(player);
   const cost = { light: stats.lightCost, heavy: stats.heavyCost, parry: stats.parryCost, roll: stats.rollCost }[action];
@@ -930,9 +1160,10 @@ function startAction(player, action) {
   player.actionHit = false;
   player.actionDuration = { light: stats.lightTime, heavy: stats.heavyTime, parry: 0.62, roll: 0.46 }[action];
   player.actionTimer = player.actionDuration;
-  if (action === 'parry') player.parryActive = stats.parryWindow;
+  if (action === 'parry') { player.parryActive = stats.parryWindow; player.parryAttempts += 1; }
   if (action === 'roll') {
     player.invulnerable = stats.rollInvulnerability;
+    player.perfectWindow = 0.13 + (perkCount(player, 'quickstep') >= 3 ? 0.05 : 0) + (perkCount(player, 'safe_roll') >= 3 ? 0.04 : 0);
     player.rollHit = false;
     player.rollSpeed = stats.rollSpeed;
     player.vx = player.facing * stats.rollSpeed;
@@ -975,6 +1206,10 @@ function updatePlayer(room, player) {
   player.invulnerable = Math.max(0, player.invulnerable - DT);
   player.staminaDelay = Math.max(0, player.staminaDelay - DT);
   player.momentumTimer = Math.max(0, player.momentumTimer - DT);
+  player.perfectWindow = Math.max(0, player.perfectWindow - DT);
+  player.perfectDodgeCooldown = Math.max(0, player.perfectDodgeCooldown - DT);
+  player.abilityCooldown = Math.max(0, player.abilityCooldown - DT);
+  player.abilityBuff = Math.max(0, player.abilityBuff - DT);
   player.aggro = Math.max(0, player.aggro - 18 * DT);
   if (player.momentumTimer === 0) player.momentum = 0;
   if (player.downed) return;
@@ -987,6 +1222,8 @@ function updatePlayer(room, player) {
   }
   if (input.team && !player.held.team) activateTeamOath(room, player);
   player.held.team = input.team;
+  if (input.ability && !player.held.ability) activateClassAbility(room, player);
+  player.held.ability = input.ability;
   if (input.jump && !player.held.jump && player.onGround && player.action !== 'roll') {
     player.vy = -stats.jump;
     player.onGround = false;
@@ -1003,6 +1240,7 @@ function updatePlayer(room, player) {
     const berserkRecovery = player.classId === 'berserker' && player.stamina < player.maxStamina * 0.35 ? Math.pow(2, perkCount(player, 'berserk_endurance')) : 1;
     player.stamina = Math.min(player.maxStamina, player.stamina + stats.staminaRegen * berserkRecovery * DT);
   }
+  if (room.training?.infiniteStamina) player.stamina = player.maxStamina;
 
   const previousBottom = player.y + player.h;
   player.vy += 1880 * DT;
@@ -1039,7 +1277,7 @@ function arenaHazardBox(hazard) {
 
 function updateArena(room) {
   if (!room.arena) return;
-  room.arenaTime += DT * (room.routeEffect?.hazardRate || 1);
+  room.arenaTime += DT * (room.routeEffect?.hazardRate || 1) * (room.difficulty === 'ngplus' ? 1.25 : 1);
   for (const hazard of room.arena.hazards) {
     const phase = (room.arenaTime + hazard.offset) % hazard.period;
     const dangerStart = hazard.period - hazard.active;
@@ -1051,7 +1289,7 @@ function updateArena(room) {
     for (const player of alivePlayers(room)) {
       if (!overlaps(box, player)) continue;
       const direction = Math.sign(player.x + player.w / 2 - (hazard.x + hazard.w / 2)) || 1;
-      damagePlayer(room, player, 1, direction * 270, hazard.type === 'rune' ? -360 : -260);
+      damagePlayer(room, player, 1, direction * 270, hazard.type === 'rune' ? -360 : -260, false, hazard.x, null, 'Опасность арены');
     }
   }
 }
@@ -1068,7 +1306,8 @@ function telegraphTime(stage, type) {
 function buildBossAttack(room, target, type) {
   const phaseRate = room.boss?.phase === 3 ? 0.72 : room.boss?.phase === 2 ? 0.84 : 1;
   const threatStage = difficultyStage(room.stage);
-  const duration = telegraphTime(threatStage, type) * (room.boss?.attackRate || 1) * phaseRate;
+  const vengeance = room.boss?.hp / Math.max(1,room.boss?.maxHp) < 0.3 ? room.boss?.lowHpHaste || 1 : 1;
+  const duration = telegraphTime(threatStage, type) * (room.boss?.attackRate || 1) * phaseRate * vengeance;
   const attack = { type, phase: 'telegraph', timer: duration, duration, targetId: target.id, targetX: target.x + 21 };
   if (['skyfall', 'marked'].includes(type)) attack.targetXs = alivePlayers(room).map((player) => player.x + 21);
   if (type === 'skyfall' && threatStage >= 55) attack.targetXs.push(clamp(target.x - 170, 80, WORLD.width - 80), clamp(target.x + 210, 80, WORLD.width - 80));
@@ -1082,9 +1321,11 @@ function chooseBossAttack(room, target) {
   const available = [...(distance < 210 ? profile.near : profile.far)];
   if (room.boss.phase >= 2) available.push(...profile.phase2);
   if (room.boss.phase >= 3) available.push(...profile.phase3);
+  if (room.difficulty === 'ngplus') available.push(...profile.phase2, ...profile.phase3);
+  if (room.training?.attack && room.training.attack !== 'random') available.splice(0, available.length, room.training.attack);
   const unique = [...new Set(available)];
   const choices = unique.length > 1 ? unique.filter((item) => item !== room.boss.lastAttack) : unique;
-  const type = choices[Math.floor(Math.random() * choices.length)];
+  const type = choices[Math.floor(roomRandom(room) * choices.length)];
   room.boss.currentAttack = buildBossAttack(room, target, type);
   room.boss.lastAttack = type;
 }
@@ -1136,6 +1377,7 @@ function updateBossEvents(room) {
 function executeBossAttack(room, attack) {
   const boss = room.boss;
   const threatStage = difficultyStage(room.stage);
+  room.activeAttackType = attack.type;
   const target = room.players.get(attack.targetId) || nearestPlayer(room);
   if (attack.type === 'slash') bossMelee(room, 155, true);
   if (attack.type === 'cleave') bossMelee(room, 245, true);
@@ -1220,6 +1462,7 @@ function executeBossAttack(room, attack) {
     boss.x = nearestSafeBossX(room, clamp(boss.x + direction * (240 + Math.min(220, threatStage * 2)), left, right), boss.w);
     bossMelee(room, 125, true);
   }
+  room.activeAttackType = null;
 }
 
 function integrateBossMotion(room, boss) {
@@ -1259,8 +1502,9 @@ function gapAhead(room, boss, direction) {
 }
 
 function updateBossPhase(room, boss) {
+  if (room.training?.phase) { boss.phase = room.training.phase; return; }
   const ratio = boss.hp / boss.maxHp;
-  const nextPhase = ratio <= 0.2 ? 3 : ratio <= 0.5 ? 2 : 1;
+  const nextPhase = room.contractEffect?.earlyPhases ? (ratio <= 0.35 ? 3 : ratio <= 0.7 ? 2 : 1) : (ratio <= 0.2 ? 3 : ratio <= 0.5 ? 2 : 1);
   if (nextPhase <= boss.phase) return;
   boss.phase = nextPhase;
   boss.phaseFlash = 0.85;
@@ -1275,6 +1519,13 @@ function updateBoss(room) {
   const boss = room.boss;
   if (!boss || boss.hp <= 0) return;
   const threatStage = difficultyStage(room.stage);
+  boss.arcaneMark = Math.max(0, (boss.arcaneMark || 0) - DT);
+  boss.breached = Math.max(0, (boss.breached || 0) - DT);
+  if (boss.exposed > 0) {
+    boss.exposed = Math.max(0, boss.exposed - DT);
+    if (boss.exposed === 0) boss.poise = boss.maxPoise;
+  }
+  if (boss.exposed <= 0 && boss.poiseRegen > 0) boss.poise = Math.min(boss.maxPoise, boss.poise + boss.poiseRegen * DT);
   updateBossPhase(room, boss);
   boss.flash = Math.max(0, boss.flash - DT);
   boss.phaseFlash = Math.max(0, boss.phaseFlash - DT);
@@ -1282,6 +1533,7 @@ function updateBoss(room) {
   boss.jumpCooldown = Math.max(0, boss.jumpCooldown - DT);
   boss.gapLeapTimer = Math.max(0, boss.gapLeapTimer - DT);
   boss.repositionTimer -= DT;
+  const vengeance = boss.hp / boss.maxHp < 0.3 ? boss.lowHpHaste || 1 : 1;
   if (boss.dashTimer > 0) boss.dashTimer -= DT;
   if (boss.stagger > 0) {
     boss.stagger -= DT;
@@ -1301,11 +1553,11 @@ function updateBoss(room) {
       executeBossAttack(room, attack);
       attack.phase = 'recovery';
       const phaseRate = boss.phase === 3 ? 0.66 : boss.phase === 2 ? 0.8 : 1;
-      attack.timer = attack.duration = Math.max(0.2, (0.58 - threatStage * 0.0027) * boss.attackRate * phaseRate);
+      attack.timer = attack.duration = Math.max(0.2, (0.58 - threatStage * 0.0027) * boss.attackRate * phaseRate * vengeance);
     } else if (attack.phase === 'recovery' && attack.timer <= 0) {
       boss.currentAttack = null;
       const phaseRate = boss.phase === 3 ? 0.58 : boss.phase === 2 ? 0.76 : 1;
-      boss.attackCooldown = Math.max(0.34, (1.18 - threatStage * 0.0055) * boss.attackRate * phaseRate);
+      boss.attackCooldown = Math.max(0.34, (1.18 - threatStage * 0.0055) * boss.attackRate * phaseRate * vengeance);
     }
     return;
   }
@@ -1315,21 +1567,22 @@ function updateBoss(room) {
   const absoluteDistance = Math.abs(distance);
   boss.facing = distance < 0 ? -1 : 1;
   boss.attackCooldown -= DT;
-  const phaseMove = boss.phase === 3 ? 1.32 : boss.phase === 2 ? 1.16 : 1;
+  const lowHpHaste = boss.hp / boss.maxHp < 0.3 ? boss.lowHpHaste || 1 : 1;
+  const phaseMove = (boss.phase === 3 ? 1.32 : boss.phase === 2 ? 1.16 : 1) / lowHpHaste;
   const moveSpeed = (118 + Math.min(205, threatStage * 1.88)) * boss.moveRate * phaseMove;
   const preferredDistance = threatStage >= 55 ? 195 : 165;
 
   if (boss.repositionTimer <= 0) {
     boss.repositionTimer = Math.max(0.72, 2.45 - threatStage * 0.013);
-    boss.moveDirection = Math.random() < 0.55 ? Math.sign(distance) || boss.facing : -(Math.sign(distance) || boss.facing);
+    boss.moveDirection = roomRandom(room) < 0.55 ? Math.sign(distance) || boss.facing : -(Math.sign(distance) || boss.facing);
     const canDash = threatStage >= 12 && boss.dashCooldown <= 0 && absoluteDistance > 210 && absoluteDistance < 920;
-    if (canDash && Math.random() < 0.48 + Math.min(0.28, threatStage * 0.003)) {
+    if (canDash && roomRandom(room) < 0.48 + Math.min(0.28, threatStage * 0.003)) {
       boss.dashTimer = 0.16 + Math.min(0.1, threatStage * 0.001);
       boss.dashDirection = Math.sign(distance) || boss.facing;
-      boss.dashCooldown = Math.max(1.15, 3.1 - threatStage * 0.017);
+      boss.dashCooldown = Math.max(0.7, (3.1 - threatStage * 0.017) / (boss.dashRate || 1));
       addEffect(room, 'blink', bossCenterX, boss.y + boss.h / 2, '#9b5261', 0.3, 105);
     }
-    const wantsJump = threatStage >= 8 && boss.onGround && boss.jumpCooldown <= 0 && (target.y < boss.y - 45 || Math.random() < 0.32);
+    const wantsJump = threatStage >= 8 && boss.onGround && boss.jumpCooldown <= 0 && (target.y < boss.y - 45 || roomRandom(room) < 0.32);
     if (wantsJump) {
       boss.vy = -(500 + Math.min(160, threatStage * 1.6));
       boss.onGround = false;
@@ -1378,14 +1631,14 @@ function updateProjectiles(room) {
     if (projectile.kind === 'boss') {
       for (const player of alivePlayers(room)) {
         if (circleHitsRect(projectile, player)) {
-          if (damagePlayer(room, player, projectile.damage, Math.sign(projectile.vx || 1) * 260, -240, projectile.parryable !== false, projectile.x, projectile) !== 'ignored') projectile.ttl = 0;
+          if (damagePlayer(room, player, projectile.damage, Math.sign(projectile.vx || 1) * 260, -240, projectile.parryable !== false, projectile.x, projectile, projectile.style === 'sky' ? 'Падение сверху' : 'Снаряд') !== 'ignored') projectile.ttl = 0;
           break;
         }
       }
     } else if (room.boss && circleHitsRect(projectile, room.boss)) {
       const owner = room.players.get(projectile.ownerId);
       if (owner) {
-        damageBoss(room, owner, projectile.damage, projectile.x, projectile.y, projectile.kind === 'player_magic' ? '#b58bd6' : '#9eb7dd');
+        damageBoss(room, owner, projectile.damage, projectile.x, projectile.y, projectile.kind === 'player_magic' ? '#b58bd6' : '#9eb7dd', false, true);
         if (room.status === 'playing' && projectile.kind === 'player_magic') owner.stamina = Math.min(owner.maxStamina, owner.stamina + perkCount(owner, 'mage_mana') * 6 + perkCount(owner, 'stamina_strike') * 4);
       }
       projectile.ttl = 0;
@@ -1403,7 +1656,7 @@ function updateWaves(room) {
     for (const player of alivePlayers(room)) {
       if (!wave.hit.includes(player.id) && overlaps(box, player)) {
         wave.hit.push(player.id);
-        damagePlayer(room, player, wave.damage, Math.sign(wave.vx) * 390, -330);
+        damagePlayer(room, player, wave.damage, Math.sign(wave.vx) * 390, -330, false, wave.x, null, 'Волна');
       }
     }
   }
@@ -1415,14 +1668,14 @@ function updateEffects(room) {
   room.effects = room.effects.filter((effect) => effect.ttl > 0);
 }
 
-function randomPerkOffer(player) {
+function randomPerkOffer(player, room) {
   const weights = { common: 48, rare: 31, epic: 16, legendary: 5 };
   const candidates = PERKS.filter((perk) => (!perk.classId || perk.classId === player.classId) && perkCount(player, perk.id) < (perk.maxStacks || Infinity));
   const selected = [];
   const pickFrom = (pool) => {
     const weighted = pool.map((perk) => ({ perk, weight: weights[perk.rarity] / (1 + perkCount(player, perk.id) * 0.7) }));
     const total = weighted.reduce((sum, item) => sum + item.weight, 0);
-    let roll = Math.random() * total;
+    let roll = roomRandom(room) * total;
     let chosen = weighted[0].perk;
     for (const item of weighted) { roll -= item.weight; if (roll <= 0) { chosen = item.perk; break; } }
     selected.push(chosen);
@@ -1432,7 +1685,7 @@ function randomPerkOffer(player) {
   while (selected.length < 3) {
     pickFrom(candidates.filter((perk) => !selected.includes(perk)));
   }
-  return selected.sort(() => Math.random() - 0.5);
+  return selected.sort(() => roomRandom(room) - 0.5);
 }
 
 function applyPerk(player, id) {
@@ -1446,14 +1699,32 @@ function applyPerk(player, id) {
 
 function clearStage(room) {
   if (room.status !== 'playing') return;
+  if (room.training) {
+    room.projectiles = []; room.waves = []; room.effects = []; room.bossEvents = [];
+    for (const player of room.players.values()) resetPlayerForStage(player, room, true);
+    spawnBoss(room);
+    io.to(room.code).emit('training-reset', { text: 'Манекен босса восстановлен. Тренировка продолжается.' });
+    return;
+  }
+  const defeatedBossId = room.boss?.bossId;
+  const secretVictory = SECRET_BOSSES.some((boss) => boss.id === defeatedBossId);
+  if (secretVictory && !room.secretBossesDefeated.includes(defeatedBossId)) room.secretBossesDefeated.push(defeatedBossId);
   room.stagesCleared = room.stage;
   for (const player of room.players.values()) {
     player.bossesDefeated += 1;
     if (player.stageHitsTaken === 0) player.noHitStages += 1;
-    const reward = Math.round((14 + difficultyStage(room.stage) * 2.9) * (1 + perkCount(player, 'greed') * 0.5) * (room.routeEffect?.reward || 1) * (room.modifier?.reward || 1));
-    io.to(player.id).emit('currency-earned', { amount: reward, stage: room.stage });
+    const reward = Math.round((14 + difficultyStage(room.stage) * 2.9)
+      * (room.difficulty === 'ngplus' ? 1.8 : 1)
+      * (room.mode === 'daily' ? 1.25 : 1)
+      * (1 + perkCount(player, 'greed') * 0.5)
+      * (room.routeEffect?.reward || 1)
+      * (room.contractEffect?.reward || 1)
+      * (room.modifier?.reward || 1));
+    if (player.connected) io.to(player.id).emit('currency-earned', { amount: reward, stage: room.stage });
+    else player.pendingCurrency += reward;
   }
-  io.to(room.code).emit('stage-cleared', { stage: room.stage });
+  io.to(room.code).emit('stage-cleared', { stage: room.stage, bossId: defeatedBossId });
+  if ((room.stage % STAGES_PER_BOSS === 0 || secretVictory) && defeatedBossId) io.to(room.code).emit('boss-reward', { bossId: defeatedBossId, secret: secretVictory, ...BOSS_REWARDS[defeatedBossId] });
   if (room.stage >= MAX_STAGE) return finishRun(room, 'victory');
   room.status = 'perk';
   room.projectiles = [];
@@ -1461,7 +1732,7 @@ function clearStage(room) {
   room.bossEvents = [];
   room.boss = null;
   for (const player of room.players.values()) {
-    player.perkOffer = randomPerkOffer(player);
+    player.perkOffer = randomPerkOffer(player, room);
     player.perkChosen = false;
     player.action = 'idle';
   }
@@ -1481,12 +1752,16 @@ function beginRouteVote(room) {
   room.status = 'route';
   room.routeVotes = {};
   const healingRoute = ROUTES.find((route) => route.id === 'healing');
-  const regularRoutes = ROUTES.filter((route) => route.id !== 'healing').sort(() => Math.random() - 0.5);
+  const regularRoutes = shuffled(room, ROUTES.filter((route) => route.id !== 'healing'));
+  const mastery = [...room.players.values()].reduce((sum, player) => sum + player.parries + player.perfectDodges, 0);
+  const availableSecret = SECRET_BOSSES.find((boss) => !room.secretBossesDefeated.includes(boss.id));
+  const secretRoute = availableSecret && room.stage >= 5 && room.stage % 5 === 0 && mastery >= Math.max(4, Math.floor(room.stage / 3))
+    ? { id:`secret_${availableSecret.id}`,name:'ЗАПЕЧАТАННАЯ ДВЕРЬ',description:'Точность отряда открыла путь к неизвестному владыке.',hp:1.18,attackRate:0.88,reward:2.2,secretBossId:availableSecret.id,special:'secret' } : null;
   if (room.stage >= room.nextHealingOfferStage) {
-    room.routeOffer = [healingRoute, ...regularRoutes.slice(0, 2)].sort(() => Math.random() - 0.5);
-    room.nextHealingOfferStage = room.stage + 4 + Math.floor(Math.random() * 3);
+    room.routeOffer = shuffled(room, [healingRoute, ...(secretRoute ? [secretRoute] : regularRoutes.slice(0, 1)), ...regularRoutes.slice(secretRoute ? 0 : 1, 2)]).slice(0,3);
+    room.nextHealingOfferStage = room.stage + 4 + Math.floor(roomRandom(room) * 3);
   } else {
-    room.routeOffer = regularRoutes.slice(0, 3);
+    room.routeOffer = secretRoute ? shuffled(room,[secretRoute,...regularRoutes.slice(0,2)]) : regularRoutes.slice(0, 3);
   }
   io.to(room.code).emit('state', snapshot(room));
 }
@@ -1519,26 +1794,86 @@ function checkRouteVotes(room) {
   }
   io.to(room.code).emit('route-chosen', { ...selected, healedPlayers, restoredHp });
   if (room.nextStageTimer) clearTimeout(room.nextStageTimer);
-  room.nextStageTimer = setTimeout(() => { room.nextStageTimer = null; startNextStage(room); }, 900);
+  room.nextStageTimer = setTimeout(() => { room.nextStageTimer = null; if (selected.id === 'forge') beginFusionChoice(room); else beginContractVote(room); }, 700);
+}
+
+function beginFusionChoice(room) {
+  if (!rooms.has(room.code)) return;
+  room.status = 'fusion'; room.fusionOffers = {};
+  for (const player of room.players.values()) {
+    const eligible = FUSIONS.filter((fusion) => !player.fusions.includes(fusion.id) && fusion.requires.every((id) => perkCount(player,id) > 0));
+    room.fusionOffers[player.id] = shuffled(room, eligible).slice(0,3);
+    player.perkChosen = false;
+  }
+  io.to(room.code).emit('state', snapshot(room));
+  if ([...room.players.values()].every((player) => !room.fusionOffers[player.id].length)) setTimeout(() => beginContractVote(room), 500);
+}
+
+function chooseFusion(room, player, id) {
+  if (player.perkChosen) return false;
+  const offer = room.fusionOffers[player.id] || [];
+  if (id !== 'skip') {
+    const fusion = offer.find((item) => item.id === id); if (!fusion) return false;
+    for (const perkId of fusion.requires) player.perks[perkId] = Math.max(0, perkCount(player, perkId) - 1);
+    player.fusions.push(fusion.id); applyPerk(player, '__fusion_refresh'); delete player.perks.__fusion_refresh;
+  }
+  player.perkChosen = true;
+  if ([...room.players.values()].every((candidate) => candidate.perkChosen || !(room.fusionOffers[candidate.id] || []).length)) setTimeout(() => beginContractVote(room), 500);
+  return true;
+}
+
+function beginContractVote(room) {
+  if (!rooms.has(room.code)) return;
+  room.status = 'contract'; room.contractVotes = {};
+  room.contractOffer = [CONTRACTS[0], ...shuffled(room, CONTRACTS.slice(1)).slice(0,2)];
+  io.to(room.code).emit('state', snapshot(room));
+}
+
+function checkContractVotes(room) {
+  if (room.status !== 'contract' || ![...room.players.keys()].every((id) => room.contractVotes[id])) return;
+  const counts = new Map(room.contractOffer.map((contract) => [contract.id,0]));
+  for (const id of Object.values(room.contractVotes)) counts.set(id,(counts.get(id)||0)+1);
+  const hostVote = room.contractVotes[room.hostId];
+  room.contractEffect = room.contractOffer.slice().sort((a,b)=>(counts.get(b)||0)-(counts.get(a)||0)||(a.id===hostVote?-1:b.id===hostVote?1:a.id.localeCompare(b.id)))[0];
+  io.to(room.code).emit('contract-chosen', room.contractEffect);
+  room.nextStageTimer = setTimeout(() => { room.nextStageTimer=null; startNextStage(room); }, 750);
 }
 
 function checkTeamWipe(room) {
-  if (room.status === 'playing' && room.players.size && [...room.players.values()].every((player) => player.downed)) finishRun(room, 'defeat');
+  if (room.status !== 'playing' || !room.players.size || ![...room.players.values()].every((player) => player.downed)) return;
+  if (room.training) {
+    for (const player of room.players.values()) resetPlayerForStage(player, room, true);
+    spawnBoss(room);
+    io.to(room.code).emit('training-reset', { text: 'Попытка перезапущена без потери прогресса.' });
+    return;
+  }
+  finishRun(room, 'defeat');
 }
 
 function finishRun(room, result) {
-  if (!['playing', 'perk', 'route'].includes(room.status)) return;
+  if (!['playing', 'perk', 'route', 'fusion', 'contract'].includes(room.status)) return;
   room.status = result;
   room.projectiles = [];
   room.waves = [];
   room.bossEvents = [];
+  const players = [...room.players.values()].map((player) => ({
+    id: player.id, name: player.name, classId: player.classId, damageDone: Math.round(player.damageDone),
+    perkCount: Object.values(player.perks).reduce((sum, count) => sum + count, 0), parries: player.parries, parryAttempts: player.parryAttempts,
+    perfectDodges: player.perfectDodges, hitsTaken: player.hitsTaken, lastDamageSource: player.lastDamageSource, poiseDamage: player.poiseDamage,
+    bossesDefeated: player.bossesDefeated, noHitStages: player.noHitStages, weaponId: player.weaponId, fusions: player.fusions,
+  })).sort((a, b) => b.damageDone - a.damageDone);
+  if (room.mode === 'daily') {
+    const key = `${room.dailyKey}:${room.players.size}`;
+    const board = dailyLeaderboard.get(key) || [];
+    board.push({ names: players.map((player) => player.name).join(' + '), stages: room.stagesCleared, elapsed: Math.round(room.elapsed * 10) / 10, result, teamSize: room.players.size, at: Date.now() });
+    board.sort((a,b) => b.stages - a.stages || a.elapsed - b.elapsed);
+    dailyLeaderboard.set(key, board.slice(0,10));
+  }
   io.to(room.code).emit('game-over', {
-    result, stageReached: room.stage, stagesCleared: room.stagesCleared, elapsed: room.elapsed, teamSize: room.players.size, modifier: room.modifier,
-    players: [...room.players.values()].map((player) => ({
-      id: player.id, name: player.name, classId: player.classId, damageDone: Math.round(player.damageDone),
-      perkCount: Object.values(player.perks).reduce((sum, count) => sum + count, 0), parries: player.parries,
-      bossesDefeated: player.bossesDefeated, noHitStages: player.noHitStages,
-    })).sort((a, b) => b.damageDone - a.damageDone),
+    result, stageReached: room.stage, stagesCleared: room.stagesCleared, elapsed: room.elapsed, teamSize: room.players.size,
+    modifier: room.modifier, difficulty: room.difficulty, mode: room.mode, dailyKey: room.dailyKey,
+    dailyLeaderboard: room.mode === 'daily' ? dailyLeaderboard.get(`${room.dailyKey}:${room.players.size}`) : [],
+    players,
   });
 }
 
@@ -1548,7 +1883,9 @@ function snapshot(room) {
     sequence: ++room.stateSequence, status: room.status, stage: room.stage, maxStage: MAX_STAGE,
     stagesCleared: room.stagesCleared, elapsed: Math.round(room.elapsed * 10) / 10,
     teamPower: Math.round(room.teamPower), modifier: room.modifier, routeEffect: room.routeEffect,
+    contractEffect: room.contractEffect, difficulty: room.difficulty, mode: room.mode, dailyKey: room.dailyKey, training: room.training,
     routeOffer: room.routeOffer, routeVotes: room.routeVotes,
+    fusionOffers: room.fusionOffers, contractOffer: room.contractOffer, contractVotes: room.contractVotes, pings: room.pings,
     players: [...room.players.values()].map((player) => publicPlayer(player, room.hostId, true)),
     arena: publicArena(room),
     boss: boss ? {
@@ -1556,7 +1893,9 @@ function snapshot(room) {
       vx: Math.round(boss.vx), vy: Math.round(boss.vy), onGround: boss.onGround,
       hp: Math.round(boss.hp), maxHp: boss.maxHp, damage: boss.damage, facing: boss.facing, tier: boss.tier,
       bossId: boss.bossId, name: boss.name, title: boss.title, color: boss.color, eye: boss.eye, phase: boss.phase, targetId: boss.targetId,
-      flash: boss.flash > 0, phaseFlash: boss.phaseFlash > 0, stagger: boss.stagger > 0, currentAttack: boss.currentAttack,
+      poise: Math.round(boss.poise), maxPoise: boss.maxPoise, exposed: boss.exposed > 0,
+      synergies: { arcaneMark: boss.arcaneMark > 0, breached: boss.breached > 0 },
+      mutations: boss.mutations, flash: boss.flash > 0, phaseFlash: boss.phaseFlash > 0, stagger: boss.stagger > 0, currentAttack: boss.currentAttack,
     } : null,
     projectiles: room.projectiles, waves: room.waves, effects: room.effects,
   };
@@ -1572,15 +1911,50 @@ function tickRoom(room) {
   updateProjectiles(room);
   updateWaves(room);
   updateEffects(room);
+  for (const ping of room.pings) ping.ttl -= DT;
+  room.pings = room.pings.filter((ping) => ping.ttl > 0);
   io.to(room.code).emit('state', snapshot(room));
 }
 
 io.on('connection', (socket) => {
   socket.data.roomCode = null;
+  socket.on('ping-check', (reply = () => {}) => { if (typeof reply === 'function') reply({ now: Date.now() }); });
+  socket.on('list-public-rooms', (reply = () => {}) => {
+    if (typeof reply !== 'function') return;
+    const region = process.env.RENDER_REGION || 'EU';
+    reply([...rooms.values()].filter((room) => room.isPublic && room.status === 'lobby' && room.players.size < MAX_PLAYERS).map((room) => ({
+      code: room.code, players: room.players.size, maxPlayers: MAX_PLAYERS, difficulty: room.difficulty, mode: room.mode, region, createdAt: room.createdAt,
+    })).slice(0, 30));
+  });
+  socket.on('resume-room', (payload, reply = () => {}) => {
+    const code = String(payload?.code || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5);
+    const token = cleanReconnectToken(payload?.reconnectToken);
+    if (!token) return reply({ ok: false, error: 'Ключ восстановления отсутствует' });
+    const room = rooms.get(code);
+    const player = room && [...room.players.values()].find((candidate) => candidate.reconnectToken === token && candidate.id !== socket.id);
+    if (!room || !player) return reply({ ok: false, error: 'Сессия для восстановления не найдена' });
+    const oldId = player.id;
+    const oldSocket = io.sockets.sockets.get(oldId);
+    if (oldSocket) { oldSocket.data.roomCode = null; oldSocket.leave(room.code); oldSocket.emit('session-replaced'); }
+    if (player.reconnectTimer) clearTimeout(player.reconnectTimer);
+    room.players.delete(oldId);
+    player.id = socket.id; player.connected = true; player.disconnectDeadline = 0; player.reconnectTimer = null;
+    room.players.set(socket.id, player);
+    if (room.hostId === oldId) room.hostId = socket.id;
+    if (room.routeVotes[oldId]) { room.routeVotes[socket.id] = room.routeVotes[oldId]; delete room.routeVotes[oldId]; }
+    if (room.contractVotes[oldId]) { room.contractVotes[socket.id] = room.contractVotes[oldId]; delete room.contractVotes[oldId]; }
+    if (room.fusionOffers[oldId]) { room.fusionOffers[socket.id] = room.fusionOffers[oldId]; delete room.fusionOffers[oldId]; }
+    socket.data.roomCode = room.code; socket.join(room.code);
+    const response = { ok: true, status: room.status, room: lobbyState(room), game: ['playing','perk','route','fusion','contract'].includes(room.status) ? snapshot(room) : null };
+    reply(response);
+    if (player.pendingCurrency > 0) { io.to(socket.id).emit('currency-earned', { amount: player.pendingCurrency, stage: room.stage }); player.pendingCurrency = 0; }
+    io.to(room.code).emit('toast', { text: `${player.name} вернулся в забег.`, tone: 'gold' });
+  });
   socket.on('create-room', (payload, reply = () => {}) => {
     leaveCurrentRoom(socket);
     const classId = cleanClass(payload?.classId);
-    const room = createRoom(socket, cleanName(payload?.name), classId, cleanSkin(payload?.skin), payload?.equippedSkills, cleanWeapon(payload?.weaponId, classId), payload?.appearance);
+    const progression = { specialization: payload?.specialization, masteryChoices: payload?.masteryChoices, reconnectToken: payload?.reconnectToken };
+    const room = createRoom(socket, cleanName(payload?.name), classId, cleanSkin(payload?.skin), payload?.equippedSkills, cleanWeapon(payload?.weaponId, classId), payload?.appearance, progression, { difficulty: payload?.difficulty, mode: payload?.mode, isPublic: payload?.isPublic });
     socket.data.roomCode = room.code;
     socket.join(room.code);
     reply({ ok: true, room: lobbyState(room), playerId: socket.id });
@@ -1594,7 +1968,7 @@ io.on('connection', (socket) => {
     if (room.players.size >= MAX_PLAYERS) return reply({ ok: false, error: 'В комнате уже 4 игрока' });
     leaveCurrentRoom(socket);
     const classId = cleanClass(payload?.classId);
-    room.players.set(socket.id, makePlayer(socket.id, cleanName(payload?.name), classId, cleanSkin(payload?.skin), room.players.size, payload?.equippedSkills, cleanWeapon(payload?.weaponId, classId), payload?.appearance));
+    room.players.set(socket.id, makePlayer(socket.id, cleanName(payload?.name), classId, cleanSkin(payload?.skin), room.players.size, payload?.equippedSkills, cleanWeapon(payload?.weaponId, classId), payload?.appearance, { specialization: payload?.specialization, masteryChoices: payload?.masteryChoices, reconnectToken: payload?.reconnectToken }));
     socket.data.roomCode = room.code;
     socket.join(room.code);
     reply({ ok: true, room: lobbyState(room), playerId: socket.id });
@@ -1609,7 +1983,23 @@ io.on('connection', (socket) => {
     player.weaponId = cleanWeapon(payload?.weaponId, player.classId);
     player.appearance = cleanAppearance(payload?.appearance);
     player.equippedSkills = cleanEquippedSkills(payload?.equippedSkills, player.classId);
+    player.specialization = cleanSpecialization(payload?.specialization, player.classId);
+    player.masteryChoices = cleanMasteryChoices(payload?.masteryChoices);
     emitLobby(room);
+  });
+  socket.on('start-training', (payload, reply = () => {}) => {
+    leaveCurrentRoom(socket);
+    const classId = cleanClass(payload?.classId);
+    const bossIndex = clamp(Math.floor(Number(payload?.bossIndex) || 0), 0, ALL_BOSSES.length - 1);
+    const attack = Object.hasOwn(ATTACK_LABELS, payload?.attack) ? payload.attack : 'random';
+    const phase = clamp(Math.floor(Number(payload?.phase) || 1), 1, 3);
+    const speed = clamp(Number(payload?.speed) || 1, 0.65, 1.35);
+    const arenaIndex = clamp(Math.floor(Number(payload?.arenaIndex) || 0), 0, ARENAS.length - 1);
+    const damageMode = ['harmless','normal','lethal'].includes(payload?.damageMode) ? payload.damageMode : 'normal';
+    const progression = { specialization: payload?.specialization, masteryChoices: payload?.masteryChoices, reconnectToken: payload?.reconnectToken };
+    const room = createRoom(socket, cleanName(payload?.name), classId, cleanSkin(payload?.skin), payload?.equippedSkills, cleanWeapon(payload?.weaponId, classId), payload?.appearance, progression, { training: { bossIndex, attack, phase, speed, arenaIndex, damageMode, infiniteStamina: payload?.infiniteStamina === true }, difficulty: 'normal', isPublic: false });
+    socket.data.roomCode = room.code; socket.join(room.code); startRun(room);
+    reply({ ok: true, code: room.code });
   });
   socket.on('start-game', (reply = () => {}) => {
     const room = socketRoom(socket);
@@ -1623,7 +2013,7 @@ io.on('connection', (socket) => {
     const room = socketRoom(socket);
     const player = room?.players.get(socket.id);
     if (!room || room.status !== 'playing' || !player || !value) return;
-    player.input = Object.fromEntries(['left', 'right', 'jump', 'light', 'heavy', 'parry', 'roll', 'team'].map((key) => [key, value[key] === true]));
+    player.input = Object.fromEntries(['left', 'right', 'jump', 'light', 'heavy', 'parry', 'roll', 'team', 'ability'].map((key) => [key, value[key] === true]));
   });
   socket.on('choose-perk', (id, reply = () => {}) => {
     const room = socketRoom(socket);
@@ -1645,6 +2035,38 @@ io.on('connection', (socket) => {
     checkRouteVotes(room);
     return reply({ ok: true });
   });
+  socket.on('choose-fusion', (id, reply = () => {}) => {
+    const room = socketRoom(socket);
+    const player = room?.players.get(socket.id);
+    if (!room || room.status !== 'fusion' || !player) return reply({ ok:false, error:'Кузня закрыта' });
+    const ok = chooseFusion(room, player, String(id));
+    if (ok) io.to(room.code).emit('state', snapshot(room));
+    return reply(ok ? { ok:true } : { ok:false, error:'Этот сплав недоступен' });
+  });
+  socket.on('choose-contract', (id, reply = () => {}) => {
+    const room = socketRoom(socket);
+    if (!room || room.status !== 'contract' || !room.players.has(socket.id)) return reply({ ok:false, error:'Выбор контракта закрыт' });
+    if (!room.contractOffer.some((contract) => contract.id === id)) return reply({ ok:false, error:'Такого контракта нет' });
+    room.contractVotes[socket.id] = id;
+    io.to(room.code).emit('state', snapshot(room));
+    checkContractVotes(room);
+    return reply({ ok:true });
+  });
+  socket.on('team-ping', (type, reply = () => {}) => {
+    const room = socketRoom(socket);
+    const player = room?.players.get(socket.id);
+    if (!room || room.status !== 'playing' || !player || !PING_TYPES.has(type)) return reply({ ok:false });
+    if (player.downed && player.pingsRemaining <= 0) return reply({ ok:false, error:'Сигналы закончились до следующей стадии' });
+    if (player.downed) player.pingsRemaining -= 1;
+    const target = type === 'attack' || type === 'poise' ? room.boss : player;
+    room.pings.push({ id:entitySequence++, type, playerId:player.id, name:player.name, x:(target?.x||player.x)+(target?.w||player.w)/2, y:(target?.y||player.y)-18, ttl:3 });
+    return reply({ ok:true });
+  });
+  socket.on('daily-leaderboard', (teamSize, reply = () => {}) => {
+    const size = clamp(Math.floor(Number(teamSize) || 1), 1, MAX_PLAYERS);
+    const key = new Date().toISOString().slice(0,10);
+    return reply({ key, teamSize:size, entries:dailyLeaderboard.get(`${key}:${size}`) || [] });
+  });
   if (process.env.NODE_ENV === 'test') {
     socket.on('debug-clear-stage', () => {
       const room = socketRoom(socket);
@@ -1661,7 +2083,7 @@ io.on('connection', (socket) => {
       setArena(room);
       for (const player of room.players.values()) resetPlayerForStage(player, room);
       spawnBoss(room);
-      io.to(room.code).emit('stage-start', { stage: room.stage, arena: publicArena(room, true) });
+      io.to(room.code).emit('stage-start', { stage: room.stage, arena: publicArena(room, true), boss: { id: room.boss.bossId, name: room.boss.name } });
     });
     socket.on('debug-set-boss-hp', (ratio) => {
       const room = socketRoom(socket);
@@ -1727,13 +2149,13 @@ io.on('connection', (socket) => {
     const room = socketRoom(socket);
     if (!room) return reply({ ok: false, error: 'Комната закрыта' });
     if (room.hostId !== socket.id) return reply({ ok: false, error: 'Только создатель может запустить новый забег' });
-    Object.assign(room, { status: 'lobby', boss: null, projectiles: [], waves: [], effects: [], bossEvents: [], arena: null, arenaTime: 0, routeOffer: [], routeVotes: {}, routeEffect: null, modifier: null, teamPower: 0 });
+    Object.assign(room, { status: 'lobby', boss: null, projectiles: [], waves: [], effects: [], bossEvents: [], pings: [], arena: null, arenaTime: 0, routeOffer: [], routeVotes: {}, routeEffect: null, fusionOffers: {}, contractOffer: [], contractVotes: {}, contractEffect: null, modifier: null, teamPower: 0 });
     emitLobby(room);
     return reply({ ok: true });
   });
   socket.on('leave-room', () => leaveCurrentRoom(socket));
-  socket.on('disconnect', () => leaveCurrentRoom(socket));
+  socket.on('disconnect', () => handleDisconnect(socket));
 });
 
 setInterval(() => { for (const room of rooms.values()) tickRoom(room); }, 1000 / TICK_RATE);
-server.listen(PORT, '0.0.0.0', () => console.log(`RIFT//RAID: ASHEN HUNDRED is running at http://localhost:${PORT}`));
+server.listen(PORT, '0.0.0.0', () => console.log(`RIFT//RAID: ASHEN FIFTY is running at http://localhost:${PORT}`));

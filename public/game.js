@@ -38,6 +38,78 @@ const ARMOR_META = {
   moon:{name:'Луна',color:'#7189b7'}, violet:{name:'Пустота',color:'#8b63a0'}, ember:{name:'Угли',color:'#bc613b'}, void:{name:'Чернота',color:'#38333f'},
 };
 const AURA_META = { ash:{name:'Пепельный след',color:'#b5aa96'}, sparks:{name:'Искры',color:'#e38a4c'}, mist:{name:'Лунный туман',color:'#8baad2'}, runes:{name:'Руны пустоты',color:'#ae75c4'} };
+const SPECIALIZATION_META = {
+  swordsman: {
+    duelist: { name: 'Дуэлянт', description: '+12% урона и +5% скорости.' },
+    guardian: { name: 'Страж', description: '+1 HP и более широкое окно парирования.' },
+  },
+  greatsword: {
+    juggernaut: { name: 'Джаггернаут', description: '+1 HP и +12% к тяжёлым атакам.' },
+    reaper: { name: 'Жнец', description: '+10% скорости и ускоренные лёгкие атаки.' },
+  },
+  rogue: {
+    assassin: { name: 'Ассасин', description: 'Усиленные удары в спину и +6% общего урона.' },
+    thrower: { name: 'Метатель', description: '+25% к снарядам и +12 выносливости.' },
+  },
+  spearman: {
+    sentinel: { name: 'Часовой', description: 'Дальнее оружие и более широкое парирование.' },
+    vanguard: { name: 'Авангард', description: 'Сильнее воздушные и тяжёлые атаки.' },
+  },
+  berserker: {
+    fury: { name: 'Ярость', description: 'Сильнее при 1 HP и немного быстрее.' },
+    breaker: { name: 'Крушитель', description: 'Больше урона стойкости и тяжёлых атак.' },
+  },
+  ashmage: {
+    flame: { name: 'Пламя', description: 'Сильнее магия и её снаряды.' },
+    void: { name: 'Пустота', description: '+18 выносливости и длиннее неуязвимость переката.' },
+  },
+};
+const MASTERY_OPTIONS = {
+  5: {
+    tempo: { name: 'Темп', description: 'Атаки выполняются быстрее.' },
+    force: { name: 'Сила', description: '+10% к урону оружия.' },
+  },
+  10: {
+    reach: { name: 'Дистанция', description: '+12% к дальности атак.' },
+    economy: { name: 'Экономия', description: 'Атаки расходуют меньше выносливости.' },
+  },
+  15: {
+    finesse: { name: 'Точность', description: 'Шире окно парирования и безопаснее перекат.' },
+    execution: { name: 'Казнь', description: 'Больше урона боссу с низким здоровьем.' },
+  },
+};
+const BOSS_META = [
+  { id:'grave_knight', name:'Могильный рыцарь', title:'Хранитель первых врат', hint:'Не жадничай после двойного взмаха.', weakness:'Парирование ближних серий быстро ломает стойкость.' },
+  { id:'ember_colossus', name:'Тлеющий колосс', title:'Сердце погасшей кузни', hint:'Покидай отмеченную землю до удара сверху.', weakness:'Долгие замахи дают окно для тяжёлой атаки.' },
+  { id:'drowned_oracle', name:'Утонувший оракул', title:'Голос затопленной крипты', hint:'Проходи сквозь кольцо перекатом.', weakness:'Уязвим после луча и вспышки кольца.' },
+  { id:'bell_inquisitor', name:'Колокольный инквизитор', title:'Судья погребальной башни', hint:'Следи одновременно за боссом и падающими зонами.', weakness:'Быстрые удары хорошо сбивают стойкость.' },
+  { id:'crimson_duelist', name:'Багровый дуэлянт', title:'Клинок без поражений', hint:'Его рывок проще парировать, чем убегать от него.', weakness:'Теряет стойкость от точных парирований.' },
+  { id:'iron_warden', name:'Железный надзиратель', title:'Замок безмолвной тюрьмы', hint:'Не оставайся между клинками арены и боссом.', weakness:'Медленно разворачивается после тяжёлых серий.' },
+  { id:'moon_huntress', name:'Лунная охотница', title:'Стрела над разломом', hint:'Меняй высоту и не стой на одной платформе.', weakness:'Коротко открывается после залпа.' },
+  { id:'storm_sovereign', name:'Владыка бури', title:'Корона громового сердца', hint:'Заранее планируй путь между зонами молний.', weakness:'Тяжёлые атаки эффективны после небесного падения.' },
+  { id:'void_apostle', name:'Апостол пустоты', title:'Глашатай последней бездны', hint:'Сохраняй выносливость для телепорта и луча.', weakness:'Метка мага открывает сильные командные комбинации.' },
+  { id:'ashen_king', name:'Пепельный король', title:'Последний владыка печатей', hint:'В третьей фазе отвечай на каждую атаку отдельно.', weakness:'Слом стойкости — главное окно для общего натиска.' },
+  { id:'mirror_saint', name:'Зеркальный святой', title:'Отражение забытой клятвы', hint:'Не повторяй один и тот же ответ на его серии.', weakness:'Идеальное уклонение открывает короткое окно контратаки.' },
+  { id:'rootless_beast', name:'Безкорневой зверь', title:'Голод живых руин', hint:'Держи путь к безопасному краю открытым.', weakness:'Тяжёлые атаки быстрее ломают его стойкость.' },
+  { id:'clockwork_mourner', name:'Часовой плакальщик', title:'Последняя минута колокольни', hint:'Слушай ритм телеграфов и не торопись.', weakness:'Парирование двойных атак сбивает его темп.' },
+];
+const BOSS_BY_ID = new Map(BOSS_META.map((boss) => [boss.id, boss]));
+const ATTACK_META = {
+  random:'Случайная атака', slash:'Одиночный взмах', twin_slash:'Двойной взмах', cleave:'Широкий размах', charge:'Рывок',
+  wave:'Волна', volley:'Залп', slam:'Удар по земле', blink:'Телепорт', marked:'Метки', quake:'Землетрясение',
+  ring_burst:'Кольцевая вспышка', skyfall:'Небесное падение', beam:'Луч',
+};
+const DEFAULT_BINDINGS = { left:'KeyA', right:'KeyD', jump:'KeyW', light:'KeyJ', parry:'KeyH', heavy:'KeyK', roll:'KeyL', ability:'KeyV', team:'KeyU' };
+const ACTION_LABELS = { left:'Влево', right:'Вправо', jump:'Прыжок', light:'Лёгкая атака', parry:'Парирование', heavy:'Тяжёлая атака', roll:'Перекат', ability:'Способность класса', team:'Клятва отряда' };
+const KEY_LABELS = { Space:'ПРОБЕЛ', ArrowLeft:'←', ArrowRight:'→', ArrowUp:'↑', ArrowDown:'↓' };
+const EVOLVING_PERKS = new Set(['vitality','quickstep','safe_roll','sharpened','heavy_mastery','echo_blade','parry_master']);
+const reconnectToken = (() => {
+  const stored = sessionStorage.getItem('riftRaidReconnectToken');
+  if (stored) return stored;
+  const value = window.crypto?.randomUUID?.() || `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+  sessionStorage.setItem('riftRaidReconnectToken', value);
+  return value;
+})();
 const ACHIEVEMENTS = [
   {id:'first_seal',name:'Первая печать',description:'Пройди хотя бы одну стадию.',stat:'highestStage',goal:2,reward:250},
   {id:'first_lord',name:'Первый владыка',description:'Доберись до стадии 6.',stat:'highestStage',goal:6,reward:600},
@@ -151,7 +223,16 @@ const DEFAULT_PROFILE = {
   unlockedWeapons: Object.values(DEFAULT_WEAPON),
   selectedWeapons: { ...DEFAULT_WEAPON },
   classProgress: Object.fromEntries(Object.keys(CLASS_META).map((classId) => [classId, { xp: 0 }])),
-  appearance: { armor: 'ashen', aura: 'ash' },
+  weaponProgress: Object.fromEntries(Object.keys(WEAPON_META).map((weaponId) => [weaponId, { xp: 0, choices: {} }])),
+  classSpecializations: {},
+  bossTrophies: [],
+  bossCodex: Object.fromEntries(BOSS_META.map((boss) => [boss.id, { seen: 0, wins: 0 }])),
+  ngPlusUnlocked: false,
+  ngPlusWins: 0,
+  appearance: { armor: 'ashen', aura: 'ash', title: 'wanderer' },
+  settings: { bindings: { ...DEFAULT_BINDINGS }, effectsVolume: 0.7, musicVolume: 0.45, screenShake: 1, gamepad: true, highContrast:false, reducedFlash:false, telegraphText:true, colorblind:false },
+  loadoutPresets: [null,null,null],
+  ghosts: {},
   stats: { runs: 0, highestStage: 1, parries: 0, bosses: 0, noHitStages: 0, damage: 0 },
   achievements: [],
   daily: null,
@@ -167,16 +248,24 @@ const dom = Object.fromEntries([
   'closeShopButton', 'currencyCount', 'shopCurrency', 'classShop', 'skinShop', 'boxBuyButton', 'boxSlots',
   'skillClassTabs', 'skillCollection', 'skillCollectionCount', 'equippedSkillCount', 'weaponShop', 'classLevelText', 'appearanceShop',
   'challengeGrid', 'achievementGrid', 'routeOverlay', 'routeGrid', 'routeSubtitle', 'routeWaiting',
+  'fusionOverlay', 'fusionGrid', 'fusionWaiting', 'contractOverlay', 'contractGrid', 'contractWaiting',
   'teamPowerBar', 'teamPowerText', 'modifierText', 'bossPhaseText', 'resultOverlay',
   'resultKicker', 'resultTitle', 'resultSubtitle', 'runSummary', 'resultStats', 'rematchButton', 'resultExitButton',
+  'runDifficulty', 'runMode', 'publicRoomToggle', 'presetBar', 'trainingBossSelect', 'trainingAttackSelect', 'trainingPhaseSelect', 'trainingArenaSelect', 'trainingSpeedSelect', 'trainingDamageSelect', 'trainingStaminaToggle', 'startTrainingButton',
+  'publicRoomsButton', 'publicRoomsList', 'bossPoiseBar', 'bossStatusText', 'trainingExitButton',
+  'dailyBoardButton', 'dailyBoard', 'masteryTree', 'specializationShop', 'bossCodex', 'settingsPanel',
+  'abilityBar', 'abilityLabel', 'spectatorPanel', 'spectatorTarget',
 ].map((id) => [id, document.querySelector(`#${id}`)]));
 
 const ctx = dom.gameCanvas.getContext('2d');
 const screens = [dom.homeScreen, dom.lobbyScreen, dom.gameScreen];
-const input = { left: false, right: false, jump: false, light: false, heavy: false, parry: false, roll: false, team: false };
+const input = { left: false, right: false, jump: false, light: false, heavy: false, parry: false, roll: false, ability: false, team: false };
+const keyboardInput = { ...input };
+const gamepadInput = { ...input };
 
 let profile = loadProfile();
 applyUiSize(profile.uiSize);
+applyAccessibility();
 let selectedClass = profile.unlockedClasses.includes('swordsman') ? 'swordsman' : profile.unlockedClasses[0];
 let skillFilterClass = selectedClass;
 let roomCode = '';
@@ -196,24 +285,44 @@ let audioContext = null;
 let previousBossHp = null;
 let boxTimerInterval = null;
 let currentRouteKey = '';
+let currentFusionKey = '';
+let currentContractKey = '';
 let previousMeHp = null;
 let screenShake = 0;
 let hitStopUntil = 0;
 let bossMusicTimer = null;
 let bossMusicKey = '';
 let bossMusicStep = 0;
+let waitingBindingAction = '';
+let currentTraining = false;
+let resumeInProgress = false;
+let gamepadWasConnected = false;
+let spectatorIndex = 0;
+let ghostRecording = [];
+let ghostPlayback = [];
+let lastGhostSampleAt = -1;
+let ghostPlaybackIndex = 0;
 
 function dateKey() { return new Date().toISOString().slice(0, 10); }
 function freshDaily() { return { date: dateKey(), stages: 0, parries: 0, damage: 0, claimed: [] }; }
 function xpForLevel(level) { const steps = Math.max(0, level - 1); return steps * 100 + 40 * steps * (steps + 1); }
 function levelFromXp(xp) { let level = 1; while (level < 50 && xp >= xpForLevel(level + 1)) level += 1; return level; }
 function classLevel(classId) { return levelFromXp(profile.classProgress?.[classId]?.xp || 0); }
+function masteryXpForLevel(level) { const steps = Math.max(0, level - 1); return steps * 80 + 26 * steps * (steps + 1); }
+function masteryLevel(weaponId) { const xp = profile.weaponProgress?.[weaponId]?.xp || 0; let level = 1; while (level < 20 && xp >= masteryXpForLevel(level + 1)) level += 1; return level; }
 
 function applyUiSize(size) {
   const safeSize = ['small', 'normal', 'large'].includes(size) ? size : 'normal';
   profile.uiSize = safeSize;
   document.documentElement.dataset.uiSize = safeSize;
   dom.uiSizePicker?.querySelectorAll('[data-ui-size]').forEach((button) => button.classList.toggle('selected', button.dataset.uiSize === safeSize));
+}
+
+function applyAccessibility() {
+  if (!profile?.settings) return;
+  document.documentElement.dataset.highContrast = String(profile.settings.highContrast === true);
+  document.documentElement.dataset.colorblind = String(profile.settings.colorblind === true);
+  document.body.classList.toggle('reduced-flash', profile.settings.reducedFlash === true);
 }
 
 function loadProfile() {
@@ -241,10 +350,64 @@ function loadProfile() {
       const candidate = saved.selectedWeapons?.[classId];
       selectedWeapons[classId] = unlockedWeapons.includes(candidate) && WEAPON_META[candidate]?.classId === classId ? candidate : DEFAULT_WEAPON[classId];
     }
+    const weaponProgress = {};
+    for (const weaponId of Object.keys(WEAPON_META)) {
+      const xp = Math.max(0, Math.floor(Number(saved.weaponProgress?.[weaponId]?.xp) || 0));
+      let level = 1;
+      while (level < 20 && xp >= masteryXpForLevel(level + 1)) level += 1;
+      const choices = {};
+      for (const [required, options] of Object.entries(MASTERY_OPTIONS)) {
+        const choice = saved.weaponProgress?.[weaponId]?.choices?.[required];
+        if (level >= Number(required) && Object.hasOwn(options, choice)) choices[required] = choice;
+      }
+      weaponProgress[weaponId] = { xp, choices };
+    }
+    const classSpecializations = {};
+    for (const classId of Object.keys(CLASS_META)) {
+      const candidate = saved.classSpecializations?.[classId];
+      if (classLevelFromProgress(classProgress, classId) >= 10 && Object.hasOwn(SPECIALIZATION_META[classId], candidate)) classSpecializations[classId] = candidate;
+    }
+    const bossTrophies = [...new Set(Array.isArray(saved.bossTrophies) ? saved.bossTrophies.filter((id) => BOSS_BY_ID.has(id)) : [])];
+    const bossCodex = Object.fromEntries(BOSS_META.map((boss) => [boss.id, {
+      seen: Math.max(0, Math.floor(Number(saved.bossCodex?.[boss.id]?.seen) || 0)),
+      wins: Math.max(0, Math.floor(Number(saved.bossCodex?.[boss.id]?.wins) || 0)),
+    }]));
+    const savedTitle = String(saved.appearance?.title || 'wanderer');
     const appearance = {
       armor: ARMOR_META[saved.appearance?.armor] ? saved.appearance.armor : 'ashen',
       aura: AURA_META[saved.appearance?.aura] ? saved.appearance.aura : 'ash',
+      title: savedTitle === 'wanderer' || bossTrophies.some((id) => savedTitle === `title_${id}`) ? savedTitle : 'wanderer',
     };
+    const bindings = {};
+    for (const [action, fallback] of Object.entries(DEFAULT_BINDINGS)) {
+      const candidate = saved.settings?.bindings?.[action];
+      bindings[action] = typeof candidate === 'string' && candidate.length <= 32 ? candidate : fallback;
+    }
+    const settings = {
+      bindings,
+      effectsVolume: clampNumber(saved.settings?.effectsVolume, 0, 1, 0.7),
+      musicVolume: clampNumber(saved.settings?.musicVolume, 0, 1, 0.45),
+      screenShake: clampNumber(saved.settings?.screenShake, 0, 1.5, 1),
+      gamepad: saved.settings?.gamepad !== false,
+      highContrast: saved.settings?.highContrast === true,
+      reducedFlash: saved.settings?.reducedFlash === true,
+      telegraphText: saved.settings?.telegraphText !== false,
+      colorblind: saved.settings?.colorblind === true,
+    };
+    const loadoutPresets = Array.from({length:3},(_,index)=>{
+      const preset=saved.loadoutPresets?.[index];
+      return preset && CLASS_META[preset.classId] ? {
+        classId:preset.classId, weaponId:WEAPON_META[preset.weaponId]?.classId===preset.classId?preset.weaponId:DEFAULT_WEAPON[preset.classId],
+        skin:SKIN_META[preset.skin]?preset.skin:'iron', equippedSkills:Array.isArray(preset.equippedSkills)?preset.equippedSkills.slice(0,3):[],
+        specialization:Object.hasOwn(SPECIALIZATION_META[preset.classId]||{},preset.specialization)?preset.specialization:null,
+        appearance:preset.appearance||{armor:'ashen',aura:'ash',title:'wanderer'},
+      }:null;
+    });
+    const ghosts = {};
+    for (const classId of Object.keys(CLASS_META)) {
+      const ghost=saved.ghosts?.[classId];
+      if (ghost && Array.isArray(ghost.samples)) ghosts[classId]={stages:Math.max(0,Number(ghost.stages)||0),samples:ghost.samples.slice(0,12000)};
+    }
     const stats = {
       runs: Math.max(0, Number(saved.stats?.runs) || 0), highestStage: Math.max(1, Number(saved.stats?.highestStage) || 1),
       parries: Math.max(0, Number(saved.stats?.parries) || 0), bosses: Math.max(0, Number(saved.stats?.bosses) || 0),
@@ -263,7 +426,16 @@ function loadProfile() {
       unlockedWeapons,
       selectedWeapons,
       classProgress,
+      weaponProgress,
+      classSpecializations,
+      bossTrophies,
+      bossCodex,
+      ngPlusUnlocked: saved.ngPlusUnlocked === true,
+      ngPlusWins: Math.max(0, Math.floor(Number(saved.ngPlusWins) || 0)),
       appearance,
+      settings,
+      loadoutPresets,
+      ghosts,
       stats,
       achievements: [...new Set(Array.isArray(saved.achievements) ? saved.achievements.filter((id) => ACHIEVEMENTS.some((achievement) => achievement.id === id)) : [])],
       daily,
@@ -273,6 +445,15 @@ function loadProfile() {
   }
 }
 
+function clampNumber(value, minimum, maximum, fallback) {
+  const number = Number(value);
+  return Number.isFinite(number) ? Math.min(maximum, Math.max(minimum, number)) : fallback;
+}
+
+function classLevelFromProgress(classProgress, classId) {
+  return levelFromXp(classProgress?.[classId]?.xp || 0);
+}
+
 function saveProfile() {
   localStorage.setItem('riftRaidAshenProfile', JSON.stringify(profile));
   renderProfile();
@@ -280,13 +461,24 @@ function saveProfile() {
 
 function equippedForClass(classId = selectedClass) { return profile.equippedSkills[classId] || []; }
 function classPayload(classId = selectedClass) {
-  return { classId, skin: profile.selectedSkin, weaponId: profile.selectedWeapons[classId] || DEFAULT_WEAPON[classId], appearance: profile.appearance, equippedSkills: equippedForClass(classId) };
+  const weaponId = profile.selectedWeapons[classId] || DEFAULT_WEAPON[classId];
+  return {
+    classId, skin: profile.selectedSkin, weaponId, appearance: profile.appearance,
+    equippedSkills: equippedForClass(classId), specialization: profile.classSpecializations[classId] || null,
+    masteryChoices: profile.weaponProgress[weaponId]?.choices || {}, reconnectToken,
+  };
 }
 
 function renderProfile() {
   applyUiSize(profile.uiSize);
+  applyAccessibility();
   dom.currencyCount.textContent = profile.currency;
   dom.shopCurrency.textContent = profile.currency;
+  if (dom.runDifficulty) {
+    const ngOption = dom.runDifficulty.querySelector('option[value="ngplus"]');
+    if (ngOption) { ngOption.disabled = !profile.ngPlusUnlocked; ngOption.textContent = profile.ngPlusUnlocked ? 'Новая игра+ · усиленные боссы' : 'Новая игра+ · пройди обычный забег'; }
+    if (!profile.ngPlusUnlocked && dom.runDifficulty.value === 'ngplus') dom.runDifficulty.value = 'normal';
+  }
   document.querySelectorAll('.class-option').forEach((button) => {
     const id = button.dataset.class;
     const unlocked = profile.unlockedClasses.includes(id);
@@ -298,7 +490,20 @@ function renderProfile() {
       label.className = unlocked ? '' : 'lock-label';
     }
   });
+  renderPresets();
   renderShop();
+}
+
+function renderPresets() {
+  if (!dom.presetBar) return;
+  dom.presetBar.innerHTML = profile.loadoutPresets.map((preset,index)=>`<div class="preset-slot"><button type="button" data-load-preset="${index}" ${preset?'':'disabled'}>${preset?`${index+1} · ${CLASS_META[preset.classId].label}`:`${index+1} · ПУСТО`}</button><button type="button" data-save-preset="${index}" title="Сохранить текущую экипировку">＋</button></div>`).join('');
+  dom.presetBar.querySelectorAll('[data-save-preset]').forEach((button)=>button.addEventListener('click',()=>{
+    const classId=selectedClass;profile.loadoutPresets[Number(button.dataset.savePreset)]={classId,weaponId:profile.selectedWeapons[classId],skin:profile.selectedSkin,equippedSkills:[...equippedForClass(classId)],specialization:profile.classSpecializations[classId]||null,appearance:{...profile.appearance}};saveProfile();toast(`Пресет ${Number(button.dataset.savePreset)+1} сохранён`,'gold');
+  }));
+  dom.presetBar.querySelectorAll('[data-load-preset]:not(:disabled)').forEach((button)=>button.addEventListener('click',()=>{
+    const preset=profile.loadoutPresets[Number(button.dataset.loadPreset)];if(!preset)return;if(!profile.unlockedClasses.includes(preset.classId))return toast('Класс этого пресета пока закрыт','warn');
+    selectedClass=preset.classId;profile.selectedSkin=profile.unlockedSkins.includes(preset.skin)?preset.skin:'iron';if(profile.unlockedWeapons.includes(preset.weaponId))profile.selectedWeapons[preset.classId]=preset.weaponId;profile.equippedSkills[preset.classId]=preset.equippedSkills.filter((id)=>profile.ownedSkills.includes(id)).slice(0,3);if(preset.specialization)profile.classSpecializations[preset.classId]=preset.specialization;profile.appearance={...profile.appearance,...preset.appearance};saveProfile();if(lobbyState)socket.emit('select-class',classPayload());toast(`Пресет ${Number(button.dataset.loadPreset)+1} загружен`,'gold');
+  }));
 }
 
 function escapeHtml(value) {
@@ -461,12 +666,78 @@ function renderWeapons() {
   }));
 }
 
+function renderMastery() {
+  if (!dom.masteryTree) return;
+  const weaponId = profile.selectedWeapons[selectedClass] || DEFAULT_WEAPON[selectedClass];
+  const weapon = WEAPON_META[weaponId];
+  const progress = profile.weaponProgress[weaponId];
+  const level = masteryLevel(weaponId);
+  const floor = masteryXpForLevel(level);
+  const ceiling = level < 20 ? masteryXpForLevel(level + 1) : floor;
+  dom.masteryTree.innerHTML = `<div class="mastery-head"><div><strong>${weapon.name} · МАСТЕРСТВО ${level}</strong><small>${level >= 20 ? 'Максимальный уровень' : `${progress.xp - floor} / ${ceiling - floor} XP до следующего уровня`}</small></div><div class="mastery-progress"><i style="width:${level >= 20 ? 100 : (progress.xp - floor) / Math.max(1, ceiling - floor) * 100}%"></i></div></div>
+    ${Object.entries(MASTERY_OPTIONS).map(([required, options]) => {
+      const unlocked = level >= Number(required);
+      return `<section class="mastery-node ${unlocked ? 'unlocked' : 'locked'}"><b>УРОВЕНЬ ${required}</b><div>${Object.entries(options).map(([id, option]) => `<button type="button" data-mastery-level="${required}" data-mastery="${id}" class="${progress.choices[required] === id ? 'selected' : ''}" ${unlocked ? '' : 'disabled'}><strong>${option.name}</strong><small>${option.description}</small></button>`).join('')}</div></section>`;
+    }).join('')}`;
+  dom.masteryTree.querySelectorAll('[data-mastery]:not(:disabled)').forEach((button) => button.addEventListener('click', () => {
+    progress.choices[button.dataset.masteryLevel] = button.dataset.mastery;
+    saveProfile();
+    if (lobbyState) socket.emit('select-class', classPayload());
+    toast(`Мастерство: ${MASTERY_OPTIONS[button.dataset.masteryLevel][button.dataset.mastery].name}`, 'gold');
+  }));
+}
+
+function renderSpecializations() {
+  if (!dom.specializationShop) return;
+  const level = classLevel(selectedClass);
+  const selected = profile.classSpecializations[selectedClass];
+  dom.specializationShop.innerHTML = `<div class="specialization-intro"><strong>${CLASS_META[selectedClass].label} · УРОВЕНЬ ${level}</strong><small>${level >= 10 ? 'Можно менять специализацию между забегами.' : `Специализации откроются на 10-м уровне класса.`}</small></div><div class="specialization-grid">${Object.entries(SPECIALIZATION_META[selectedClass]).map(([id, item]) => `<button type="button" class="spec-card ${selected === id ? 'selected' : ''}" data-specialization="${id}" ${level >= 10 ? '' : 'disabled'}><i>${CLASS_META[selectedClass].icon}</i><strong>${item.name}</strong><small>${item.description}</small><b>${selected === id ? 'ВЫБРАНО' : level >= 10 ? 'ВЫБРАТЬ' : 'ЗАКРЫТО'}</b></button>`).join('')}</div>
+    <div class="combo-guide"><strong>КОМАНДНЫЕ СВЯЗКИ</strong><span><b>МАГ → ВОР</b> метка Пепла усиливает удар в спину и заряжает клятву</span><span><b>КОПЕЙЩИК → ТЯЖЁЛЫЙ МЕЧНИК</b> пробитая броня усиливает тяжёлый удар</span><span><b>БЕРСЕРК</b> продлевает окно сломанной стойкости тяжёлой атакой</span></div>`;
+  dom.specializationShop.querySelectorAll('[data-specialization]:not(:disabled)').forEach((button) => button.addEventListener('click', () => {
+    profile.classSpecializations[selectedClass] = button.dataset.specialization;
+    saveProfile();
+    if (lobbyState) socket.emit('select-class', classPayload());
+    toast(`Специализация: ${SPECIALIZATION_META[selectedClass][button.dataset.specialization].name}`, 'gold');
+  }));
+}
+
+function renderBossCodex() {
+  if (!dom.bossCodex) return;
+  dom.bossCodex.innerHTML = BOSS_META.map((boss, index) => {
+    const record = profile.bossCodex[boss.id] || { seen: 0, wins: 0 };
+    const known = record.seen > 0;
+    const trophy = profile.bossTrophies.includes(boss.id);
+    return `<article class="codex-card ${known ? 'known' : 'unknown'} ${trophy ? 'complete' : ''}"><span>${String(index + 1).padStart(2, '0')}</span><div><strong>${known ? boss.name : 'НЕИЗВЕСТНЫЙ ВЛАДЫКА'}</strong><b>${known ? boss.title : 'Запись закрыта'}</b><small>${known ? boss.hint : `Встреть босса на стадиях ${index * 5 + 1}–${index * 5 + 5}.`}</small>${known ? `<em>СЛАБОСТЬ: ${boss.weakness}</em>` : ''}</div><aside><b>${record.wins}</b><small>ПОБЕД</small>${trophy ? '<i>ТИТУЛ ПОЛУЧЕН</i>' : ''}</aside></article>`;
+  }).join('');
+}
+
+function formatKeyCode(code) {
+  if (KEY_LABELS[code]) return KEY_LABELS[code];
+  return String(code || '?').replace(/^Key/, '').replace(/^Digit/, '');
+}
+
+function renderSettings() {
+  if (!dom.settingsPanel) return;
+  dom.settingsPanel.innerHTML = `<div class="binding-grid">${Object.entries(ACTION_LABELS).map(([action, label]) => `<div><span>${label}</span><button type="button" data-rebind="${action}" class="${waitingBindingAction === action ? 'listening' : ''}">${waitingBindingAction === action ? 'НАЖМИ КЛАВИШУ' : formatKeyCode(profile.settings.bindings[action])}</button></div>`).join('')}</div>
+    <div class="settings-sliders"><label><span>ЭФФЕКТЫ <b>${Math.round(profile.settings.effectsVolume * 100)}%</b></span><input type="range" min="0" max="1" step="0.05" value="${profile.settings.effectsVolume}" data-setting-range="effectsVolume"></label><label><span>МУЗЫКА <b>${Math.round(profile.settings.musicVolume * 100)}%</b></span><input type="range" min="0" max="1" step="0.05" value="${profile.settings.musicVolume}" data-setting-range="musicVolume"></label><label><span>ТРЯСКА ЭКРАНА <b>${Math.round(profile.settings.screenShake * 100)}%</b></span><input type="range" min="0" max="1.5" step="0.1" value="${profile.settings.screenShake}" data-setting-range="screenShake"></label></div>
+    <div class="access-grid"><label><input type="checkbox" data-access="highContrast" ${profile.settings.highContrast?'checked':''}><span>Высокая контрастность</span></label><label><input type="checkbox" data-access="reducedFlash" ${profile.settings.reducedFlash?'checked':''}><span>Меньше вспышек и анимаций</span></label><label><input type="checkbox" data-access="telegraphText" ${profile.settings.telegraphText?'checked':''}><span>Названия атак над боссом</span></label><label><input type="checkbox" data-access="colorblind" ${profile.settings.colorblind?'checked':''}><span>Различимые цвета опасностей</span></label></div>
+    <label class="gamepad-toggle"><input type="checkbox" data-gamepad-toggle ${profile.settings.gamepad ? 'checked' : ''}><span>Геймпад включён · A — прыжок, X/Y — атаки, LB — парирование, RB — перекат, RT — способность</span></label>
+    <button type="button" class="reset-bindings" data-reset-bindings>СБРОСИТЬ УПРАВЛЕНИЕ</button>`;
+  dom.settingsPanel.querySelectorAll('[data-rebind]').forEach((button) => button.addEventListener('click', () => { waitingBindingAction = button.dataset.rebind; renderSettings(); }));
+  dom.settingsPanel.querySelectorAll('[data-setting-range]').forEach((range) => range.addEventListener('change', () => { profile.settings[range.dataset.settingRange] = Number(range.value); saveProfile(); }));
+  dom.settingsPanel.querySelector('[data-gamepad-toggle]')?.addEventListener('change', (event) => { profile.settings.gamepad = event.target.checked; resetGamepadInput(); saveProfile(); });
+  dom.settingsPanel.querySelectorAll('[data-access]').forEach((box)=>box.addEventListener('change',()=>{profile.settings[box.dataset.access]=box.checked;applyAccessibility();saveProfile();}));
+  dom.settingsPanel.querySelector('[data-reset-bindings]')?.addEventListener('click', () => { profile.settings.bindings = { ...DEFAULT_BINDINGS }; waitingBindingAction = ''; saveProfile(); toast('Управление сброшено', 'gold'); });
+}
+
 function renderAppearance() {
   if (!dom.appearanceShop) return;
   dom.appearanceShop.innerHTML = `<div class="appearance-group"><strong>ЦВЕТ ДОСПЕХА</strong><div>${Object.entries(ARMOR_META).map(([id, item]) => `<button type="button" class="appearance-swatch ${profile.appearance.armor === id ? 'selected' : ''}" data-armor="${id}" style="--swatch:${item.color}" title="${item.name}"><i></i><span>${item.name}</span></button>`).join('')}</div></div>
-    <div class="appearance-group"><strong>СЛЕД ДВИЖЕНИЯ</strong><div>${Object.entries(AURA_META).map(([id, item]) => `<button type="button" class="aura-choice ${profile.appearance.aura === id ? 'selected' : ''}" data-aura="${id}" style="--swatch:${item.color}"><i></i><span>${item.name}</span></button>`).join('')}</div></div>`;
+    <div class="appearance-group"><strong>СЛЕД ДВИЖЕНИЯ</strong><div>${Object.entries(AURA_META).map(([id, item]) => `<button type="button" class="aura-choice ${profile.appearance.aura === id ? 'selected' : ''}" data-aura="${id}" style="--swatch:${item.color}"><i></i><span>${item.name}</span></button>`).join('')}</div></div>
+    <div class="appearance-group title-group"><strong>ТИТУЛ НАД ИМЕНЕМ</strong><div><button type="button" data-title="wanderer" class="aura-choice ${profile.appearance.title === 'wanderer' ? 'selected' : ''}"><i>◇</i><span>Странник</span></button>${profile.bossTrophies.map((id) => { const boss = BOSS_BY_ID.get(id); return `<button type="button" data-title="title_${id}" class="aura-choice ${profile.appearance.title === `title_${id}` ? 'selected' : ''}"><i>♛</i><span>${boss.title}</span></button>`; }).join('')}</div></div>`;
   dom.appearanceShop.querySelectorAll('[data-armor]').forEach((button) => button.addEventListener('click', () => { profile.appearance.armor = button.dataset.armor; saveProfile(); if (lobbyState) socket.emit('select-class', classPayload()); }));
   dom.appearanceShop.querySelectorAll('[data-aura]').forEach((button) => button.addEventListener('click', () => { profile.appearance.aura = button.dataset.aura; saveProfile(); if (lobbyState) socket.emit('select-class', classPayload()); }));
+  dom.appearanceShop.querySelectorAll('[data-title]').forEach((button) => button.addEventListener('click', () => { profile.appearance.title = button.dataset.title; saveProfile(); if (lobbyState) socket.emit('select-class', classPayload()); }));
 }
 
 function dailyTasks() {
@@ -509,6 +780,13 @@ function applyRunProgress(data) {
   const xpEarned = (me.bossesDefeated || 0) * 180 + Math.floor((me.damageDone || 0) / 125) + (data.result === 'victory' ? 500 : 0);
   profile.classProgress[me.classId].xp += xpEarned;
   const newLevel = classLevel(me.classId);
+  const weaponId = WEAPON_META[me.weaponId] ? me.weaponId : DEFAULT_WEAPON[me.classId];
+  const oldMastery = masteryLevel(weaponId);
+  const masteryXp = (me.bossesDefeated || 0) * 115 + Math.floor((me.damageDone || 0) / 175) + (data.result === 'victory' ? 350 : 0);
+  profile.weaponProgress[weaponId].xp += masteryXp;
+  const newMastery = masteryLevel(weaponId);
+  if (data.result === 'victory' && data.difficulty === 'normal') profile.ngPlusUnlocked = true;
+  if (data.result === 'victory' && data.difficulty === 'ngplus') profile.ngPlusWins += 1;
   profile.unlockedWeapons = Object.entries(WEAPON_META).filter(([, weapon]) => classLevel(weapon.classId) >= weapon.unlockLevel).map(([id]) => id);
   const unlockedNow = [];
   for (const achievement of ACHIEVEMENTS) {
@@ -521,6 +799,8 @@ function applyRunProgress(data) {
   }
   saveProfile();
   toast(`${CLASS_META[me.classId].label}: +${xpEarned} XP${newLevel > oldLevel ? ` · УРОВЕНЬ ${newLevel}` : ''}`, 'gold');
+  toast(`${WEAPON_META[weaponId].name}: +${masteryXp} мастерства${newMastery > oldMastery ? ` · УРОВЕНЬ ${newMastery}` : ''}`, 'gold');
+  if (data.result === 'victory' && data.difficulty === 'normal') toast('Открыта «Новая игра+»', 'gold');
   if (unlockedNow.length) toast(`Достижение: ${unlockedNow.join(', ')}`, 'gold');
 }
 
@@ -572,10 +852,14 @@ function renderShop() {
     toast(`${meta.label} экипировано`, 'gold');
   }));
   renderWeapons();
+  renderMastery();
+  renderSpecializations();
   renderAppearance();
   renderProgression();
   renderBoxSlots();
   renderSkillCollection();
+  renderBossCodex();
+  renderSettings();
 }
 
 function openShop() {
@@ -596,10 +880,13 @@ function enterLobby(room) {
   stopBossMusic();
   lobbyState = room;
   roomCode = room.code;
+  currentTraining = false;
+  sessionStorage.setItem('riftRaidActiveRoom', room.code);
   gameState = null;
   dom.resultOverlay.classList.remove('active');
   dom.perkOverlay.classList.remove('active');
   dom.routeOverlay.classList.remove('active');
+  dom.fusionOverlay?.classList.remove('active');dom.contractOverlay?.classList.remove('active');dom.spectatorPanel?.classList.remove('active');
   dom.hudRoomCode.textContent = room.code;
   showScreen(dom.lobbyScreen);
   renderLobby(room);
@@ -622,16 +909,18 @@ function renderLobby(room) {
     const meta = CLASS_META[player.classId] || CLASS_META.swordsman;
     const weapon = WEAPON_META[player.weaponId] || WEAPON_META[DEFAULT_WEAPON[player.classId]];
     const isMe = player.id === socket.id;
+    const title = player.appearance?.title && player.appearance.title !== 'wanderer' ? BOSS_BY_ID.get(player.appearance.title.replace(/^title_/, ''))?.title : '';
     cards.push(`<article class="squad-card ${isMe ? 'me' : ''}" style="--class-color:${meta.color}">
       <span class="slot-number">0${index + 1}</span>${player.isHost ? '<span class="host-chip">ХРАНИТЕЛЬ</span>' : ''}
       <div class="avatar-art"></div><div class="squad-info"><strong>${escapeHtml(player.name)}${isMe ? ' · ВЫ' : ''}</strong>
-      <button type="button" ${isMe ? 'data-cycle-class' : 'disabled'}>${meta.label} · ${weapon.name}</button></div></article>`);
+      ${title ? `<small>${escapeHtml(title)}</small>` : ''}<button type="button" ${isMe ? 'data-cycle-class' : 'disabled'}>${meta.label} · ${weapon.name}${player.specialization ? ` · ${SPECIALIZATION_META[player.classId]?.[player.specialization]?.name || ''}` : ''}</button></div></article>`);
   }
   dom.squadGrid.innerHTML = cards.join('');
   const isHost = room.hostId === socket.id;
   dom.startGameButton.style.display = isHost ? 'flex' : 'none';
   dom.startGameButton.disabled = false;
-  dom.lobbyHint.querySelector('span').textContent = isHost ? (room.players.length === 1 ? 'МОЖНО НАЧАТЬ В ОДИНОЧКУ' : 'ОТРЯД ГОТОВ') : 'ЖДЁМ ХРАНИТЕЛЯ';
+  const mode = `${room.mode==='daily'?' · ЕЖЕДНЕВНЫЙ РАЗЛОМ':room.difficulty === 'ngplus' ? ' · NG+' : ''}${room.isPublic?' · ОТКРЫТАЯ':''}`;
+  dom.lobbyHint.querySelector('span').textContent = `${isHost ? (room.players.length === 1 ? 'МОЖНО НАЧАТЬ В ОДИНОЧКУ' : 'ОТРЯД ГОТОВ') : 'ЖДЁМ ХРАНИТЕЛЯ'}${mode}`;
   dom.squadGrid.querySelector('[data-cycle-class]')?.addEventListener('click', () => {
     const unlocked = Object.keys(CLASS_META).filter((id) => profile.unlockedClasses.includes(id));
     chooseClass(unlocked[(unlocked.indexOf(selectedClass) + 1) % unlocked.length], true);
@@ -640,21 +929,73 @@ function renderLobby(room) {
 
 function createRoom() {
   setBusy(dom.createRoomButton, true, 'ОТКРЫТЬ РАЗЛОМ');
-  socket.emit('create-room', { name: currentName(), ...classPayload() }, (response) => {
+  const difficulty = dom.runDifficulty?.value === 'ngplus' && profile.ngPlusUnlocked ? 'ngplus' : 'normal';
+  const mode = dom.runMode?.value === 'daily' ? 'daily' : 'standard';
+  socket.emit('create-room', { name: currentName(), difficulty, mode, isPublic: dom.publicRoomToggle?.checked === true, ...classPayload() }, (response) => {
     setBusy(dom.createRoomButton, false, 'ОТКРЫТЬ РАЗЛОМ');
     if (!response?.ok) return showError(dom.homeError, response?.error || 'Не удалось открыть комнату');
     enterLobby(response.room);
   });
 }
 
-function joinRoom() {
-  const code = dom.roomCodeInput.value.trim().toUpperCase();
+function joinRoom(requestedCode = '') {
+  const code = String(requestedCode || dom.roomCodeInput.value).trim().toUpperCase();
   if (code.length !== 5) return showError(dom.homeError, 'Нужен пятизначный код');
   dom.joinRoomButton.disabled = true;
   socket.emit('join-room', { code, name: currentName(), ...classPayload() }, (response) => {
     dom.joinRoomButton.disabled = false;
     if (!response?.ok) return showError(dom.homeError, response?.error || 'Не удалось войти');
     enterLobby(response.room);
+  });
+}
+
+function startTraining() {
+  currentTraining = true;
+  dom.startTrainingButton.disabled = true;
+  socket.emit('start-training', {
+    name: currentName(), bossIndex: Number(dom.trainingBossSelect.value) || 0,
+    attack: dom.trainingAttackSelect.value || 'random', phase:Number(dom.trainingPhaseSelect?.value)||1,
+    arenaIndex:Number(dom.trainingArenaSelect?.value)||0, speed:Number(dom.trainingSpeedSelect?.value)||1,
+    damageMode:dom.trainingDamageSelect?.value||'normal', infiniteStamina:dom.trainingStaminaToggle?.checked===true,
+    ...classPayload(),
+  }, (response) => {
+    dom.startTrainingButton.disabled = false;
+    if (!response?.ok) { currentTraining = false; return showError(dom.homeError, response?.error || 'Не удалось запустить тренировку'); }
+    roomCode = response.code;
+    dom.hudRoomCode.textContent = 'ТРЕН.';
+    sessionStorage.setItem('riftRaidActiveRoom', response.code);
+  });
+}
+
+function populateTraining() {
+  if (!dom.trainingBossSelect || !dom.trainingAttackSelect) return;
+  dom.trainingBossSelect.innerHTML = BOSS_META.map((boss, index) => `<option value="${index}">${index + 1}. ${boss.name}</option>`).join('');
+  dom.trainingAttackSelect.innerHTML = Object.entries(ATTACK_META).map(([id, name]) => `<option value="${id}">${name}</option>`).join('');
+  if(dom.trainingArenaSelect)dom.trainingArenaSelect.innerHTML=['Пепельные врата','Зал углей','Расколотая кузня','Затопленная крипта','Колокольня','Багровый ров','Безмолвная тюрьма','Лунный разлом','Сердце бури','Трон Пустоты'].map((name,index)=>`<option value="${index}">${index+1}. ${name}</option>`).join('');
+}
+
+function loadDailyBoard() {
+  if(!dom.dailyBoard)return;
+  dom.dailyBoard.innerHTML='<small>Загружаем лучшие попытки дня…</small>';
+  Promise.all([1,2,3,4].map((size)=>new Promise((resolve)=>socket.emit('daily-leaderboard',size,resolve)))).then((boards)=>{
+    const rows=boards.flatMap((board)=>(board?.entries||[]).slice(0,3).map((entry,index)=>`<article><b>${board.teamSize}ИГР · #${index+1}</b><strong>${escapeHtml(entry.names)}</strong><span>${entry.stages} стадий · ${formatTime(entry.elapsed)}</span></article>`));
+    dom.dailyBoard.innerHTML=rows.length?rows.join(''):`<small>${boards[0]?.key||dateKey()} · сегодня завершённых попыток пока нет.</small>`;
+  });
+}
+
+function loadPublicRooms() {
+  if (!dom.publicRoomsList) return;
+  dom.publicRoomsButton.disabled = true;
+  dom.publicRoomsList.innerHTML = '<small>Ищем открытые комнаты...</small>';
+  const startedAt = performance.now();
+  socket.emit('ping-check', () => {
+    const ping = Math.round(performance.now() - startedAt);
+    socket.emit('list-public-rooms', (rooms = []) => {
+      dom.publicRoomsButton.disabled = false;
+      if (!rooms.length) { dom.publicRoomsList.innerHTML = '<small>Сейчас нет свободных открытых комнат.</small>'; return; }
+      dom.publicRoomsList.innerHTML = rooms.map((room) => `<article class="public-room"><div><strong>${room.code}</strong><small>${room.region} · ${room.mode==='daily'?'ЕЖЕДНЕВНЫЙ':room.difficulty === 'ngplus' ? 'NG+' : 'ОБЫЧНЫЙ'} · ~${ping} мс</small></div><b>${room.players} / ${room.maxPlayers}</b><button type="button" data-public-code="${room.code}">ВОЙТИ</button></article>`).join('');
+      dom.publicRoomsList.querySelectorAll('[data-public-code]').forEach((button) => button.addEventListener('click', () => { dom.roomCodeInput.value = button.dataset.publicCode; joinRoom(button.dataset.publicCode); }));
+    });
   });
 }
 
@@ -672,11 +1013,14 @@ function leaveHome() {
   stopBossMusic();
   socket.emit('leave-room');
   roomCode = '';
+  currentTraining = false;
+  sessionStorage.removeItem('riftRaidActiveRoom');
   lobbyState = gameState = null;
   resetInput();
   dom.resultOverlay.classList.remove('active');
   dom.perkOverlay.classList.remove('active');
   dom.routeOverlay.classList.remove('active');
+  dom.fusionOverlay?.classList.remove('active');dom.contractOverlay?.classList.remove('active');dom.spectatorPanel?.classList.remove('active');
   showScreen(dom.homeScreen);
 }
 
@@ -694,26 +1038,37 @@ function updateHud(state) {
   dom.stageText.textContent = `СТАДИЯ ${state.stage} / ${state.maxStage}${state.arena?.name ? ` · ${state.arena.name}` : ''}`;
   dom.bossName.textContent = state.boss ? `${state.boss.name} · УРОН ${state.boss.damage}` : 'ПУТЬ МЕЖДУ ПЕЧАТЯМИ';
   dom.bossPhaseText.textContent = `ФАЗА ${['I','II','III'][(state.boss?.phase || 1) - 1]}`;
-  dom.modifierText.textContent = state.modifier?.name || '—';
+  dom.modifierText.textContent = state.training ? 'ТРЕНИРОВКА' : `${state.mode==='daily'?'ДЕНЬ · ':''}${state.difficulty === 'ngplus' ? 'NG+ · ' : ''}${state.contractEffect?.name||state.modifier?.name||'БЕЗ МОДИФИКАТОРА'}`;
+  dom.trainingExitButton.style.display = state.training ? 'block' : 'none';
   dom.teamPowerText.textContent = `${state.teamPower || 0}%`;
   dom.teamPowerBar.style.width = `${state.teamPower || 0}%`;
   if (state.boss) {
     const ratio = Math.max(0, state.boss.hp / state.boss.maxHp);
     dom.bossHealthBar.style.width = `${ratio * 100}%`;
     dom.bossHealthText.textContent = `${state.boss.hp} / ${state.boss.maxHp}`;
+    dom.bossPoiseBar.style.width = `${Math.max(0, state.boss.poise / state.boss.maxPoise * 100)}%`;
+    const statuses = [];
+    if (state.boss.exposed) statuses.push('СТОЙКОСТЬ СЛОМАНА · +35% УРОНА');
+    if (state.boss.synergies?.arcaneMark) statuses.push('МЕТКА ПЕПЛА');
+    if (state.boss.synergies?.breached) statuses.push('БРОНЯ ПРОБИТА');
+    if (state.boss.mutations?.length) statuses.push(state.boss.mutations.map((item)=>item.name).join(' + '));
+    dom.bossStatusText.textContent = statuses.join(' · ');
   }
   const me = state.players.find((player) => player.id === socket.id);
   if (me) {
     dom.heartsBar.innerHTML = Array.from({ length: me.maxHp }, (_, index) => `<span class="heart ${index >= me.hp ? 'empty' : ''}">♥</span>`).join('');
     dom.staminaBar.style.width = `${Math.max(0, me.stamina / me.maxStamina * 100)}%`;
+    const abilityReady=Math.max(0,1-me.abilityCooldown/Math.max(.1,me.abilityMaxCooldown));dom.abilityBar.style.width=`${abilityReady*100}%`;dom.abilityLabel.textContent=`V · ${me.abilityName}${me.abilityCooldown>0?` · ${me.abilityCooldown.toFixed(1)}С`:' · ГОТОВО'}${me.focus?` · ФОКУС ${me.focus}/3`:''}`;
+    const alive=state.players.filter((player)=>!player.downed&&player.id!==socket.id);dom.spectatorPanel?.classList.toggle('active',me.downed&&alive.length>0);
+    if(me.downed&&alive.length){spectatorIndex=((spectatorIndex%alive.length)+alive.length)%alive.length;dom.spectatorTarget.textContent=`Наблюдение: ${alive[spectatorIndex].name} · сигналов ${me.pingsRemaining}`;}else spectatorIndex=0;
   }
   dom.squadHud.innerHTML = state.players.map((player) => {
     const meta = CLASS_META[player.classId];
     const color = ARMOR_META[player.appearance?.armor]?.color || meta.color;
     const targeted = state.boss?.targetId === player.id;
-    return `<div class="hud-player ${player.downed ? 'downed' : ''}" style="--class-color:${color}">
+    return `<div class="hud-player ${player.downed ? 'downed' : ''} ${player.connected === false ? 'disconnected' : ''}" style="--class-color:${color}">
       <span class="hud-avatar">${targeted ? '!' : meta.short}</span><div><strong>${escapeHtml(player.name)}${player.id === socket.id ? ' · ВЫ' : ''}${targeted ? ' · ЦЕЛЬ' : ''}</strong>
-      <span class="mini-bars"><span><i style="width:${player.hp / player.maxHp * 100}%"></i></span><span><i style="width:${player.stamina / player.maxStamina * 100}%"></i></span></span></div></div>`;
+      ${player.connected === false ? '<small>ПЕРЕПОДКЛЮЧЕНИЕ…</small>' : player.focus?`<small>ФОКУС ${player.focus}/3${player.riposteReady?' · КОНТРАТАКА':''}</small>`:''}<span class="mini-bars"><span><i style="width:${player.hp / player.maxHp * 100}%"></i></span><span><i style="width:${player.stamina / player.maxStamina * 100}%"></i></span></span></div></div>`;
   }).join('');
 }
 
@@ -721,6 +1076,7 @@ function showRoutes(state) {
   if (!dom.routeOverlay) return;
   dom.perkOverlay.classList.remove('active');
   dom.perkOverlay.setAttribute('aria-hidden', 'true');
+  dom.fusionOverlay?.classList.remove('active');dom.contractOverlay?.classList.remove('active');
   dom.routeOverlay.classList.add('active');
   dom.routeOverlay.setAttribute('aria-hidden', 'false');
   const myVote = state.routeVotes?.[socket.id];
@@ -739,11 +1095,30 @@ function showRoutes(state) {
   }));
 }
 
+function showFusions(state) {
+  const me=state.players.find((player)=>player.id===socket.id);if(!me||!dom.fusionOverlay)return;
+  dom.perkOverlay.classList.remove('active');dom.routeOverlay.classList.remove('active');dom.contractOverlay?.classList.remove('active');dom.fusionOverlay.classList.add('active');dom.fusionOverlay.setAttribute('aria-hidden','false');
+  const offers=state.fusionOffers?.[socket.id]||[];const key=`${state.stage}:${me.perkChosen}:${offers.map((item)=>item.id).join(',')}`;if(key===currentFusionKey)return;currentFusionKey=key;resetInput();
+  if(me.perkChosen){dom.fusionGrid.innerHTML='';dom.fusionWaiting.textContent='СПЛАВ ЗАВЕРШЁН · ЖДЁМ ОТРЯД';return;}
+  const cards=offers.map((fusion)=>`<button class="choice-card" type="button" data-fusion="${fusion.id}"><i>⌁</i><h3>${escapeHtml(fusion.name)}</h3><p>${escapeHtml(fusion.description)}</p><b>ПОГЛОТИТ: ${fusion.requires.join(' + ')}</b></button>`).join('');
+  dom.fusionGrid.innerHTML=`${cards}<button class="choice-card" type="button" data-fusion="skip"><i>→</i><h3>Пройти мимо</h3><p>Сохрани текущие карты без изменений.</p><b>БЕЗ СПЛАВА</b></button>`;dom.fusionWaiting.textContent=offers.length?'ВЫБЕРИ СПЛАВ ИЛИ ПРОЙДИ МИМО':'ПОДХОДЯЩИХ СОЧЕТАНИЙ ПОКА НЕТ';
+  dom.fusionGrid.querySelectorAll('[data-fusion]').forEach((button)=>button.addEventListener('click',()=>{dom.fusionGrid.querySelectorAll('button').forEach((item)=>{item.disabled=true;});socket.emit('choose-fusion',button.dataset.fusion,(response)=>{if(!response?.ok){currentFusionKey='';toast(response?.error||'Кузня не ответила','danger');}});}));
+}
+
+function showContracts(state) {
+  if(!dom.contractOverlay)return;dom.perkOverlay.classList.remove('active');dom.routeOverlay.classList.remove('active');dom.fusionOverlay?.classList.remove('active');dom.contractOverlay.classList.add('active');dom.contractOverlay.setAttribute('aria-hidden','false');
+  const myVote=state.contractVotes?.[socket.id];const offers=state.contractOffer||[];const key=`${state.stage}:${myVote||''}:${offers.map((item)=>item.id).join(',')}:${Object.keys(state.contractVotes||{}).length}`;if(key===currentContractKey)return;currentContractKey=key;resetInput();
+  const votes={};for(const id of Object.values(state.contractVotes||{}))votes[id]=(votes[id]||0)+1;
+  dom.contractGrid.innerHTML=offers.map((contract)=>`<button class="choice-card ${myVote===contract.id?'voted':''}" type="button" data-contract="${contract.id}" ${myVote?'disabled':''}><i>${contract.id==='none'?'◇':'!'}</i><h3>${escapeHtml(contract.name)}</h3><p>${escapeHtml(contract.description)}</p><b>${votes[contract.id]||0} ГОЛОСОВ · ×${contract.reward||1} ПЕПЛА</b></button>`).join('');dom.contractWaiting.textContent=myVote?'ЖДЁМ РЕШЕНИЕ ОТРЯДА':'ПРИМИТЕ ОДНО УСЛОВИЕ';
+  dom.contractGrid.querySelectorAll('[data-contract]:not(:disabled)').forEach((button)=>button.addEventListener('click',()=>{dom.contractGrid.querySelectorAll('button').forEach((item)=>{item.disabled=true;});socket.emit('choose-contract',button.dataset.contract,(response)=>{if(!response?.ok){currentContractKey='';toast(response?.error||'Контракт закрыт','danger');}});}));
+}
+
 function showPerks(state) {
   const me = state.players.find((player) => player.id === socket.id);
   if (!me) return;
   const key = `${state.stage}:${me.perkChosen}:${me.perkOffer.map((perk) => perk.id).join(',')}`;
   dom.perkOverlay.classList.add('active');
+  dom.fusionOverlay?.classList.remove('active');dom.contractOverlay?.classList.remove('active');
   dom.perkOverlay.setAttribute('aria-hidden', 'false');
   dom.perkKicker.textContent = `СТАДИЯ ${state.stage} ПРОЙДЕНА`;
   if (key === currentPerkKey) return;
@@ -758,9 +1133,12 @@ function showPerks(state) {
   dom.perkSubtitle.textContent = 'Остальные карты обратятся в пепел.';
   dom.waitingPerks.textContent = 'СДЕЛАЙ ВЫБОР';
   const rarityNames = { common: 'Обычный', rare: 'Редкий', epic: 'Эпический', legendary: 'Легендарный' };
-  dom.perkGrid.innerHTML = me.perkOffer.map((perk) => `<button class="perk-card ${perk.rarity}${perk.classId ? ' class-perk' : ''}" type="button" data-perk="${perk.id}">
-    <span class="perk-topline"><span class="perk-rarity">${rarityNames[perk.rarity]}</span>${perk.classId ? `<span class="perk-class">ТОЛЬКО: ${CLASS_META[perk.classId].label}</span>` : ''}</span><span class="perk-icon">${perk.icon}</span>
-    <h3>${perk.name}</h3><p>${perk.description}</p>${me.perks[perk.id] ? `<span class="perk-stack">УЖЕ: ×${me.perks[perk.id]}</span>` : ''}</button>`).join('');
+  dom.perkGrid.innerHTML = me.perkOffer.map((perk) => {
+    const next=(me.perks[perk.id]||0)+1;
+    return `<button class="perk-card ${perk.rarity}${perk.classId ? ' class-perk' : ''}" type="button" data-perk="${perk.id}">
+      <span class="perk-topline"><span class="perk-rarity">${next===3&&EVOLVING_PERKS.has(perk.id)?'ЭВОЛЮЦИЯ · ':''}${rarityNames[perk.rarity]}</span>${perk.classId ? `<span class="perk-class">ТОЛЬКО: ${CLASS_META[perk.classId].label}</span>` : ''}</span><span class="perk-icon">${perk.icon}</span>
+      <h3>${perk.name}</h3><p>${perk.description}</p>${me.perks[perk.id] ? `<span class="perk-stack">УЖЕ: ×${me.perks[perk.id]}</span>` : ''}</button>`;
+  }).join('');
   dom.perkGrid.querySelectorAll('[data-perk]').forEach((button) => button.addEventListener('click', () => {
     dom.perkGrid.querySelectorAll('button').forEach((item) => { item.disabled = true; });
     socket.emit('choose-perk', button.dataset.perk, (response) => {
@@ -772,13 +1150,19 @@ function showPerks(state) {
 
 function showResults(data) {
   stopBossMusic();
+  sessionStorage.removeItem('riftRaidActiveRoom');
   applyRunProgress(data);
+  const myResult=data.players.find((player)=>player.id===socket.id);
+  if(myResult&&!currentTraining&&ghostRecording.length&&(data.stagesCleared>(profile.ghosts?.[myResult.classId]?.stages||0))){profile.ghosts[myResult.classId]={stages:data.stagesCleared,samples:ghostRecording};saveProfile();toast('Призрак лучшего забега сохранён','gold');}
   const victory = data.result === 'victory';
-  dom.resultKicker.textContent = victory ? 'СОТНЯ ЗАВЕРШЕНА' : 'ЗАБЕГ ОКОНЧЕН';
+  dom.resultKicker.textContent = victory ? (data.difficulty === 'ngplus' ? 'NG+ ЗАВЕРШЕНА' : 'ПОСЛЕДНЯЯ ПЕЧАТЬ') : 'ЗАБЕГ ОКОНЧЕН';
   dom.resultTitle.textContent = victory ? 'Пепельный король повержен' : 'Пламя погасло';
-  dom.resultSubtitle.textContent = victory ? 'Все сто печатей разрушены.' : `Отряд достиг стадии ${data.stageReached}.`;
-  dom.runSummary.innerHTML = `<div class="summary-box"><strong>${data.stagesCleared}</strong><span>СТАДИЙ ПРОЙДЕНО</span></div><div class="summary-box"><strong>${formatTime(data.elapsed)}</strong><span>ВРЕМЯ ЗАБЕГА</span></div>`;
-  dom.resultStats.innerHTML = data.players.map((player, index) => `<div class="result-row"><span>#${index + 1}</span><strong>${escapeHtml(player.name)} · ${CLASS_META[player.classId].label}</strong><b>${player.damageDone} УРОНА · ${player.parries || 0} ПАРИРОВАНИЙ</b></div>`).join('');
+  dom.resultSubtitle.textContent = victory ? `Все 50 печатей разрушены${data.difficulty === 'ngplus' ? ' в Новой игре+' : ''}.` : `Отряд достиг стадии ${data.stageReached}. Ниже — разбор попытки.`;
+  dom.runSummary.innerHTML = `<div class="summary-box"><strong>${data.stagesCleared}</strong><span>СТАДИЙ ПРОЙДЕНО</span></div><div class="summary-box"><strong>${formatTime(data.elapsed)}</strong><span>ВРЕМЯ ЗАБЕГА</span></div><div class="summary-box"><strong>${data.mode==='daily'?'ДЕНЬ':data.difficulty === 'ngplus' ? 'NG+' : 'I'}</strong><span>СЛОЖНОСТЬ</span></div>`;
+  dom.resultStats.innerHTML = data.players.map((player, index) => {
+    const parryRate = player.parryAttempts ? Math.round((player.parries || 0) / player.parryAttempts * 100) : 0;
+    return `<div class="result-row postmortem"><span>#${index + 1}</span><strong>${escapeHtml(player.name)} · ${CLASS_META[player.classId].label}</strong><div><b>${player.damageDone} УРОНА</b><small>${player.parries || 0}/${player.parryAttempts || 0} ПАРИРОВАНИЙ · ${parryRate}% · ${player.perfectDodges||0} ИДЕАЛЬНЫХ УКЛОНЕНИЙ</small><small>${player.poiseDamage || 0} УРОНА СТОЙКОСТИ · ${player.hitsTaken || 0} ПОПАДАНИЙ ПОЛУЧЕНО · ${(player.fusions||[]).length} СПЛАВОВ</small><em>ПОСЛЕДНЯЯ ОПАСНОСТЬ: ${escapeHtml(player.lastDamageSource || 'неизвестно')}</em></div></div>`;
+  }).join('')+(data.dailyLeaderboard?.length?`<h3>ЛУЧШИЕ ПОПЫТКИ ДНЯ · ${data.teamSize} ИГР.</h3>${data.dailyLeaderboard.map((entry,index)=>`<div class="result-row"><span>#${index+1}</span><strong>${escapeHtml(entry.names)}</strong><b>${entry.stages} · ${formatTime(entry.elapsed)}</b></div>`).join('')}`:'');
   const host = lobbyState?.hostId === socket.id;
   dom.rematchButton.disabled = !host;
   dom.rematchButton.querySelector('span').textContent = host ? 'ВЕРНУТЬСЯ К КОСТРУ' : 'ЖДЁМ ХРАНИТЕЛЯ';
@@ -787,25 +1171,72 @@ function showResults(data) {
   playSound(victory ? 'victory' : 'defeat');
 }
 
-const KEY_MAP = {
-  KeyA: 'left', ArrowLeft: 'left', KeyD: 'right', ArrowRight: 'right', KeyW: 'jump', ArrowUp: 'jump', Space: 'jump',
-  KeyJ: 'light', KeyH: 'parry', KeyK: 'heavy', KeyL: 'roll', KeyU: 'team',
-};
-
-function setInput(key, pressed) {
-  if (!(key in input)) return;
-  input[key] = pressed;
-  socket.emit('input', input);
-  if (pressed && ['light', 'heavy', 'parry', 'roll', 'team'].includes(key)) playSound(key);
+function actionForCode(code) {
+  const configured = Object.entries(profile.settings.bindings).find(([, keyCode]) => keyCode === code)?.[0];
+  if (configured) return configured;
+  return ({ ArrowLeft:'left', ArrowRight:'right', ArrowUp:'jump', Space:'jump' })[code];
 }
-function resetInput() { Object.keys(input).forEach((key) => { input[key] = false; }); socket.emit('input', input); }
+
+function choiceOverlayActive(){return [dom.perkOverlay,dom.routeOverlay,dom.fusionOverlay,dom.contractOverlay].some((item)=>item?.classList.contains('active'));}
+
+function emitCombinedInput() {
+  let changed = false;
+  for (const key of Object.keys(input)) {
+    const next = keyboardInput[key] || gamepadInput[key];
+    if (input[key] !== next) { input[key] = next; changed = true; if (next && ['light', 'heavy', 'parry', 'roll', 'ability', 'team'].includes(key)) playSound(key); }
+  }
+  if (changed) socket.emit('input', input);
+}
+
+function setInput(key, pressed, source = 'keyboard') {
+  if (!(key in input)) return;
+  const target = source === 'gamepad' ? gamepadInput : keyboardInput;
+  target[key] = pressed;
+  emitCombinedInput();
+}
+function resetGamepadInput() { Object.keys(gamepadInput).forEach((key) => { gamepadInput[key] = false; }); emitCombinedInput(); }
+function resetInput() {
+  Object.keys(input).forEach((key) => { keyboardInput[key] = false; gamepadInput[key] = false; input[key] = false; });
+  socket.emit('input', input);
+}
+
+function pollGamepad() {
+  if (!profile.settings.gamepad || !navigator.getGamepads) { if (gamepadWasConnected) { gamepadWasConnected = false; resetGamepadInput(); } return; }
+  const pad = [...navigator.getGamepads()].find(Boolean);
+  if (!pad) { if (gamepadWasConnected) { gamepadWasConnected = false; resetGamepadInput(); } return; }
+  if (!gamepadWasConnected) { gamepadWasConnected = true; toast(`Геймпад подключён: ${pad.id.slice(0, 34)}`, 'gold'); }
+  const blocked = !dom.gameScreen.classList.contains('active') || choiceOverlayActive();
+  const values = blocked ? { ...gamepadInput, left:false,right:false,jump:false,light:false,heavy:false,parry:false,roll:false,ability:false,team:false } : {
+    left:(pad.axes[0] || 0) < -0.35, right:(pad.axes[0] || 0) > 0.35,
+    jump:pad.buttons[0]?.pressed === true, light:pad.buttons[2]?.pressed === true,
+    heavy:pad.buttons[3]?.pressed === true, parry:pad.buttons[4]?.pressed === true,
+    roll:pad.buttons[5]?.pressed === true, ability:pad.buttons[7]?.pressed === true, team:pad.buttons[8]?.pressed === true,
+  };
+  for (const [key, pressed] of Object.entries(values)) if (gamepadInput[key] !== pressed) setInput(key, pressed, 'gamepad');
+}
 
 window.addEventListener('keydown', (event) => {
-  const key = KEY_MAP[event.code];
-  if (!key || !dom.gameScreen.classList.contains('active') || dom.perkOverlay.classList.contains('active') || dom.routeOverlay.classList.contains('active')) return;
+  if (waitingBindingAction) {
+    event.preventDefault();
+    if (event.code === 'Escape') { waitingBindingAction = ''; renderSettings(); return; }
+    for (const action of Object.keys(profile.settings.bindings)) if (profile.settings.bindings[action] === event.code) profile.settings.bindings[action] = profile.settings.bindings[waitingBindingAction];
+    profile.settings.bindings[waitingBindingAction] = event.code;
+    const label = ACTION_LABELS[waitingBindingAction];
+    waitingBindingAction = '';
+    saveProfile();
+    toast(`${label}: ${formatKeyCode(event.code)}`, 'gold');
+    return;
+  }
+  if(dom.gameScreen.classList.contains('active')&&!choiceOverlayActive()){
+    const me=gameState?.players?.find((player)=>player.id===socket.id);
+    if(me?.downed&&['KeyQ','KeyE'].includes(event.code)){event.preventDefault();spectatorIndex+=event.code==='KeyE'?1:-1;updateHud(gameState);return;}
+    const pingType=({Digit1:'attack',Digit2:'retreat',Digit3:'poise',Digit4:'heal'})[event.code];if(pingType){event.preventDefault();socket.emit('team-ping',pingType,(response)=>{if(!response?.ok&&response?.error)toast(response.error,'warn');});return;}
+  }
+  const key = actionForCode(event.code);
+  if (!key || !dom.gameScreen.classList.contains('active') || choiceOverlayActive()) return;
   event.preventDefault(); setInput(key, true);
 });
-window.addEventListener('keyup', (event) => { const key = KEY_MAP[event.code]; if (key) { event.preventDefault(); setInput(key, false); } });
+window.addEventListener('keyup', (event) => { const key = actionForCode(event.code); if (key) { event.preventDefault(); setInput(key, false); } });
 window.addEventListener('blur', resetInput);
 dom.gameCanvas.addEventListener('pointerdown', (event) => { if (event.pointerType !== 'touch') setInput(event.button === 2 ? 'heavy' : 'light', true); });
 window.addEventListener('pointerup', (event) => { if (event.pointerType !== 'touch') setInput(event.button === 2 ? 'heavy' : 'light', false); });
@@ -821,11 +1252,12 @@ function ensureAudio() {
   if (!audioContext) { const AudioCtx = window.AudioContext || window.webkitAudioContext; if (AudioCtx) audioContext = new AudioCtx(); }
   if (audioContext?.state === 'suspended') audioContext.resume();
 }
-function tone(frequency, duration, volume, type = 'sine', offset = 0) {
+function tone(frequency, duration, volume, type = 'sine', offset = 0, channel = 'effects') {
   if (!audioContext) return;
   const oscillator = audioContext.createOscillator(); const gain = audioContext.createGain(); const start = audioContext.currentTime + offset;
   oscillator.type = type; oscillator.frequency.setValueAtTime(frequency, start); oscillator.frequency.exponentialRampToValueAtTime(Math.max(40, frequency * .62), start + duration);
-  gain.gain.setValueAtTime(volume, start); gain.gain.exponentialRampToValueAtTime(.001, start + duration);
+  const channelVolume = channel === 'music' ? profile.settings.musicVolume : profile.settings.effectsVolume;
+  gain.gain.setValueAtTime(Math.max(.0001, volume * channelVolume), start); gain.gain.exponentialRampToValueAtTime(.0001, start + duration);
   oscillator.connect(gain).connect(audioContext.destination); oscillator.start(start); oscillator.stop(start + duration);
 }
 function playSound(kind) {
@@ -851,7 +1283,7 @@ function syncBossMusic(boss) {
   const roots = [82,87,92,98,104,110,117,123,131,139];
   const root = roots[Math.max(0,(boss.tier||1)-1)];
   const pattern = boss.phase === 3 ? [1,1.5,1.25,2,1.5,2.5] : boss.phase === 2 ? [1,1.25,1.5,2] : [1,1.5,1.25,1];
-  const pulse = () => { if (!dom.gameScreen.classList.contains('active')) return; const multiplier = pattern[bossMusicStep++ % pattern.length]; tone(root*multiplier,.18,.006,boss.phase===3?'square':'triangle'); };
+  const pulse = () => { if (!dom.gameScreen.classList.contains('active')) return; const multiplier = pattern[bossMusicStep++ % pattern.length]; tone(root*multiplier,.18,.009,boss.phase===3?'square':'triangle',0,'music'); };
   pulse(); bossMusicTimer = setInterval(pulse, boss.phase === 3 ? 330 : boss.phase === 2 ? 430 : 560);
 }
 
@@ -903,7 +1335,7 @@ function drawAbyss(bounds,gaps,time) {
 
 function drawArenaHazard(hazard,time) {
   if(!hazard.live&&!hazard.warning)return;
-  const active=hazard.live;const color=hazard.type==='storm'?'#8fc7e8':hazard.type==='rune'?'#a47bd0':hazard.type==='fall'?'#c7b9dc':'#d3543c';
+  const active=hazard.live;const accessible=profile.settings.colorblind;const color=accessible?(hazard.type==='storm'?'#36d1ff':hazard.type==='rune'?'#ffcc33':hazard.type==='fall'?'#f4f4f4':'#ff5c8a'):(hazard.type==='storm'?'#8fc7e8':hazard.type==='rune'?'#a47bd0':hazard.type==='fall'?'#c7b9dc':'#d3543c');
   ctx.save();ctx.globalAlpha=active ? 0.82 : 0.32;ctx.strokeStyle=color;ctx.fillStyle=color;ctx.shadowColor=color;ctx.shadowBlur=active?24:10;ctx.lineWidth=active?5:2;ctx.setLineDash(active?[]:[10,8]);
   if(hazard.type==='rune'){
     ctx.beginPath();ctx.ellipse(hazard.x+hazard.w/2,world.floor-8,hazard.w/2,18,0,0,Math.PI*2);ctx.stroke();
@@ -954,7 +1386,8 @@ function drawPlayer(player,time) {
   if(player.action==='parry'||player.action==='parry_success'){ctx.fillStyle=player.parryActive?'#f1d58d':'#756542';ctx.fillRect(24,-18,4,36);ctx.fillRect(28,-12,4,24);}
   if(player.action==='light'||player.action==='heavy'){ctx.globalAlpha=.5;ctx.fillStyle=skin.color;const size=player.action==='heavy'?8:5;for(let i=0;i<6;i++)ctx.fillRect(28+i*8,-28+i*7,size,size);}
   ctx.restore();ctx.globalAlpha=1;
-  ctx.textAlign='center';ctx.fillStyle=isMe?'#eee3cf':'rgba(225,217,201,.7)';ctx.font=`${isMe?700:600} 9px monospace`;ctx.fillText(player.downed?`${player.name} · ПАЛ`:player.name,Math.round(player.x+21),Math.round(player.y-18));
+  ctx.textAlign='center';ctx.fillStyle=isMe?'#eee3cf':'rgba(225,217,201,.7)';ctx.font=`${isMe?700:600} 9px monospace`;ctx.fillText(player.downed?`${player.name} · ПАЛ`:player.connected===false?`${player.name} · СВЯЗЬ`:player.name,Math.round(player.x+21),Math.round(player.y-18));
+  const titleId=player.appearance?.title?.replace(/^title_/,'');const title=titleId&&titleId!=='wanderer'?BOSS_BY_ID.get(titleId)?.title:'';if(title){ctx.fillStyle='rgba(211,180,111,.78)';ctx.font='600 7px monospace';ctx.fillText(title.toUpperCase(),Math.round(player.x+21),Math.round(player.y-29));}
   if(gameState?.boss?.targetId===player.id&&!player.downed){ctx.fillStyle='#d65c69';ctx.fillRect(Math.round(player.x+16),Math.round(player.y-34),10,4);ctx.fillRect(Math.round(player.x+19),Math.round(player.y-39),4,4);}
 }
 
@@ -997,7 +1430,18 @@ function drawTelegraph(boss,state) {
   else if(['slash','cleave','charge','twin_slash'].includes(attack.type)){const radius=attack.type==='cleave'?245:attack.type==='twin_slash'?225:155;ctx.beginPath();ctx.arc(centerX,centerY,radius,-1.15,1.15);ctx.stroke();if(attack.type==='twin_slash'){ctx.beginPath();ctx.arc(centerX,centerY,radius*.72,2,4.2);ctx.stroke();}}
   else if(attack.type==='wave'){ctx.beginPath();ctx.moveTo(centerX,world.floor-8);ctx.lineTo(attack.targetX,world.floor-8);ctx.stroke();}
   else {ctx.beginPath();ctx.arc(centerX,boss.y+42,30+progress*20,0,Math.PI*2);ctx.stroke();}
+  if(profile.settings.telegraphText){ctx.setLineDash([]);ctx.globalAlpha=.95;ctx.fillStyle='#ffe8b6';ctx.font='800 13px monospace';ctx.textAlign='center';ctx.fillText((ATTACK_META[attack.type]||attack.type).toUpperCase(),centerX,boss.y-25);}
   ctx.setLineDash([]);ctx.restore();
+}
+
+function drawGhost(state){
+  if(!ghostPlayback.length||state.training)return;while(ghostPlaybackIndex<ghostPlayback.length-1&&ghostPlayback[ghostPlaybackIndex+1].t<=state.elapsed)ghostPlaybackIndex+=1;const sample=ghostPlayback[ghostPlaybackIndex];if(!sample||sample.s!==state.stage||Math.abs(sample.t-state.elapsed)>.7)return;
+  ctx.save();ctx.globalAlpha=.22;ctx.fillStyle='#80d8df';ctx.shadowColor='#80d8df';ctx.shadowBlur=14;ctx.translate(sample.x+21,sample.y+30);ctx.fillRect(-16,-24,32,24);ctx.fillRect(-20,0,40,24);ctx.fillRect(-14,24,11,17);ctx.fillRect(4,24,11,17);ctx.fillStyle='#d6ffff';ctx.fillRect(sample.f>0?3:-13,-15,10,4);ctx.restore();ctx.save();ctx.fillStyle='rgba(128,216,223,.55)';ctx.font='700 7px monospace';ctx.textAlign='center';ctx.fillText('ЛУЧШИЙ ПРИЗРАК',sample.x+21,sample.y-16);ctx.restore();
+}
+
+function drawPings(state){
+  const labels={attack:'АТАКА',retreat:'ОТХОД',poise:'ЛОМАЕМ СТОЙКОСТЬ',heal:'НУЖНО ЛЕЧЕНИЕ'};const colors={attack:'#e96b73',retreat:'#e9c36b',poise:'#9dc5e8',heal:'#8fc587'};
+  for(const ping of state.pings||[]){const pulse=1+Math.sin((3-ping.ttl)*12)*.12;ctx.save();ctx.translate(ping.x,ping.y);ctx.scale(pulse,pulse);ctx.strokeStyle=colors[ping.type];ctx.fillStyle=colors[ping.type];ctx.lineWidth=3;ctx.beginPath();ctx.arc(0,0,18,0,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.moveTo(0,23);ctx.lineTo(-7,12);ctx.lineTo(7,12);ctx.closePath();ctx.fill();ctx.font='800 9px monospace';ctx.textAlign='center';ctx.fillText(labels[ping.type],0,-27);ctx.restore();}
 }
 
 function drawProjectile(projectile){const playerOwned=projectile.kind!=='boss';const color=projectile.style==='magic'?'#b58bd6':playerOwned?'#9eb7dd':projectile.style==='sky'?'#a98ac2':projectile.style==='ring'?'#d06a7b':'#a93445';const size=Math.max(8,Math.round(projectile.r*1.5));ctx.save();ctx.translate(Math.round(projectile.x),Math.round(projectile.y));ctx.rotate(Math.PI/4);ctx.fillStyle=color;ctx.fillRect(-size/2,-size/2,size,size);ctx.globalAlpha=.35;ctx.fillRect(-size*1.4,-size/4,size,size/2);ctx.restore();}
@@ -1013,10 +1457,11 @@ function drawEffect(effect){
 }
 
 function renderFrame(timeMs) {
+  pollGamepad();
   if(timeMs<hitStopUntil){requestAnimationFrame(renderFrame);return;}
   const time=timeMs/1000;const state=gameState;drawBackdrop(state);
-  if(state?.boss){canvasScale=canvasHeight/world.height;const visible=canvasWidth/canvasScale;const me=state.players.find((p)=>p.id===socket.id)||state.players[0];const target=Math.max(0,Math.min(world.width-visible,(me?.x||0)-visible*.42));cameraX+=(target-cameraX)*.1;const shakeX=screenShake?(Math.random()-.5)*screenShake:0;const shakeY=screenShake?(Math.random()-.5)*screenShake*.55:0;screenShake*=.82;if(screenShake<.2)screenShake=0;ctx.save();ctx.setTransform(canvasScale*pixelRatio,0,0,canvasScale*pixelRatio,(-cameraX+shakeX)*canvasScale*pixelRatio,shakeY*canvasScale*pixelRatio);
-    const left=cameraX-150,right=cameraX+visible+150;drawAbyss(state.arena?.bounds,state.arena?.gaps,time);for(const platform of platforms)if(platform.x+platform.w>left&&platform.x<right)drawPlatform(platform);for(const hazard of state.arena?.hazards||[])if(hazard.x+hazard.w>left&&hazard.x<right)drawArenaHazard(hazard,time);drawTelegraph(state.boss,state);for(const wave of state.waves||[])drawWave(wave,time);drawBoss(state.boss,time);for(const player of state.players)drawPlayer(player,time);for(const projectile of state.projectiles||[])drawProjectile(projectile);for(const effect of state.effects||[])drawEffect(effect);ctx.restore();}
+  if(state?.boss){canvasScale=canvasHeight/world.height;const visible=canvasWidth/canvasScale;const local=state.players.find((p)=>p.id===socket.id)||state.players[0];const living=state.players.filter((p)=>!p.downed&&p.id!==socket.id);const me=local?.downed&&living.length?living[((spectatorIndex%living.length)+living.length)%living.length]:local;const target=Math.max(0,Math.min(world.width-visible,(me?.x||0)-visible*.42));cameraX+=(target-cameraX)*.1;const shakeX=screenShake?(Math.random()-.5)*screenShake:0;const shakeY=screenShake?(Math.random()-.5)*screenShake*.55:0;screenShake*=.82;if(screenShake<.2)screenShake=0;ctx.save();ctx.setTransform(canvasScale*pixelRatio,0,0,canvasScale*pixelRatio,(-cameraX+shakeX)*canvasScale*pixelRatio,shakeY*canvasScale*pixelRatio);
+    const left=cameraX-150,right=cameraX+visible+150;drawAbyss(state.arena?.bounds,state.arena?.gaps,time);for(const platform of platforms)if(platform.x+platform.w>left&&platform.x<right)drawPlatform(platform);for(const hazard of state.arena?.hazards||[])if(hazard.x+hazard.w>left&&hazard.x<right)drawArenaHazard(hazard,time);drawTelegraph(state.boss,state);for(const wave of state.waves||[])drawWave(wave,time);drawBoss(state.boss,time);drawGhost(state);for(const player of state.players)drawPlayer(player,time);for(const projectile of state.projectiles||[])drawProjectile(projectile);for(const effect of state.effects||[])drawEffect(effect);drawPings(state);ctx.restore();}
   requestAnimationFrame(renderFrame);
 }
 
@@ -1034,24 +1479,83 @@ dom.uiSizePicker?.querySelectorAll('[data-ui-size]').forEach((button) => button.
 }));
 dom.boxBuyButton.addEventListener('click', purchaseBox);
 dom.resultExitButton.addEventListener('click', leaveHome); dom.rematchButton.addEventListener('click', () => socket.emit('return-lobby', (response) => { if(!response?.ok)toast(response?.error||'Не удалось вернуться','danger'); }));
+dom.startTrainingButton?.addEventListener('click', startTraining);
+dom.publicRoomsButton?.addEventListener('click', loadPublicRooms);
+dom.dailyBoardButton?.addEventListener('click', loadDailyBoard);
+dom.trainingExitButton?.addEventListener('click', leaveHome);
+dom.spectatorPanel?.querySelectorAll('[data-ping]').forEach((button)=>button.addEventListener('click',()=>socket.emit('team-ping',button.dataset.ping,(response)=>{if(!response?.ok&&response?.error)toast(response.error,'warn');})));
 
-socket.on('connect',()=>{dom.serverState.className='server-state online';dom.serverState.querySelector('span').textContent='Сервер доступен';});
+function restoreActiveRoom() {
+  const activeCode = sessionStorage.getItem('riftRaidActiveRoom');
+  if (!activeCode || resumeInProgress) return;
+  resumeInProgress = true;
+  dom.serverState.querySelector('span').textContent = 'Восстанавливаем забег...';
+  socket.emit('resume-room', { code: activeCode, reconnectToken }, (response) => {
+    resumeInProgress = false;
+    if (!response?.ok) {
+      sessionStorage.removeItem('riftRaidActiveRoom');
+      if (roomCode) toast('Срок восстановления комнаты истёк', 'warn');
+      roomCode = ''; lobbyState = gameState = null; currentTraining = false;
+      showScreen(dom.homeScreen);
+      return;
+    }
+    roomCode = response.room.code; lobbyState = response.room; dom.hudRoomCode.textContent = roomCode;
+    if (response.status === 'lobby') return enterLobby(response.room);
+    if (!response.game) { sessionStorage.removeItem('riftRaidActiveRoom'); showScreen(dom.homeScreen); return toast('Этот забег уже завершён', 'warn'); }
+    const state = response.game;
+    currentTraining = Boolean(state.training);
+    const restoredMe=state.players.find((player)=>player.id===socket.id);ghostPlayback=profile.ghosts?.[restoredMe?.classId||selectedClass]?.samples||[];ghostPlaybackIndex=0;while(ghostPlaybackIndex<ghostPlayback.length-1&&ghostPlayback[ghostPlaybackIndex+1].t<=state.elapsed)ghostPlaybackIndex+=1;ghostRecording=[];lastGhostSampleAt=state.elapsed;
+    if (state.arena) applyArena(state.arena);
+    gameState = state; previousBossHp = state.boss?.hp ?? null;
+    previousMeHp = state.players.find((player) => player.id === socket.id)?.hp ?? null;
+    showScreen(dom.gameScreen); resizeCanvas(); updateHud(state); syncBossMusic(state.boss);
+    if (state.status === 'perk') showPerks(state); else if (state.status === 'route') showRoutes(state); else if(state.status==='fusion')showFusions(state);else if(state.status==='contract')showContracts(state);
+    toast('Соединение восстановлено — ты снова в забеге', 'gold');
+  });
+}
+
+socket.on('connect',()=>{
+  dom.serverState.className='server-state online';dom.serverState.querySelector('span').textContent='Сервер доступен';
+  restoreActiveRoom();
+});
 socket.on('disconnect',()=>{dom.serverState.className='server-state offline';dom.serverState.querySelector('span').textContent='Связь потеряна';if(dom.gameScreen.classList.contains('active'))toast('Соединение потеряно','danger');});
+socket.on('session-replaced',()=>{sessionStorage.removeItem('riftRaidActiveRoom');roomCode='';lobbyState=gameState=null;resetInput();showScreen(dom.homeScreen);toast('Забег открыт в другой вкладке','warn');});
 socket.on('lobby-state',enterLobby);
-socket.on('game-start',(config)=>{world=config.world;applyArena(config.arena);gameState=null;previousBossHp=null;previousMeHp=null;currentRouteKey='';dom.resultOverlay.classList.remove('active');dom.perkOverlay.classList.remove('active');dom.routeOverlay.classList.remove('active');showScreen(dom.gameScreen);resizeCanvas();clearTimeout(controlsTimer);dom.controlsTip.classList.remove('hide');controlsTimer=setTimeout(()=>dom.controlsTip.classList.add('hide'),9500);ensureAudio();toast(`Модификатор: ${config.modifier?.name||'нет'}`,'gold');});
-socket.on('stage-start',({stage,arena:nextArena})=>{applyArena(nextArena);currentPerkKey='';currentRouteKey='';dom.perkOverlay.classList.remove('active');dom.perkOverlay.setAttribute('aria-hidden','true');dom.routeOverlay.classList.remove('active');dom.routeOverlay.setAttribute('aria-hidden','true');toast(`${stage>1&&(stage-1)%5===0?'НОВЫЙ ВЛАДЫКА · ':''}${nextArena?.name||`Стадия ${stage}`}`,'gold');});
+socket.on('game-start',(config)=>{
+  world=config.world;applyArena(config.arena);gameState=null;previousBossHp=null;previousMeHp=null;currentRouteKey='';currentFusionKey='';currentContractKey='';currentTraining=Boolean(config.training);ghostRecording=[];lastGhostSampleAt=-1;ghostPlaybackIndex=0;ghostPlayback=profile.ghosts?.[selectedClass]?.samples||[];
+  dom.trainingExitButton.style.display=currentTraining?'block':'none';dom.resultOverlay.classList.remove('active');dom.perkOverlay.classList.remove('active');dom.routeOverlay.classList.remove('active');dom.fusionOverlay?.classList.remove('active');dom.contractOverlay?.classList.remove('active');
+  showScreen(dom.gameScreen);resizeCanvas();clearTimeout(controlsTimer);dom.controlsTip.classList.remove('hide');controlsTimer=setTimeout(()=>dom.controlsTip.classList.add('hide'),9500);ensureAudio();
+  toast(currentTraining?'Тренировка началась':`${config.mode==='daily'?'ЕЖЕДНЕВНЫЙ РАЗЛОМ · ':''}${config.difficulty==='ngplus'?'NG+ · ':''}Модификатор: ${config.modifier?.name||'нет'}`,'gold');
+});
+socket.on('stage-start',({stage,arena:nextArena,boss})=>{
+  applyArena(nextArena);currentPerkKey='';currentRouteKey='';currentFusionKey='';currentContractKey='';dom.perkOverlay.classList.remove('active');dom.perkOverlay.setAttribute('aria-hidden','true');dom.routeOverlay.classList.remove('active');dom.routeOverlay.setAttribute('aria-hidden','true');dom.fusionOverlay?.classList.remove('active');dom.contractOverlay?.classList.remove('active');
+  if (boss?.id && profile.bossCodex[boss.id]) { profile.bossCodex[boss.id].seen += 1; saveProfile(); }
+  toast(`${stage>1&&(stage-1)%5===0?'НОВЫЙ ВЛАДЫКА · ':''}${nextArena?.name||`Стадия ${stage}`}`,'gold');
+});
 socket.on('state',(state)=>{
   if(!dom.gameScreen.classList.contains('active'))showScreen(dom.gameScreen);if(state.arena)applyArena(state.arena);
   const bossDelta=previousBossHp!==null&&state.boss?previousBossHp-state.boss.hp:0;const me=state.players.find((player)=>player.id===socket.id);
-  if(bossDelta>0){playSound('hit');screenShake=Math.min(16,3+bossDelta*.035);hitStopUntil=performance.now()+Math.min(58,18+bossDelta*.08);}
-  if(previousMeHp!==null&&me?.hp<previousMeHp){screenShake=18;hitStopUntil=performance.now()+48;}
+  if(bossDelta>0){playSound('hit');screenShake=Math.min(16,3+bossDelta*.035)*profile.settings.screenShake;hitStopUntil=performance.now()+Math.min(58,18+bossDelta*.08);}
+  if(previousMeHp!==null&&me?.hp<previousMeHp){screenShake=18*profile.settings.screenShake;hitStopUntil=performance.now()+48;}
   previousBossHp=state.boss?.hp??null;previousMeHp=me?.hp??null;gameState=state;updateHud(state);syncBossMusic(state.boss);
-  if(state.status==='perk')showPerks(state);else if(state.status==='route')showRoutes(state);else{dom.perkOverlay.classList.remove('active');dom.routeOverlay.classList.remove('active');}
+  if(!state.training&&me&&state.elapsed-lastGhostSampleAt>=.1&&ghostRecording.length<12000){ghostRecording.push({t:Math.round(state.elapsed*10)/10,s:state.stage,x:Math.round(me.x),y:Math.round(me.y),f:me.facing,a:me.action});lastGhostSampleAt=state.elapsed;}
+  if(state.status==='perk')showPerks(state);else if(state.status==='route')showRoutes(state);else if(state.status==='fusion')showFusions(state);else if(state.status==='contract')showContracts(state);else{dom.perkOverlay.classList.remove('active');dom.routeOverlay.classList.remove('active');dom.fusionOverlay?.classList.remove('active');dom.contractOverlay?.classList.remove('active');}
 });
-socket.on('stage-cleared',({stage})=>toast(`Печать ${stage} разрушена`,'gold'));
+socket.on('stage-cleared',({stage,bossId})=>{if(bossId&&profile.bossCodex[bossId]){profile.bossCodex[bossId].wins+=1;saveProfile();}toast(`Печать ${stage} разрушена`,'gold');});
+socket.on('boss-reward',(reward)=>{
+  const first = !profile.bossTrophies.includes(reward.bossId);
+  if(first)profile.bossTrophies.push(reward.bossId);
+  profile.currency += Math.max(0,Math.floor(reward.currency||0));
+  saveProfile();
+  toast(`${first?'Новый титул':'Награда владыки'}: ${reward.name} · +${reward.currency} пепла`,'gold');
+});
 socket.on('route-chosen',(route)=>{toast(`Путь выбран: ${route.name}`,'gold');if(route.special==='healing')toast(route.restoredHp>0?`Тихий свет восстановил ${route.restoredHp} HP отряду`:'Здоровье живых странников уже заполнено','gold');});
-socket.on('boss-phase',({phase,name})=>{screenShake=20;playSound('phase');toast(`${name} · ФАЗА ${phase}`,'danger');});
+socket.on('contract-chosen',(contract)=>toast(`Контракт принят: ${contract.name} · ×${contract.reward||1} пепла`,'warn'));
+socket.on('perfect-dodge',({playerId,name,focus,riposteReady})=>{if(playerId===socket.id){playSound('parry');toast(riposteReady?'ИДЕАЛЬНОЕ УКЛОНЕНИЕ · КОНТРАТАКА ГОТОВА':`ИДЕАЛЬНОЕ УКЛОНЕНИЕ · ФОКУС ${focus}/3`,'gold');}else toast(`${name}: идеальное уклонение`,'gold');});
+socket.on('ability-used',({playerId,name})=>{if(playerId===socket.id)toast(`${name} активирован`,'gold');});
+socket.on('boss-phase',({phase,name})=>{screenShake=20*profile.settings.screenShake;playSound('phase');toast(`${name} · ФАЗА ${phase}`,'danger');});
 socket.on('currency-earned',({amount,stage})=>{profile.currency+=Math.max(0,Math.floor(amount));saveProfile();toast(`+${amount} пепла за стадию ${stage}`,'gold');});
+socket.on('training-reset',(payload)=>toast(payload.text||'Тренировка перезапущена','gold'));
 socket.on('toast',(payload)=>toast(payload.text,payload.tone));socket.on('game-over',showResults);
 
-window.addEventListener('resize',resizeCanvas);renderProfile();resizeCanvas();requestAnimationFrame(renderFrame);
+window.addEventListener('resize',resizeCanvas);populateTraining();renderProfile();resizeCanvas();requestAnimationFrame(renderFrame);
