@@ -92,6 +92,7 @@ const BOSS_META = [
   { id:'mirror_saint', name:'Зеркальный святой', title:'Отражение забытой клятвы', hint:'Не повторяй один и тот же ответ на его серии.', weakness:'Идеальное уклонение открывает короткое окно контратаки.' },
   { id:'rootless_beast', name:'Безкорневой зверь', title:'Голод живых руин', hint:'Держи путь к безопасному краю открытым.', weakness:'Тяжёлые атаки быстрее ломают его стойкость.' },
   { id:'clockwork_mourner', name:'Часовой плакальщик', title:'Последняя минута колокольни', hint:'Слушай ритм телеграфов и не торопись.', weakness:'Парирование двойных атак сбивает его темп.' },
+  { id:'nameless_hunter', name:'Безымянный охотник', title:'Тот, кто идёт по следу', hint:'Он повторяет приёмы, которыми закончился прошлый забег.', weakness:'Смена стойки сбивает его адаптацию.' },
 ];
 const BOSS_BY_ID = new Map(BOSS_META.map((boss) => [boss.id, boss]));
 const ATTACK_META = {
@@ -99,8 +100,8 @@ const ATTACK_META = {
   wave:'Волна', volley:'Залп', slam:'Удар по земле', blink:'Телепорт', marked:'Метки', quake:'Землетрясение',
   ring_burst:'Кольцевая вспышка', skyfall:'Небесное падение', beam:'Луч',
 };
-const DEFAULT_BINDINGS = { left:'KeyA', right:'KeyD', jump:'KeyW', light:'KeyJ', parry:'KeyH', heavy:'KeyK', roll:'KeyL', ability:'KeyV', team:'KeyU' };
-const ACTION_LABELS = { left:'Влево', right:'Вправо', jump:'Прыжок', light:'Лёгкая атака', parry:'Парирование', heavy:'Тяжёлая атака', roll:'Перекат', ability:'Способность класса', team:'Клятва отряда' };
+const DEFAULT_BINDINGS = { left:'KeyA', right:'KeyD', jump:'KeyW', light:'KeyJ', parry:'KeyH', heavy:'KeyK', roll:'KeyL', ability:'KeyV', team:'KeyU', stance:'KeyR', technique:'KeyF', layer:'KeyT', interact:'KeyG', spectral:'KeyX' };
+const ACTION_LABELS = { left:'Влево', right:'Вправо', jump:'Прыжок', light:'Лёгкая атака', parry:'Парирование', heavy:'Тяжёлая атака', roll:'Перекат', ability:'Способность класса', team:'Клятва отряда', stance:'Смена стойки', technique:'Украденная техника', layer:'Смена слоя мира', interact:'Механизм арены', spectral:'Спектральная помощь' };
 const KEY_LABELS = { Space:'ПРОБЕЛ', ArrowLeft:'←', ArrowRight:'→', ArrowUp:'↑', ArrowDown:'↓' };
 const EVOLVING_PERKS = new Set(['vitality','quickstep','safe_roll','sharpened','heavy_mastery','echo_blade','parry_master']);
 const reconnectToken = (() => {
@@ -233,6 +234,7 @@ const DEFAULT_PROFILE = {
   settings: { bindings: { ...DEFAULT_BINDINGS }, effectsVolume: 0.7, musicVolume: 0.45, screenShake: 1, gamepad: true, highContrast:false, reducedFlash:false, telegraphText:true, colorblind:false },
   loadoutPresets: [null,null,null],
   ghosts: {},
+  nemesisAttacks:Object.fromEntries(Object.keys(CLASS_META).map((id)=>[id,null])),
   stats: { runs: 0, highestStage: 1, parries: 0, bosses: 0, noHitStages: 0, damage: 0 },
   achievements: [],
   daily: null,
@@ -259,7 +261,7 @@ const dom = Object.fromEntries([
 
 const ctx = dom.gameCanvas.getContext('2d');
 const screens = [dom.homeScreen, dom.lobbyScreen, dom.gameScreen];
-const input = { left: false, right: false, jump: false, light: false, heavy: false, parry: false, roll: false, ability: false, team: false };
+const input = { left: false, right: false, jump: false, light: false, heavy: false, parry: false, roll: false, ability: false, team: false, stance:false, technique:false, layer:false, interact:false, spectral:false };
 const keyboardInput = { ...input };
 const gamepadInput = { ...input };
 
@@ -436,6 +438,7 @@ function loadProfile() {
       settings,
       loadoutPresets,
       ghosts,
+      nemesisAttacks:Object.fromEntries(Object.keys(CLASS_META).map((id)=>[id,typeof saved.nemesisAttacks?.[id]==='string'?saved.nemesisAttacks[id]:null])),
       stats,
       achievements: [...new Set(Array.isArray(saved.achievements) ? saved.achievements.filter((id) => ACHIEVEMENTS.some((achievement) => achievement.id === id)) : [])],
       daily,
@@ -465,7 +468,7 @@ function classPayload(classId = selectedClass) {
   return {
     classId, skin: profile.selectedSkin, weaponId, appearance: profile.appearance,
     equippedSkills: equippedForClass(classId), specialization: profile.classSpecializations[classId] || null,
-    masteryChoices: profile.weaponProgress[weaponId]?.choices || {}, reconnectToken,
+    masteryChoices: profile.weaponProgress[weaponId]?.choices || {}, reconnectToken, nemesisAttack:profile.nemesisAttacks?.[classId]||null,
   };
 }
 
@@ -776,6 +779,7 @@ function applyRunProgress(data) {
   profile.daily.stages += me.bossesDefeated || 0;
   profile.daily.parries += me.parries || 0;
   profile.daily.damage += me.damageDone || 0;
+  if(me.lastDamageAttack)profile.nemesisAttacks[me.classId]=me.lastDamageAttack;
   const oldLevel = classLevel(me.classId);
   const xpEarned = (me.bossesDefeated || 0) * 180 + Math.floor((me.damageDone || 0) / 125) + (data.result === 'victory' ? 500 : 0);
   profile.classProgress[me.classId].xp += xpEarned;
@@ -1035,10 +1039,11 @@ function formatTime(seconds) {
 
 function updateHud(state) {
   dom.timerText.textContent = formatTime(state.elapsed);
-  dom.stageText.textContent = `СТАДИЯ ${state.stage} / ${state.maxStage}${state.arena?.name ? ` · ${state.arena.name}` : ''}`;
+  const objectiveProgress=state.objective?.id==='survive'?` · ${Math.ceil(state.objectiveTimer||0)}С`:state.objective?.id==='seals'?` · ${state.objectiveSeals||0}/${state.objective.seals||3}`:state.objective?.id==='parallel'?` · ${state.parallelCharge||0}%`:'';
+  dom.stageText.textContent = `СТАДИЯ ${state.stage} / ${state.maxStage}${state.arena?.name ? ` · ${state.arena.name}` : ''} · ${state.objective?.name||'СРАЖЕНИЕ'}${objectiveProgress}`;
   dom.bossName.textContent = state.boss ? `${state.boss.name} · УРОН ${state.boss.damage}` : 'ПУТЬ МЕЖДУ ПЕЧАТЯМИ';
-  dom.bossPhaseText.textContent = `ФАЗА ${['I','II','III'][(state.boss?.phase || 1) - 1]}`;
-  dom.modifierText.textContent = state.training ? 'ТРЕНИРОВКА' : `${state.mode==='daily'?'ДЕНЬ · ':''}${state.difficulty === 'ngplus' ? 'NG+ · ' : ''}${state.contractEffect?.name||state.modifier?.name||'БЕЗ МОДИФИКАТОРА'}`;
+  dom.bossPhaseText.textContent = `ФАЗА ${['I','II','III'][(state.boss?.phase || 1) - 1]}${state.arena?.layered?` · СЛОЙ ${(state.boss?.worldLayer||0)+1}`:''}${state.boss?.languageRune?` · ${state.boss.languageRune}`:''}`;
+  dom.modifierText.textContent = state.training ? 'ТРЕНИРОВКА' : `${state.mode==='daily'?'ДЕНЬ · ':''}${state.difficulty === 'ngplus' ? 'NG+ · ' : ''}${state.stageLaw?.name||state.contractEffect?.name||state.modifier?.name||'БЕЗ МОДИФИКАТОРА'}`;
   dom.trainingExitButton.style.display = state.training ? 'block' : 'none';
   dom.teamPowerText.textContent = `${state.teamPower || 0}%`;
   dom.teamPowerBar.style.width = `${state.teamPower || 0}%`;
@@ -1051,16 +1056,21 @@ function updateHud(state) {
     if (state.boss.exposed) statuses.push('СТОЙКОСТЬ СЛОМАНА · +35% УРОНА');
     if (state.boss.synergies?.arcaneMark) statuses.push('МЕТКА ПЕПЛА');
     if (state.boss.synergies?.breached) statuses.push('БРОНЯ ПРОБИТА');
+    if(state.boss.armorParts)statuses.push(`ЖИВАЯ БРОНЯ ×${state.boss.armorParts}`);
+    if(state.boss.modules?.length)statuses.push(state.boss.modules.map((item)=>item.name).join(' + '));
+    if(state.boss.copiedPerk)statuses.push(`КОПИЯ ДАРА: ${state.boss.copiedPerk}`);
     if (state.boss.mutations?.length) statuses.push(state.boss.mutations.map((item)=>item.name).join(' + '));
+    if(state.teamVow){const progress=state.teamVow.id==='parry'?`${state.vowProgress?.parries||0}/${state.teamVow.target}`:state.teamVow.id==='mercy'?`${state.vowProgress?.hits||0}/${state.teamVow.target} ПОПАДАНИЙ`:`${Math.round(state.vowProgress?.time||0)}/${state.teamVow.target}С`;statuses.push(`${state.teamVow.name} · ${progress}`);}
+    const bond=Object.entries(state.bonds||{}).sort((a,b)=>b[1]-a[1])[0];if(bond)statuses.push(`СВЯЗЬ ${bond[0]} · УРОВЕНЬ ${Math.min(5,Math.floor(bond[1]/4)+1)}`);
     dom.bossStatusText.textContent = statuses.join(' · ');
   }
   const me = state.players.find((player) => player.id === socket.id);
   if (me) {
     dom.heartsBar.innerHTML = Array.from({ length: me.maxHp }, (_, index) => `<span class="heart ${index >= me.hp ? 'empty' : ''}">♥</span>`).join('');
     dom.staminaBar.style.width = `${Math.max(0, me.stamina / me.maxStamina * 100)}%`;
-    const abilityReady=Math.max(0,1-me.abilityCooldown/Math.max(.1,me.abilityMaxCooldown));dom.abilityBar.style.width=`${abilityReady*100}%`;dom.abilityLabel.textContent=`V · ${me.abilityName}${me.abilityCooldown>0?` · ${me.abilityCooldown.toFixed(1)}С`:' · ГОТОВО'}${me.focus?` · ФОКУС ${me.focus}/3`:''}`;
+    const abilityReady=Math.max(0,1-me.abilityCooldown/Math.max(.1,me.abilityMaxCooldown));dom.abilityBar.style.width=`${abilityReady*100}%`;const wounds=Object.values(me.wounds||{}).reduce((sum,value)=>sum+value,0);dom.abilityLabel.textContent=`V · ${me.abilityName}${me.abilityCooldown>0?` · ${me.abilityCooldown.toFixed(1)}С`:' · ГОТОВО'} · R ${me.stance?.name||'БЫСТРАЯ'} · ФОРМА ${String(me.weaponEvolution||'unformed').toUpperCase()}${me.stolenTechnique&&!me.stolenTechniqueUsed?` · F ${ATTACK_META[me.stolenTechnique]||me.stolenTechnique}`:''}${wounds?` · РАНЕНИЯ ${wounds}`:''}`;
     const alive=state.players.filter((player)=>!player.downed&&player.id!==socket.id);dom.spectatorPanel?.classList.toggle('active',me.downed&&alive.length>0);
-    if(me.downed&&alive.length){spectatorIndex=((spectatorIndex%alive.length)+alive.length)%alive.length;dom.spectatorTarget.textContent=`Наблюдение: ${alive[spectatorIndex].name} · сигналов ${me.pingsRemaining}`;}else spectatorIndex=0;
+    if(me.downed&&alive.length){spectatorIndex=((spectatorIndex%alive.length)+alive.length)%alive.length;dom.spectatorTarget.textContent=`Наблюдение: ${alive[spectatorIndex].name} · сигналов ${me.pingsRemaining} · помощь ${me.spectralCooldown>0?`${me.spectralCooldown.toFixed(1)}с`:'готова'}`;}else spectatorIndex=0;
   }
   dom.squadHud.innerHTML = state.players.map((player) => {
     const meta = CLASS_META[player.classId];
@@ -1068,7 +1078,7 @@ function updateHud(state) {
     const targeted = state.boss?.targetId === player.id;
     return `<div class="hud-player ${player.downed ? 'downed' : ''} ${player.connected === false ? 'disconnected' : ''}" style="--class-color:${color}">
       <span class="hud-avatar">${targeted ? '!' : meta.short}</span><div><strong>${escapeHtml(player.name)}${player.id === socket.id ? ' · ВЫ' : ''}${targeted ? ' · ЦЕЛЬ' : ''}</strong>
-      ${player.connected === false ? '<small>ПЕРЕПОДКЛЮЧЕНИЕ…</small>' : player.focus?`<small>ФОКУС ${player.focus}/3${player.riposteReady?' · КОНТРАТАКА':''}</small>`:''}<span class="mini-bars"><span><i style="width:${player.hp / player.maxHp * 100}%"></i></span><span><i style="width:${player.stamina / player.maxStamina * 100}%"></i></span></span></div></div>`;
+      ${player.connected === false ? '<small>ПЕРЕПОДКЛЮЧЕНИЕ…</small>' : `<small>${state.arena?.layered?`СЛОЙ ${(player.worldLayer||0)+1} · `:''}${player.echoResonance?'ЭХО · ':''}${player.weaponEvolution&&player.weaponEvolution!=='unformed'?player.weaponEvolution.toUpperCase():player.focus?`ФОКУС ${player.focus}/3${player.riposteReady?' · КОНТРАТАКА':''}`:''}</small>`}<span class="mini-bars"><span><i style="width:${player.hp / player.maxHp * 100}%"></i></span><span><i style="width:${player.stamina / player.maxStamina * 100}%"></i></span></span></div></div>`;
   }).join('');
 }
 
@@ -1084,9 +1094,10 @@ function showRoutes(state) {
   if (key === currentRouteKey) return;
   currentRouteKey = key;
   resetInput();
+  dom.routeSubtitle.textContent=`Голос большинства определит путь. Ближайшие законы: ${(state.fatePreview||[]).map((law)=>law.name).join(' → ')||'неизвестны'}.`;
   const voteCounts = {};
   for (const routeId of Object.values(state.routeVotes || {})) voteCounts[routeId] = (voteCounts[routeId] || 0) + 1;
-  const icons = { sanctuary:'♨', elite:'⚔', curse:'◇', forge:'⌁', oath:'✦', ruins:'⌂', healing:'✚' };
+  const icons = { sanctuary:'♨', elite:'⚔', curse:'◇', forge:'⌁', oath:'✦', ruins:'⌂', healing:'✚',merchant:'¤',trial:'◆',ambush:'!',debt:'⌛',phase_theft:'◐',corruption:'※',fate_shift:'⁂',law_haste:'»',law_weight:'▰',law_mirror:'◇',law_scarcity:'∅',law_rift:'◑' };
   dom.routeGrid.innerHTML = (state.routeOffer || []).map((route) => `<button class="route-card ${route.special === 'healing' ? 'healing' : ''} ${myVote === route.id ? 'voted' : ''}" type="button" data-route="${route.id}" ${myVote ? 'disabled' : ''}><i>${icons[route.id] || '◇'}</i><h3>${route.name}</h3><p>${route.description}</p><b>${voteCounts[route.id] || 0} ГОЛОСОВ</b></button>`).join('');
   dom.routeWaiting.textContent = myVote ? 'ЖДЁМ РЕШЕНИЕ ОТРЯДА' : 'ВЫБЕРИ ОДИН ИЗ ТРЁХ ПУТЕЙ';
   dom.routeGrid.querySelectorAll('[data-route]:not(:disabled)').forEach((button) => button.addEventListener('click', () => {
@@ -1156,12 +1167,12 @@ function showResults(data) {
   if(myResult&&!currentTraining&&ghostRecording.length&&(data.stagesCleared>(profile.ghosts?.[myResult.classId]?.stages||0))){profile.ghosts[myResult.classId]={stages:data.stagesCleared,samples:ghostRecording};saveProfile();toast('Призрак лучшего забега сохранён','gold');}
   const victory = data.result === 'victory';
   dom.resultKicker.textContent = victory ? (data.difficulty === 'ngplus' ? 'NG+ ЗАВЕРШЕНА' : 'ПОСЛЕДНЯЯ ПЕЧАТЬ') : 'ЗАБЕГ ОКОНЧЕН';
-  dom.resultTitle.textContent = victory ? 'Пепельный король повержен' : 'Пламя погасло';
-  dom.resultSubtitle.textContent = victory ? `Все 50 печатей разрушены${data.difficulty === 'ngplus' ? ' в Новой игре+' : ''}.` : `Отряд достиг стадии ${data.stageReached}. Ниже — разбор попытки.`;
+  dom.resultTitle.textContent = victory ? (data.ending?.title||'Пепельный король повержен') : 'Пламя погасло';
+  dom.resultSubtitle.textContent = victory ? `${data.ending?.description||'Все 50 печатей разрушены.'}${data.difficulty === 'ngplus' ? ' Новая игра+ завершена.' : ''}` : `Отряд достиг стадии ${data.stageReached}. Ниже — разбор попытки.`;
   dom.runSummary.innerHTML = `<div class="summary-box"><strong>${data.stagesCleared}</strong><span>СТАДИЙ ПРОЙДЕНО</span></div><div class="summary-box"><strong>${formatTime(data.elapsed)}</strong><span>ВРЕМЯ ЗАБЕГА</span></div><div class="summary-box"><strong>${data.mode==='daily'?'ДЕНЬ':data.difficulty === 'ngplus' ? 'NG+' : 'I'}</strong><span>СЛОЖНОСТЬ</span></div>`;
   dom.resultStats.innerHTML = data.players.map((player, index) => {
     const parryRate = player.parryAttempts ? Math.round((player.parries || 0) / player.parryAttempts * 100) : 0;
-    return `<div class="result-row postmortem"><span>#${index + 1}</span><strong>${escapeHtml(player.name)} · ${CLASS_META[player.classId].label}</strong><div><b>${player.damageDone} УРОНА</b><small>${player.parries || 0}/${player.parryAttempts || 0} ПАРИРОВАНИЙ · ${parryRate}% · ${player.perfectDodges||0} ИДЕАЛЬНЫХ УКЛОНЕНИЙ</small><small>${player.poiseDamage || 0} УРОНА СТОЙКОСТИ · ${player.hitsTaken || 0} ПОПАДАНИЙ ПОЛУЧЕНО · ${(player.fusions||[]).length} СПЛАВОВ</small><em>ПОСЛЕДНЯЯ ОПАСНОСТЬ: ${escapeHtml(player.lastDamageSource || 'неизвестно')}</em></div></div>`;
+    return `<div class="result-row postmortem"><span>#${index + 1}</span><strong>${escapeHtml(player.name)} · ${CLASS_META[player.classId].label}</strong><div><b>${player.damageDone} УРОНА · ФОРМА ${String(player.weaponEvolution||'unformed').toUpperCase()}</b><small>${player.parries || 0}/${player.parryAttempts || 0} ПАРИРОВАНИЙ · ${parryRate}% · ${player.perfectDodges||0} ИДЕАЛЬНЫХ УКЛОНЕНИЙ</small><small>${player.poiseDamage || 0} УРОНА СТОЙКОСТИ · ${player.hitsTaken || 0} ПОПАДАНИЙ ПОЛУЧЕНО · ${(player.fusions||[]).length} СПЛАВОВ · ${player.trialMarks||0} ИСПЫТАНИЙ</small><em>ПОСЛЕДНЯЯ ОПАСНОСТЬ: ${escapeHtml(player.lastDamageSource || 'неизвестно')}</em></div></div>`;
   }).join('')+(data.dailyLeaderboard?.length?`<h3>ЛУЧШИЕ ПОПЫТКИ ДНЯ · ${data.teamSize} ИГР.</h3>${data.dailyLeaderboard.map((entry,index)=>`<div class="result-row"><span>#${index+1}</span><strong>${escapeHtml(entry.names)}</strong><b>${entry.stages} · ${formatTime(entry.elapsed)}</b></div>`).join('')}`:'');
   const host = lobbyState?.hostId === socket.id;
   dom.rematchButton.disabled = !host;
@@ -1183,7 +1194,7 @@ function emitCombinedInput() {
   let changed = false;
   for (const key of Object.keys(input)) {
     const next = keyboardInput[key] || gamepadInput[key];
-    if (input[key] !== next) { input[key] = next; changed = true; if (next && ['light', 'heavy', 'parry', 'roll', 'ability', 'team'].includes(key)) playSound(key); }
+    if (input[key] !== next) { input[key] = next; changed = true; if (next && ['light', 'heavy', 'parry', 'roll', 'ability', 'team','stance','technique','layer','interact','spectral'].includes(key)) playSound(['stance','technique','layer','interact','spectral'].includes(key)?'phase':key); }
   }
   if (changed) socket.emit('input', input);
 }
@@ -1206,11 +1217,12 @@ function pollGamepad() {
   if (!pad) { if (gamepadWasConnected) { gamepadWasConnected = false; resetGamepadInput(); } return; }
   if (!gamepadWasConnected) { gamepadWasConnected = true; toast(`Геймпад подключён: ${pad.id.slice(0, 34)}`, 'gold'); }
   const blocked = !dom.gameScreen.classList.contains('active') || choiceOverlayActive();
-  const values = blocked ? { ...gamepadInput, left:false,right:false,jump:false,light:false,heavy:false,parry:false,roll:false,ability:false,team:false } : {
+  const values = blocked ? Object.fromEntries(Object.keys(gamepadInput).map((key)=>[key,false])) : {
     left:(pad.axes[0] || 0) < -0.35, right:(pad.axes[0] || 0) > 0.35,
     jump:pad.buttons[0]?.pressed === true, light:pad.buttons[2]?.pressed === true,
     heavy:pad.buttons[3]?.pressed === true, parry:pad.buttons[4]?.pressed === true,
     roll:pad.buttons[5]?.pressed === true, ability:pad.buttons[7]?.pressed === true, team:pad.buttons[8]?.pressed === true,
+    stance:pad.buttons[6]?.pressed===true,technique:pad.buttons[1]?.pressed===true,layer:pad.buttons[9]?.pressed===true,interact:pad.buttons[10]?.pressed===true,spectral:pad.buttons[1]?.pressed===true,
   };
   for (const [key, pressed] of Object.entries(values)) if (gamepadInput[key] !== pressed) setInput(key, pressed, 'gamepad');
 }
@@ -1277,14 +1289,15 @@ function playSound(kind) {
 function stopBossMusic() { clearInterval(bossMusicTimer); bossMusicTimer = null; bossMusicKey = ''; }
 function syncBossMusic(boss) {
   if (!boss) return stopBossMusic();
-  const key = `${boss.bossId}:${boss.phase}`;
+  const danger=boss.hp/Math.max(1,boss.maxHp)<.25?'last':boss.poise/Math.max(1,boss.maxPoise)<.3?'break':'steady';
+  const key = `${boss.bossId}:${boss.phase}:${danger}:${boss.worldLayer||0}`;
   if (key === bossMusicKey) return;
   stopBossMusic(); bossMusicKey = key; bossMusicStep = 0;
   const roots = [82,87,92,98,104,110,117,123,131,139];
   const root = roots[Math.max(0,(boss.tier||1)-1)];
-  const pattern = boss.phase === 3 ? [1,1.5,1.25,2,1.5,2.5] : boss.phase === 2 ? [1,1.25,1.5,2] : [1,1.5,1.25,1];
-  const pulse = () => { if (!dom.gameScreen.classList.contains('active')) return; const multiplier = pattern[bossMusicStep++ % pattern.length]; tone(root*multiplier,.18,.009,boss.phase===3?'square':'triangle',0,'music'); };
-  pulse(); bossMusicTimer = setInterval(pulse, boss.phase === 3 ? 330 : boss.phase === 2 ? 430 : 560);
+  const pattern = danger==='last'?[1,1.5,2,1.25,2.5,1.75]:danger==='break'?[1,1.25,1.01,1.5]:boss.phase === 3 ? [1,1.5,1.25,2,1.5,2.5] : boss.phase === 2 ? [1,1.25,1.5,2] : [1,1.5,1.25,1];
+  const pulse = () => { if (!dom.gameScreen.classList.contains('active')) return; const multiplier = pattern[bossMusicStep++ % pattern.length]; tone(root*multiplier,.18,danger==='last'?.013:.009,boss.phase===3?'square':'triangle',0,'music'); if(boss.worldLayer===1&&bossMusicStep%2===0)tone(root*.5,.22,.005,'sine',.04,'music'); };
+  pulse(); bossMusicTimer = setInterval(pulse, danger==='last'?270:boss.phase === 3 ? 330 : boss.phase === 2 ? 430 : 560);
 }
 
 function resizeCanvas() {
@@ -1351,9 +1364,18 @@ function drawArenaHazard(hazard,time) {
   ctx.setLineDash([]);ctx.restore();
 }
 
+function drawArenaHistory(state,time){
+  for(const scar of state.arena?.scars||[]){ctx.save();ctx.translate(scar.x,world.floor-3);ctx.globalAlpha=.28;ctx.strokeStyle=scar.type==='rift'?'#a978c0':'#c19a64';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(-34,0);ctx.lineTo(-18,-12);ctx.lineTo(-4,-3);ctx.lineTo(11,-17);ctx.lineTo(34,0);ctx.stroke();ctx.restore();}
+  for(const mechanism of state.arena?.mechanisms||[]){const pulse=.65+Math.sin(time*4+mechanism.x)*.18;ctx.save();ctx.translate(mechanism.x,mechanism.y);ctx.globalAlpha=mechanism.active?1:pulse;ctx.strokeStyle=mechanism.active?'#f2d18a':'#8a7551';ctx.fillStyle='#17130e';ctx.lineWidth=3;ctx.fillRect(-17,-17,34,34);ctx.strokeRect(-17,-17,34,34);ctx.rotate(Math.PI/4);ctx.strokeRect(-8,-8,16,16);ctx.restore();}
+}
+
+function drawStageEchoes(state){
+  for(const echo of state.echoes||[]){ctx.save();ctx.globalAlpha=echo.mode==='ally'?.22:.16;ctx.fillStyle=echo.mode==='ally'?'#79d1d8':'#b06a91';ctx.shadowColor=ctx.fillStyle;ctx.shadowBlur=13;ctx.translate(echo.x+21,echo.y+30);ctx.fillRect(-15,-26,30,25);ctx.fillRect(-19,0,38,24);ctx.fillRect(-13,24,10,17);ctx.fillRect(4,24,10,17);ctx.restore();}
+}
+
 function drawPlayer(player,time) {
-  const meta=CLASS_META[player.classId]; const skin=SKIN_META[player.skin]||SKIN_META.iron; const armor=ARMOR_META[player.appearance?.armor]?.color||meta.color;const aura=AURA_META[player.appearance?.aura]?.color||'#b5aa96';const weaponId=player.weaponId||DEFAULT_WEAPON[player.classId]; const isMe=player.id===socket.id; const bob=Math.round(Math.sin(time*8+player.slot)*Math.min(2,Math.abs(player.vx)/190));
-  ctx.save(); ctx.translate(Math.round(player.x+21),Math.round(player.y+30+bob)); ctx.scale(player.facing||1,1);
+  const meta=CLASS_META[player.classId]; const skin=SKIN_META[player.skin]||SKIN_META.iron; const armor=ARMOR_META[player.appearance?.armor]?.color||meta.color;const aura=AURA_META[player.appearance?.aura]?.color||'#b5aa96';const weaponId=player.weaponId||DEFAULT_WEAPON[player.classId]; const isMe=player.id===socket.id; const bob=Math.round(Math.sin(time*8+player.slot)*Math.min(2,Math.abs(player.vx)/190));const prediction=isMe?(Number(input.right)-Number(input.left))*Math.min(14,Math.abs(player.vx)*.04):0;const renderX=player.x+prediction;
+  ctx.save(); ctx.translate(Math.round(renderX+21),Math.round(player.y+30+bob)); ctx.scale(player.facing||1,1);if(gameState?.arena?.layered)ctx.globalAlpha=player.worldLayer===0?.92:.68;
   if(Math.abs(player.vx)>90||player.action==='roll'){ctx.fillStyle=aura;ctx.globalAlpha=.16;for(let i=0;i<4;i++)ctx.fillRect(-25-i*10-(Math.floor(time*18+i*3)%7),10+i*5,5+i%2*3,5+i%2*3);ctx.globalAlpha=1;}
   if(player.invulnerable&&Math.floor(time*18)%2===0)ctx.globalAlpha=.42;
   if(isMe){ctx.globalAlpha*=.18;ctx.fillStyle=armor;ctx.fillRect(-28,31,56,4);ctx.fillRect(-20,27,40,4);ctx.globalAlpha=player.invulnerable&&Math.floor(time*18)%2===0?.42:1;}
@@ -1386,13 +1408,13 @@ function drawPlayer(player,time) {
   if(player.action==='parry'||player.action==='parry_success'){ctx.fillStyle=player.parryActive?'#f1d58d':'#756542';ctx.fillRect(24,-18,4,36);ctx.fillRect(28,-12,4,24);}
   if(player.action==='light'||player.action==='heavy'){ctx.globalAlpha=.5;ctx.fillStyle=skin.color;const size=player.action==='heavy'?8:5;for(let i=0;i<6;i++)ctx.fillRect(28+i*8,-28+i*7,size,size);}
   ctx.restore();ctx.globalAlpha=1;
-  ctx.textAlign='center';ctx.fillStyle=isMe?'#eee3cf':'rgba(225,217,201,.7)';ctx.font=`${isMe?700:600} 9px monospace`;ctx.fillText(player.downed?`${player.name} · ПАЛ`:player.connected===false?`${player.name} · СВЯЗЬ`:player.name,Math.round(player.x+21),Math.round(player.y-18));
+  ctx.textAlign='center';ctx.fillStyle=isMe?'#eee3cf':'rgba(225,217,201,.7)';ctx.font=`${isMe?700:600} 9px monospace`;ctx.fillText(player.downed?`${player.name} · ПАЛ`:player.connected===false?`${player.name} · СВЯЗЬ`:player.name,Math.round(renderX+21),Math.round(player.y-18));
   const titleId=player.appearance?.title?.replace(/^title_/,'');const title=titleId&&titleId!=='wanderer'?BOSS_BY_ID.get(titleId)?.title:'';if(title){ctx.fillStyle='rgba(211,180,111,.78)';ctx.font='600 7px monospace';ctx.fillText(title.toUpperCase(),Math.round(player.x+21),Math.round(player.y-29));}
   if(gameState?.boss?.targetId===player.id&&!player.downed){ctx.fillStyle='#d65c69';ctx.fillRect(Math.round(player.x+16),Math.round(player.y-34),10,4);ctx.fillRect(Math.round(player.x+19),Math.round(player.y-39),4,4);}
 }
 
 function drawBoss(boss,time) {
-  ctx.save();ctx.translate(Math.round(boss.x+61),Math.round(boss.y+75));ctx.scale(boss.facing||-1,1);const armor=boss.flash?'#eee1c8':boss.color||'#786143';const eye=boss.eye||'#dbad58';
+  ctx.save();ctx.translate(Math.round(boss.x+61),Math.round(boss.y+75));ctx.scale(boss.facing||-1,1);if(gameState?.arena?.layered)ctx.globalAlpha=boss.worldLayer===0?.96:.7;const armor=boss.flash?'#eee1c8':boss.color||'#786143';const eye=boss.eye||'#dbad58';
   if(boss.phaseFlash){ctx.globalAlpha=.35;ctx.fillStyle=eye;ctx.fillRect(-92,-92,184,184);ctx.globalAlpha=1;}
   ctx.globalAlpha=.16;ctx.fillStyle=eye;ctx.fillRect(-76,-72,152,144);ctx.globalAlpha=1;ctx.fillStyle='rgba(0,0,0,.45)';ctx.fillRect(-66,68,132,12);
   ctx.fillStyle='#090706';ctx.fillRect(-44,42,25,31);ctx.fillRect(20,42,25,31);ctx.fillStyle='#201b17';ctx.fillRect(-50,65,35,10);ctx.fillRect(17,65,35,10);
@@ -1412,6 +1434,8 @@ function drawBoss(boss,time) {
   if(boss.bossId==='void_apostle'){ctx.fillStyle=eye;for(const [x,y] of [[-75,-58],[-82,8],[-58,61],[59,-63],[78,-2],[61,52]])ctx.fillRect(x,y,10,10);}
   if(boss.bossId==='ashen_king'){ctx.fillRect(-38,-91,75,7);for(let x=-35;x<=29;x+=16)ctx.fillRect(x,-103,8,15);ctx.fillStyle=eye;ctx.fillRect(-31,-108,9,8);ctx.fillRect(1,-111,9,11);ctx.fillRect(27,-108,9,8);}
   if((boss.phase||1)>=2){ctx.fillStyle=eye;ctx.fillRect(-52,39,105,5);}if((boss.phase||1)>=3){for(const [x,y] of [[-61,-66],[-68,4],[-50,62],[49,-69],[66,1],[51,60]])ctx.fillRect(x,y,6,6);}
+  if(boss.armorParts){ctx.strokeStyle='#d9bd83';ctx.lineWidth=5;for(let i=0;i<boss.armorParts;i++)ctx.strokeRect(-70+i*18,-47-i*4,20,76);}
+  for(const module of boss.modules||[]){ctx.fillStyle=eye;if(module.id==='wings'){ctx.fillRect(-96,-54,34,9);ctx.fillRect(62,-54,34,9);}if(module.id==='lens')ctx.fillRect(-9,-74,18,18);if(module.id==='chains'){ctx.fillRect(-75,5,14,70);ctx.fillRect(62,5,14,70);}if(module.id==='claws'){ctx.fillRect(99,-23,28,5);ctx.fillRect(99,-8,31,5);}if(module.id==='bulwark')ctx.strokeRect(-68,-48,133,94);}
   if(boss.stagger){ctx.fillStyle='#e7cf91';for(const [x,y] of [[-70,-60],[-82,-15],[-72,38],[-15,-88],[42,-76],[72,-40],[78,25],[35,70]])ctx.fillRect(x,y,7,7);}
   ctx.restore();
 }
@@ -1430,7 +1454,9 @@ function drawTelegraph(boss,state) {
   else if(['slash','cleave','charge','twin_slash'].includes(attack.type)){const radius=attack.type==='cleave'?245:attack.type==='twin_slash'?225:155;ctx.beginPath();ctx.arc(centerX,centerY,radius,-1.15,1.15);ctx.stroke();if(attack.type==='twin_slash'){ctx.beginPath();ctx.arc(centerX,centerY,radius*.72,2,4.2);ctx.stroke();}}
   else if(attack.type==='wave'){ctx.beginPath();ctx.moveTo(centerX,world.floor-8);ctx.lineTo(attack.targetX,world.floor-8);ctx.stroke();}
   else {ctx.beginPath();ctx.arc(centerX,boss.y+42,30+progress*20,0,Math.PI*2);ctx.stroke();}
+  if(attack.decoys?.length){ctx.globalAlpha=.22;ctx.strokeStyle='#c39ad7';for(const x of attack.decoys){ctx.beginPath();ctx.arc(x,world.floor-12,72,0,Math.PI*2);ctx.stroke();}}
   if(profile.settings.telegraphText){ctx.setLineDash([]);ctx.globalAlpha=.95;ctx.fillStyle='#ffe8b6';ctx.font='800 13px monospace';ctx.textAlign='center';ctx.fillText((ATTACK_META[attack.type]||attack.type).toUpperCase(),centerX,boss.y-25);}
+  if(attack.rune){ctx.font='800 23px monospace';ctx.fillStyle='#e8c989';ctx.fillText(attack.rune,centerX,boss.y-47);}
   ctx.setLineDash([]);ctx.restore();
 }
 
@@ -1461,7 +1487,7 @@ function renderFrame(timeMs) {
   if(timeMs<hitStopUntil){requestAnimationFrame(renderFrame);return;}
   const time=timeMs/1000;const state=gameState;drawBackdrop(state);
   if(state?.boss){canvasScale=canvasHeight/world.height;const visible=canvasWidth/canvasScale;const local=state.players.find((p)=>p.id===socket.id)||state.players[0];const living=state.players.filter((p)=>!p.downed&&p.id!==socket.id);const me=local?.downed&&living.length?living[((spectatorIndex%living.length)+living.length)%living.length]:local;const target=Math.max(0,Math.min(world.width-visible,(me?.x||0)-visible*.42));cameraX+=(target-cameraX)*.1;const shakeX=screenShake?(Math.random()-.5)*screenShake:0;const shakeY=screenShake?(Math.random()-.5)*screenShake*.55:0;screenShake*=.82;if(screenShake<.2)screenShake=0;ctx.save();ctx.setTransform(canvasScale*pixelRatio,0,0,canvasScale*pixelRatio,(-cameraX+shakeX)*canvasScale*pixelRatio,shakeY*canvasScale*pixelRatio);
-    const left=cameraX-150,right=cameraX+visible+150;drawAbyss(state.arena?.bounds,state.arena?.gaps,time);for(const platform of platforms)if(platform.x+platform.w>left&&platform.x<right)drawPlatform(platform);for(const hazard of state.arena?.hazards||[])if(hazard.x+hazard.w>left&&hazard.x<right)drawArenaHazard(hazard,time);drawTelegraph(state.boss,state);for(const wave of state.waves||[])drawWave(wave,time);drawBoss(state.boss,time);drawGhost(state);for(const player of state.players)drawPlayer(player,time);for(const projectile of state.projectiles||[])drawProjectile(projectile);for(const effect of state.effects||[])drawEffect(effect);drawPings(state);ctx.restore();}
+    const left=cameraX-150,right=cameraX+visible+150;drawAbyss(state.arena?.bounds,state.arena?.gaps,time);for(const platform of platforms)if(platform.x+platform.w>left&&platform.x<right)drawPlatform(platform);drawArenaHistory(state,time);for(const hazard of state.arena?.hazards||[])if(hazard.x+hazard.w>left&&hazard.x<right)drawArenaHazard(hazard,time);drawTelegraph(state.boss,state);for(const wave of state.waves||[])drawWave(wave,time);drawStageEchoes(state);drawBoss(state.boss,time);drawGhost(state);for(const player of state.players)drawPlayer(player,time);for(const projectile of state.projectiles||[])drawProjectile(projectile);for(const effect of state.effects||[])drawEffect(effect);drawPings(state);ctx.restore();}
   requestAnimationFrame(renderFrame);
 }
 
