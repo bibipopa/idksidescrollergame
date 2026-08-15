@@ -31,10 +31,10 @@
         <div class="home-copy">
           <div class="eyebrow"><span>ПЕПЕЛЬНЫЙ ЗАБЕГ</span><b>1–4 СТРАННИКА</b></div>
           <h1>Пройди<br><em>сотню.</em></h1>
-          <p>Сто стадий одного проклятого стража. Читай его движения, парируй удары и собирай уникальную сборку из карт после каждой победы.</p>
+          <p>Сто стадий и десять проклятых владык. Читай их движения, парируй удары и собирай уникальную сборку из карт после каждой победы.</p>
           <div class="feature-row">
-            <div><strong>100</strong><span>стадий босса</span></div>
-            <div><strong>70</strong><span>разных перков</span></div>
+            <div><strong>10</strong><span>разных боссов</span></div>
+            <div><strong>216</strong><span>наследий классов</span></div>
             <div><strong>06</strong><span>боевых классов</span></div>
           </div>
         </div>
@@ -100,10 +100,12 @@
             <span class="mini-sigil">✦</span>
             <div><small>КОМНАТА</small><strong id="hudRoomCode">-----</strong></div>
             <div><small>ВРЕМЯ</small><strong id="timerText">00:00</strong></div>
+            <div><small>ПРОКЛЯТИЕ</small><strong id="modifierText">—</strong></div>
           </div>
 
           <div class="boss-hud">
-            <div class="boss-name"><span id="bossName">СТРАЖ ПЕПЛА</span><b id="stageText">СТАДИЯ 1 / 100</b></div>
+            <div class="boss-name"><span id="bossName">МОГИЛЬНЫЙ РЫЦАРЬ</span><b id="stageText">СТАДИЯ 1 / 100</b></div>
+            <div class="boss-phase" id="bossPhaseText">ФАЗА I</div>
             <div class="boss-bar"><i id="bossHealthBar"></i><span></span></div>
             <small id="bossHealthText">365 / 365</small>
           </div>
@@ -114,12 +116,13 @@
             <div class="stamina-track"><i id="staminaBar"></i></div>
             <div class="vital-labels"><span>ЖИЗНЬ</span><b>ВЫНОСЛИВОСТЬ</b></div>
           </div>
+          <div class="team-oath hud-panel"><div><span>КЛЯТВА ОТРЯДА</span><b id="teamPowerText">0%</b></div><div class="team-oath-track"><i id="teamPowerBar"></i></div><small><kbd>U</kbd> АКТИВИРОВАТЬ ПРИ 100%</small></div>
         </div>
 
         <div class="controls-tip" id="controlsTip">
           <span><kbd>A</kbd><kbd>D</kbd> Движение</span><span><kbd>W</kbd> Прыжок</span>
           <span><kbd>J</kbd> Лёгкая</span><span><kbd>K</kbd> Тяжёлая</span>
-          <span><kbd>H</kbd> Парирование</span><span><kbd>L</kbd> Перекат</span>
+          <span><kbd>H</kbd> Парирование</span><span><kbd>L</kbd> Перекат</span><span><kbd>U</kbd> Клятва</span>
         </div>
 
         <div class="touch-controls">
@@ -128,6 +131,7 @@
             <button type="button" data-input="jump"><small>W</small>Прыжок</button>
             <button type="button" data-input="parry"><small>H</small>Парир.</button>
             <button type="button" data-input="roll"><small>L</small>Перекат</button>
+            <button type="button" data-input="team"><small>U</small>Клятва</button>
             <button type="button" data-input="heavy"><small>K</small>Тяж.</button>
             <button class="touch-attack" type="button" data-input="light"><small>J</small>Удар</button>
           </div>
@@ -145,6 +149,15 @@
       </div>
     </div>
 
+    <div class="route-overlay" id="routeOverlay" aria-hidden="true">
+      <div class="route-shell">
+        <span>РАЗВИЛКА ПЕПЛА</span><h2>Выберите следующий путь</h2>
+        <p id="routeSubtitle">Голос большинства определит следующую стадию. При равенстве решает хранитель комнаты.</p>
+        <div class="route-grid" id="routeGrid"></div>
+        <div class="route-waiting" id="routeWaiting">СДЕЛАЙ ВЫБОР</div>
+      </div>
+    </div>
+
     <div class="modal-overlay" id="shopOverlay" aria-hidden="true">
       <div class="shop-card panel">
         <button class="close-button" id="closeShopButton" type="button">×</button>
@@ -152,8 +165,27 @@
         <div class="shop-balance"><span>ТВОЙ ПЕПЕЛ</span><strong><i>¤</i> <b id="shopCurrency">0</b></strong></div>
         <h3>Пути странника</h3>
         <div class="shop-grid" id="classShop"></div>
+        <h3>Боевые стили оружия <span id="classLevelText">УРОВЕНЬ 1</span></h3>
+        <div class="weapon-shop" id="weaponShop"></div>
+        <div class="box-heading">
+          <div><span>ПЕПЕЛЬНЫЕ КОВЧЕГИ</span><strong>10 минут · 3 слота</strong><small>Каждый ковчег гарантирует новый навык без повторов. Только игровая валюта.</small></div>
+          <button class="box-buy-button" id="boxBuyButton" type="button"><span>КУПИТЬ КОВЧЕГ</span><b>20000 ¤</b></button>
+        </div>
+        <div class="box-slots" id="boxSlots"></div>
+        <div class="legacy-heading">
+          <div><span>НАСЛЕДИЯ КЛАССОВ</span><strong id="equippedSkillCount">0 / 3 · Мечник</strong></div>
+          <b id="skillCollectionCount">0 / 216</b>
+        </div>
+        <div class="skill-class-tabs" id="skillClassTabs"></div>
+        <div class="skill-collection" id="skillCollection"></div>
         <h3>Облики оружия</h3>
         <div class="skin-grid" id="skinShop"></div>
+        <h3>Редактор внешности</h3>
+        <div class="appearance-shop" id="appearanceShop"></div>
+        <h3>Ежедневные испытания</h3>
+        <div class="progress-grid" id="challengeGrid"></div>
+        <h3>Достижения</h3>
+        <div class="progress-grid achievements" id="achievementGrid"></div>
       </div>
     </div>
 

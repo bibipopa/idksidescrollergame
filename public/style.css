@@ -134,7 +134,14 @@ body:has(.game-screen.active) .topbar { opacity: 0; pointer-events: none; }
 
 /* Game */
 .game-screen { position: fixed; inset: 0; overflow: hidden; background: #090806; }
-#gameCanvas { display: block; width: 100%; height: 100%; touch-action: none; }
+#gameCanvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
 .game-hud { position: absolute; inset: 0; pointer-events: none; }
 .hud-panel { border: 1px solid rgba(218,193,142,.13); background: rgba(9,8,6,.72); box-shadow: 0 15px 40px rgba(0,0,0,.28); backdrop-filter: blur(13px); }
 .raid-meta { position: absolute; top: 23px; left: 24px; display: flex; align-items: center; gap: 16px; min-height: 54px; padding: 7px 14px 7px 8px; }
@@ -145,6 +152,7 @@ body:has(.game-screen.active) .topbar { opacity: 0; pointer-events: none; }
 .boss-hud { position: absolute; top: 22px; left: 50%; width: min(570px,45vw); transform: translateX(-50%); text-align: center; }
 .boss-name { display: flex; justify-content: space-between; padding: 0 3px 6px; font: 600 11px "Cormorant Garamond",serif; letter-spacing: 1.4px; }
 .boss-name b { color: var(--gold); font: 800 7px Manrope,sans-serif; }
+.boss-phase { position: absolute; top: -2px; left: 50%; padding: 2px 7px; transform: translate(-50%,-100%); border: 1px solid rgba(201,168,98,.22); background: rgba(8,7,6,.8); color: var(--gold-light); font-size: 6px; font-weight: 800; letter-spacing: 1.2px; }
 .boss-bar { position: relative; height: 12px; overflow: hidden; border: 1px solid rgba(218,193,142,.16); background: rgba(0,0,0,.62); }
 .boss-bar i { position: absolute; inset: 2px; right: auto; width: 100%; background: linear-gradient(90deg,#6b1d2a,#ad3e4a); box-shadow: 0 0 15px rgba(159,53,67,.35); transition: width .15s; }
 .boss-bar span { position: absolute; inset: 0; background: repeating-linear-gradient(90deg,transparent 0,transparent calc(10% - 1px),rgba(0,0,0,.32) 10%); }
@@ -159,6 +167,9 @@ body:has(.game-screen.active) .topbar { opacity: 0; pointer-events: none; }
 .mini-bars span:last-child i { background: #839b6d; }
 .hud-player.downed { opacity: .38; }
 .player-vitals { position: absolute; left: 24px; bottom: 24px; width: 235px; padding: 12px 13px 10px; }
+.team-oath { position: absolute; left: 50%; bottom: 22px; width: 235px; padding: 9px 11px; transform: translateX(-50%); }
+.team-oath > div:first-child { display:flex; justify-content:space-between; color:#8d8477; font-size:7px; font-weight:800; letter-spacing:1px; }.team-oath > div:first-child b{color:var(--gold-light)}
+.team-oath-track { height:5px; margin:6px 0; background:#241e17; }.team-oath-track i{display:block;width:0;height:100%;background:linear-gradient(90deg,#71552b,#e1c177);box-shadow:0 0 12px rgba(225,193,119,.35);transition:width .14s}.team-oath small{display:flex;align-items:center;justify-content:center;gap:5px;color:#665f55;font-size:6px}.team-oath kbd{min-width:16px;height:16px}
 .hearts { display: flex; gap: 5px; min-height: 20px; }
 .heart { color: #8f2937; font: 700 24px/18px "Cormorant Garamond",serif; text-shadow: 0 0 12px rgba(143,41,55,.3); }
 .heart.empty { color: #302722; text-shadow: none; }
@@ -193,6 +204,11 @@ kbd { display: grid; min-width: 20px; height: 20px; padding: 0 4px; place-items:
 .perk-stack { position: absolute; right: 17px; bottom: 15px; color: var(--rarity); font-size: 8px; }
 .waiting-perks { margin-top: 19px; color: #70685d; font-size: 8px; font-weight: 800; letter-spacing: 1.2px; }
 
+/* Route vote */
+.route-overlay { position:fixed;z-index:125;inset:0;display:none;place-items:center;padding:30px;background:radial-gradient(circle at 50% 42%,rgba(92,64,112,.16),transparent 38%),rgba(4,4,5,.91);backdrop-filter:blur(13px) }
+.route-overlay.active{display:grid}.route-shell{width:min(1050px,95vw);text-align:center}.route-shell>span{color:#b28ac4;font-size:8px;font-weight:800;letter-spacing:2.3px}.route-shell h2{margin:7px 0 4px;font:600 clamp(38px,5vw,62px) "Cormorant Garamond",serif}.route-shell>p{margin:0 0 25px;color:#766e7c;font-size:10px}.route-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.route-card{position:relative;min-height:260px;padding:28px 22px;border:1px solid rgba(175,133,193,.32);background:linear-gradient(155deg,rgba(112,71,128,.11),#0b090d 70%);color:#d8cedd;text-align:left;cursor:pointer;transition:.2s}.route-card:hover{transform:translateY(-7px);border-color:#b58bc7}.route-card:disabled{cursor:default;opacity:.72}.route-card>i{display:grid;width:56px;height:56px;place-items:center;margin-bottom:35px;border:1px solid #9271a0;color:#c6a1d5;font:600 29px "Cormorant Garamond",serif}.route-card h3{margin:0 0 8px;font:600 25px "Cormorant Garamond",serif}.route-card p{margin:0;color:#827789;font-size:9px;line-height:1.55}.route-card b{position:absolute;right:16px;bottom:14px;color:#b990c9;font-size:8px}.route-card.voted{box-shadow:inset 0 0 45px rgba(158,111,178,.16);border-color:#d0a9e0}.route-waiting{margin-top:18px;color:#786b7f;font-size:8px;font-weight:800;letter-spacing:1.3px}
+
 /* Shop and results */
 .modal-overlay, .result-overlay { position: fixed; z-index: 130; inset: 0; display: none; place-items: center; padding: 25px; background: rgba(5,4,3,.82); backdrop-filter: blur(12px); }
 .modal-overlay.active, .result-overlay.active { display: grid; }
@@ -205,6 +221,7 @@ kbd { display: grid; min-width: 20px; height: 20px; padding: 0 4px; place-items:
 .shop-balance span { color: #756d61; font-size: 7px; font-weight: 800; letter-spacing: 1.3px; }
 .shop-balance strong { color: var(--gold-light); font-size: 17px; } .shop-balance i { font-style: normal; }
 .shop-card h3 { margin: 21px 0 9px; color: #8f8678; font-size: 8px; letter-spacing: 1.6px; text-transform: uppercase; }
+.shop-card h3 > span { float:right;color:var(--gold);font-size:7px;letter-spacing:.8px; }
 .shop-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 8px; }
 .shop-item, .skin-item { display: grid; align-items: center; border: 1px solid rgba(218,193,142,.1); background: rgba(255,255,255,.018); }
 .shop-item { grid-template-columns: 47px 1fr auto; gap: 10px; padding: 9px; }
@@ -218,6 +235,20 @@ kbd { display: grid; min-width: 20px; height: 20px; padding: 0 4px; place-items:
 .skin-item.selected { border-color: var(--skin-color); box-shadow: inset 0 0 20px color-mix(in srgb,var(--skin-color) 8%,transparent); }
 .weapon-swatch { display: block; width: 5px; height: 50px; margin: 5px auto 9px; transform: rotate(32deg); background: var(--skin-color); box-shadow: 0 0 13px var(--skin-color); }
 .skin-item button { margin-top: 8px; }
+.weapon-shop{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.weapon-item{display:grid;grid-template-columns:36px 1fr;gap:9px;min-height:120px;padding:10px;border:1px solid rgba(218,193,142,.1);background:rgba(255,255,255,.015);cursor:pointer}.weapon-item>span{display:grid;width:36px;height:50px;place-items:center;color:#8d826f;font:600 28px "Cormorant Garamond",serif}.weapon-item div strong{display:block;font:600 16px "Cormorant Garamond",serif}.weapon-item div b{display:block;margin:2px 0;color:var(--gold);font-size:6px;letter-spacing:.7px}.weapon-item div small{display:block;color:#6a6359;font-size:7px;line-height:1.4}.weapon-item button{grid-column:1/-1;padding:7px;border:1px solid rgba(201,168,98,.18);background:rgba(201,168,98,.05);color:#8f816a;font-size:7px;font-weight:800}.weapon-item.selected{border-color:rgba(201,168,98,.5);box-shadow:inset 0 0 25px rgba(201,168,98,.07)}.weapon-item.selected button{color:var(--gold-light)}.weapon-item.locked{opacity:.48;filter:saturate(.35);cursor:default}.weapon-item.locked button{cursor:default}
+.appearance-shop{display:grid;grid-template-columns:1fr 1fr;gap:10px}.appearance-group{padding:11px;border:1px solid rgba(218,193,142,.09);background:rgba(0,0,0,.16)}.appearance-group>strong{display:block;margin-bottom:9px;color:#776f63;font-size:7px;letter-spacing:1px}.appearance-group>div{display:flex;flex-wrap:wrap;gap:5px}.appearance-swatch,.aura-choice{display:flex;align-items:center;gap:5px;padding:5px;border:1px solid rgba(218,193,142,.08);background:transparent;color:#756d62;font-size:6px;cursor:pointer}.appearance-swatch i,.aura-choice i{width:14px;height:14px;background:var(--swatch);box-shadow:0 0 7px color-mix(in srgb,var(--swatch) 55%,transparent)}.appearance-swatch.selected,.aura-choice.selected{border-color:var(--swatch);color:#d3c9b8}
+.progress-grid{display:grid;gap:6px}.progress-grid.achievements{grid-template-columns:repeat(2,1fr)}.progress-item{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;padding:10px;border:1px solid rgba(218,193,142,.08);background:rgba(255,255,255,.012)}.progress-item strong{display:block;font:600 14px "Cormorant Garamond",serif}.progress-item small{display:block;color:#686157;font-size:7px}.progress-item>b{color:#8e8475;font-size:7px}.progress-item>span{min-width:72px;color:#6d665d;font-size:6px;font-weight:800;text-align:right}.progress-item.complete{border-color:rgba(201,168,98,.32);background:rgba(201,168,98,.035)}.progress-item.complete>span{color:var(--gold)}
+.box-heading { display: flex; align-items: end; justify-content: space-between; gap: 20px; margin: 28px 0 10px; padding-top: 22px; border-top: 1px solid rgba(218,193,142,.09); }
+.box-heading > div { display: grid; gap: 4px; }.box-heading span,.legacy-heading span { color: var(--gold); font-size: 8px; font-weight: 800; letter-spacing: 1.8px; }.box-heading strong { font: 600 21px "Cormorant Garamond",serif; }.box-heading small { max-width: 430px; color: #70685d; font-size: 8px; line-height: 1.45; }
+.box-buy-button { display: grid; min-width: 172px; gap: 3px; padding: 11px 14px; border: 1px solid rgba(201,168,98,.42); background: linear-gradient(135deg,rgba(201,168,98,.15),rgba(55,38,20,.12)); color: var(--gold-light); cursor: pointer; }.box-buy-button span { font-size: 8px; font-weight: 800; letter-spacing: .8px; }.box-buy-button b { font: 600 17px "Cormorant Garamond",serif; }.box-buy-button:disabled { opacity: .35; cursor: default; }
+.box-slots { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; }
+.box-slot { position: relative; display: grid; min-height: 142px; place-items: center; align-content: center; gap: 5px; padding: 18px 12px 12px; overflow: hidden; border: 1px solid rgba(218,193,142,.11); background: radial-gradient(circle at 50% 42%,rgba(201,168,98,.08),transparent 55%),rgba(0,0,0,.18); text-align: center; }
+.box-slot > span { position: absolute; top: 8px; left: 9px; color: #5e574d; font-size: 7px; }.box-slot > i { color: #6f675b; font: 400 29px "Cormorant Garamond",serif; }.box-slot > strong { color: #9a9183; font-size: 8px; letter-spacing: .8px; }.box-slot > small { color: #5e584f; font-size: 7px; }.box-slot.ready { border-color: rgba(201,168,98,.55); box-shadow: inset 0 0 28px rgba(201,168,98,.08); }.box-slot.ready > i,.box-slot.ready > strong { color: var(--gold-light); }.box-slot.opening > strong { color: var(--gold); font: 600 22px "Cormorant Garamond",serif; }
+.box-progress { width: 100%; height: 3px; margin-top: 5px; background: #211d18; }.box-progress b { display: block; height: 100%; background: linear-gradient(90deg,#7f6130,var(--gold-light)); transition: width 1s linear; }.box-slot > button { margin-top: 4px; padding: 7px 9px; border: 1px solid rgba(201,168,98,.38); background: rgba(201,168,98,.09); color: var(--gold-light); font-size: 7px; font-weight: 800; cursor: pointer; }
+.legacy-heading { display: flex; align-items: center; justify-content: space-between; margin: 28px 0 10px; padding-top: 22px; border-top: 1px solid rgba(218,193,142,.09); }.legacy-heading > div { display: grid; gap: 4px; }.legacy-heading strong { color: #898073; font-size: 8px; letter-spacing: .8px; }.legacy-heading > b { color: var(--gold-light); font: 600 22px "Cormorant Garamond",serif; }
+.skill-class-tabs { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 9px; }.skill-class-tabs button { padding: 7px 9px; border: 1px solid rgba(218,193,142,.1); background: rgba(255,255,255,.018); color: #71695e; font-size: 7px; font-weight: 800; cursor: pointer; }.skill-class-tabs button.active { border-color: var(--tab-color); color: var(--tab-color); background: color-mix(in srgb,var(--tab-color) 8%,transparent); }
+.skill-collection { display: grid; grid-template-columns: repeat(2,1fr); gap: 6px; max-height: 430px; padding-right: 5px; overflow-y: auto; scrollbar-color: rgba(201,168,98,.28) transparent; }
+.legacy-skill { position: relative; display: grid; grid-template-columns: 36px 1fr auto; gap: 9px; align-items: center; min-height: 72px; padding: 9px; border: 1px solid rgba(218,193,142,.08); background: rgba(255,255,255,.015); }.legacy-skill > i { display: grid; width: 36px; height: 36px; place-items: center; border: 1px solid rgba(218,193,142,.1); color: #5e574d; font: 600 18px "Cormorant Garamond",serif; }.legacy-skill div { min-width: 0; }.legacy-skill strong { display: block; overflow: hidden; font: 600 13px "Cormorant Garamond",serif; text-overflow: ellipsis; white-space: nowrap; }.legacy-skill small { display: block; margin-top: 2px; color: #6c655b; font-size: 6px; line-height: 1.35; }.legacy-skill > button { padding: 7px; border: 1px solid rgba(218,193,142,.1); background: rgba(0,0,0,.2); color: #786f63; font-size: 6px; font-weight: 800; cursor: pointer; }.legacy-skill > button:disabled { cursor: default; }.legacy-skill.unknown { opacity: .42; filter: saturate(.2); }.legacy-skill.owned { border-color: color-mix(in srgb,var(--skill-color) 25%,transparent); }.legacy-skill.owned > i { color: var(--skill-color); border-color: color-mix(in srgb,var(--skill-color) 35%,transparent); }.legacy-skill.equipped { background: color-mix(in srgb,var(--skill-color) 8%,rgba(0,0,0,.2)); box-shadow: inset 3px 0 var(--skill-color); }.legacy-skill.equipped > button { color: var(--skill-color); border-color: color-mix(in srgb,var(--skill-color) 35%,transparent); }.legacy-rank { position: absolute; top: 4px; right: 5px; color: #554f46; font-size: 6px; }
 
 .result-card { width: min(500px,94vw); padding: 34px; text-align: center; }
 .result-kicker { color: var(--gold); font-size: 7px; font-weight: 800; letter-spacing: 2.3px; }
@@ -258,9 +289,9 @@ kbd { display: grid; min-width: 20px; height: 20px; padding: 0 4px; place-items:
   .entry-card { width: 100%; padding: 20px; }.lobby-screen { padding: 86px 13px 30px; align-items: flex-start; }.lobby-title h1 { font-size: 49px; }.room-code-panel strong { font-size: 24px; letter-spacing: 7px; }.room-code-panel i { display:none; }
   .squad-grid { gap: 7px; }.squad-card { min-height: 145px; }.avatar-art { transform: scale(.7); transform-origin: center top; height: 72px; margin-bottom: -14px; }.squad-info { padding-bottom: 9px; }
   .lobby-actions { grid-template-columns: 1fr 1.4fr; gap: 6px; }.lobby-hint { grid-column:1/-1; grid-row:1; }.launch-button { grid-column:2; }
-  .raid-meta { top: 9px; left: 9px; transform:scale(.76); transform-origin:top left; }.raid-meta div:nth-child(2){display:none}.boss-hud { top: 11px; width: 58vw; }.boss-name { font-size:8px; }.squad-hud { top:55px; right:8px; width:135px; padding:5px; }.player-vitals { left:9px; bottom:88px; width:180px; transform:scale(.86); transform-origin:bottom left; }
+  .raid-meta { top: 9px; left: 9px; transform:scale(.76); transform-origin:top left; }.raid-meta div:nth-child(2),.raid-meta div:nth-child(4){display:none}.boss-hud { top: 11px; width: 58vw; }.boss-name { font-size:8px; }.squad-hud { top:55px; right:8px; width:135px; padding:5px; }.player-vitals { left:9px; bottom:88px; width:180px; transform:scale(.86); transform-origin:bottom left; }.team-oath{bottom:90px;width:190px;transform:translateX(-50%) scale(.82)}
   .perk-overlay { padding: 76px 12px 18px; overflow-y:auto; align-items:start; }.perk-shell h2 { font-size:42px; }.perk-grid { grid-template-columns:1fr; }.perk-card { min-height:190px; padding:20px; }.perk-icon { width:60px; height:60px; margin:18px auto 12px; font-size:30px; }.perk-card h3 { font-size:22px; }
-  .shop-card { padding:25px 18px; }.shop-grid { grid-template-columns:1fr; }.skin-grid { grid-template-columns:repeat(2,1fr); }
+  .shop-card { padding:25px 18px; }.shop-grid,.weapon-shop,.appearance-shop,.progress-grid.achievements,.route-grid { grid-template-columns:1fr; }.skin-grid { grid-template-columns:repeat(2,1fr); }.box-heading { align-items:stretch; flex-direction:column; }.box-buy-button { width:100%; }.box-slots { grid-template-columns:1fr; }.box-slot { min-height:120px; }.skill-collection { grid-template-columns:1fr; max-height:520px; }.legacy-skill { grid-template-columns:36px 1fr; }.legacy-skill > button { grid-column:1/-1; }.route-overlay{padding:72px 12px 18px;overflow-y:auto;align-items:start}.route-card{min-height:190px}.route-card>i{margin-bottom:18px}
 }
 
 @media (max-height: 730px) and (min-width: 981px) {
