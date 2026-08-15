@@ -677,6 +677,7 @@ function makePlayer(id, name, classId, skin, slot, equippedSkills = [], weaponId
     hp: base.maxHp, maxHp: base.maxHp, stamina: base.maxStamina, maxStamina: base.maxStamina,
     staminaDelay: 0, downed: false, onGround: false, invulnerable: 0,
     action: 'idle', actionTimer: 0, actionDuration: 0, actionHit: false, parryActive: 0, rollHit: false,
+    visualAction: null, visualActionTimer: 0, visualActionDuration: 0,
     nextHitMultiplier: 1, lightChain: 0, heavyChain: 0, hitsLanded: 0, weaponHits: 0,
     momentum: 0, momentumTimer: 0, wardCharges: 0, rollBuff: 1, lastAttackType: null,
     secondWindUsed: false, damageDone: 0, poiseDamage: 0, aggro: 0, parries: 0, parryAttempts: 0, hitsTaken: 0, lastDamageSource: '—', bossesDefeated: 0, noHitStages: 0, stageHitsTaken: 0,
@@ -703,6 +704,7 @@ function publicPlayer(player, hostId, inGame = false) {
     stamina: Math.max(0, Math.round(player.stamina)), maxStamina: Math.round(player.maxStamina),
     downed: player.downed, invulnerable: player.invulnerable > 0,
     action: player.action, actionTimer: player.actionTimer, actionDuration: player.actionDuration,
+    visualAction: player.visualAction, visualActionTimer: player.visualActionTimer, visualActionDuration: player.visualActionDuration,
     parryActive: player.parryActive > 0, damageDone: Math.round(player.damageDone), aggro: Math.round(player.aggro), parries: player.parries,
     perks: player.perks, perkOffer: player.perkOffer, perkChosen: player.perkChosen, fusions: player.fusions,
     perfectDodges: player.perfectDodges, focus: player.focus, riposteReady: player.riposteReady,
@@ -788,6 +790,14 @@ function addEffect(room, type, x, y, color = '#c8a86b', ttl = 0.35, size = 80) {
   room.effects.push({ id: entitySequence++, type, x, y, color, ttl, maxTtl: ttl, size });
 }
 
+const PLAYER_VISUAL_ACTIONS = new Set(['ability','stance_switch','team_oath','stolen_technique','interact','spectral_help','spawn','revive','defeat']);
+function triggerPlayerVisual(player, action, duration = 0.7) {
+  if (!PLAYER_VISUAL_ACTIONS.has(action)) return;
+  player.visualAction = action;
+  player.visualActionTimer = duration;
+  player.visualActionDuration = duration;
+}
+
 function resetPlayerForStage(player, room, fullHeal = false) {
   const wasDowned = player.downed;
   const previousHp = player.hp;
@@ -816,6 +826,7 @@ function resetPlayerForStage(player, room, fullHeal = false) {
     input: { left: false, right: false, jump: false, light: false, heavy: false, parry: false, roll: false, team: false, ability: false, stance:false, technique:false, layer:false, interact:false, spectral:false },
     held: { jump: false, light: false, heavy: false, parry: false, roll: false, team: false, ability: false, stance:false, technique:false, layer:false, interact:false, spectral:false },
   });
+  triggerPlayerVisual(player, wasDowned ? 'revive' : 'spawn', wasDowned ? 0.95 : 0.72);
 }
 
 function resetPlayerForRun(player, room) {
@@ -1125,6 +1136,7 @@ function damagePlayer(room, player, damage = 1, knockX = 0, knockY = -220, parry
     player.downed = true;
     player.vx = player.vy = 0;
     player.action = 'downed';
+    triggerPlayerVisual(player, 'defeat', 0.9);
     io.to(room.code).emit('toast', { text: `${player.name} пал. Победа команды вернёт его.`, tone: 'danger' });
     checkTeamWipe(room);
   }
@@ -1402,6 +1414,7 @@ function activateTeamOath(room, player) {
   addEffect(room, 'oath', room.boss.x + room.boss.w / 2, room.boss.y + room.boss.h / 2, '#f0d28d', 0.8, 260);
   damageBoss(room, player, room.boss.maxHp * 0.025, room.boss.x + room.boss.w / 2, room.boss.y + 65, '#f0d28d', true);
   room.teamPower = 0;
+  triggerPlayerVisual(player, 'team_oath', 0.95);
   io.to(room.code).emit('toast', { text: `${player.name} активировал КЛЯТВУ ОТРЯДА`, tone: 'gold' });
   return true;
 }
@@ -1423,6 +1436,7 @@ function activateClassAbility(room, player) {
   } else if (player.classId === 'ashmage') {
     room.boss.arcaneMark = 7; damageBossPoise(room, player, 55); for (const angle of [-0.18,0,0.18]) spawnMageBolt(room, player, derivedStats(player).heavyDamage * 0.55, angle, 1);
   }
+  triggerPlayerVisual(player, 'ability', 0.9);
   addEffect(room,'oath',player.x+21,player.y+28,'#d7b46a',0.65,145);
   io.to(room.code).emit('ability-used',{playerId:player.id,name:meta.name});
   return true;
@@ -1432,6 +1446,7 @@ function cycleStance(room, player) {
   if (player.stanceCooldown > 0 || player.action !== 'idle') return false;
   player.stanceIndex = (player.stanceIndex + 1) % STANCES.length;
   player.stanceCooldown = 0.45;
+  triggerPlayerVisual(player, 'stance_switch', 0.52);
   addEffect(room,'phase',player.x+21,player.y+28,'#d7b46a',0.35,70);
   io.to(player.id).emit('toast',{text:`СТОЙКА: ${STANCES[player.stanceIndex].name}`,tone:'gold'});
   return true;
@@ -1445,6 +1460,7 @@ function useStolenTechnique(room, player) {
     for (const offset of [-0.16,0,0.16]) spawnMageBolt(room,player,room.boss.maxHp*0.018,offset,0.9);
   } else damageBoss(room,player,room.boss.maxHp*0.055,room.boss.x+61,room.boss.y+65,'#8bd7dd',true);
   damageBossPoise(room,player,36);
+  triggerPlayerVisual(player, 'stolen_technique', 0.95);
   addEffect(room,'oath',player.x+21,player.y+25,'#8bd7dd',0.65,165);
   io.to(room.code).emit('toast',{text:`${player.name} применил украденную технику: ${ATTACK_LABELS[player.stolenTechnique]||player.stolenTechnique}`,tone:'gold'});
   return true;
@@ -1455,6 +1471,7 @@ function shiftLayer(room, player) {
   player.worldLayer = player.worldLayer ? 0 : 1;
   player.layerCooldown = 1.25;
   player.invulnerable = Math.max(player.invulnerable,0.18);
+  triggerPlayerVisual(player, 'spectral_help', 0.48);
   addEffect(room,'blink',player.x+21,player.y+30,player.worldLayer?'#9a6fc4':'#7dbfc6',0.45,95);
   return true;
 }
@@ -1464,6 +1481,7 @@ function activateArenaMechanism(room, player) {
   const mechanism = room.arena.mechanisms.filter((item)=>item.cooldown<=0).sort((a,b)=>Math.abs(a.x-player.x)-Math.abs(b.x-player.x))[0];
   if (!mechanism || Math.abs(mechanism.x-(player.x+21))>135) return false;
   mechanism.active=true; mechanism.cooldown=13; player.interactCooldown=0.6;
+  triggerPlayerVisual(player, 'interact', 0.68);
   if (room.objective?.id==='seals'&&!mechanism.sealUsed){mechanism.sealUsed=true;room.objectiveSeals=Math.min(room.objective.seals||3,room.objectiveSeals+1);}
   if (room.boss) {
     damageBoss(room,player,room.boss.maxHp*0.018,room.boss.x+61,room.boss.y+70,'#d7b46a',true);
@@ -1483,6 +1501,7 @@ function spectralAid(room, player) {
   target.invulnerable=Math.max(target.invulnerable,last?0.75:0.32);
   if(last){target.nextHitMultiplier=Math.max(target.nextHitMultiplier,1.45);player.lastOrderAvailable=false;}
   player.spectralCooldown=perkCount(player,'relic_last_lantern')?6:10;
+  triggerPlayerVisual(player, 'spectral_help', 0.85);
   addEffect(room,'oath',target.x+21,target.y+28,'#8ebfc7',0.65,last?180:105);
   io.to(room.code).emit('toast',{text:last?`${player.name}: ПОСЛЕДНИЙ ПРИКАЗ`:`${player.name}: СПЕКТРАЛЬНАЯ ПОМОЩЬ`,tone:'gold'});
   return true;
@@ -1548,6 +1567,8 @@ function updatePlayer(room, player) {
   player.perfectDodgeCooldown = Math.max(0, player.perfectDodgeCooldown - DT);
   player.abilityCooldown = Math.max(0, player.abilityCooldown - DT);
   player.abilityBuff = Math.max(0, player.abilityBuff - DT);
+  player.visualActionTimer = Math.max(0, (player.visualActionTimer || 0) - DT);
+  if (player.visualActionTimer <= 0) { player.visualAction = null; player.visualActionDuration = 0; }
   player.stanceCooldown=Math.max(0,player.stanceCooldown-DT);player.layerCooldown=Math.max(0,player.layerCooldown-DT);player.spectralCooldown=Math.max(0,player.spectralCooldown-DT);player.interactCooldown=Math.max(0,player.interactCooldown-DT);
   player.aggro = Math.max(0, player.aggro - 18 * DT);
   if (player.momentumTimer === 0) player.momentum = 0;
@@ -2628,6 +2649,7 @@ io.on('connection', (socket) => {
         player.hp = 0;
         player.downed = true;
         player.action = 'downed';
+        triggerPlayerVisual(player, 'defeat', 0.9);
         checkTeamWipe(room);
       }
     });

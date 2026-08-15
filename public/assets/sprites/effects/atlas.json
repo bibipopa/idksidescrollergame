@@ -1,0 +1,200 @@
+{
+  "frameWidth": 32,
+  "frameHeight": 32,
+  "animations": {
+    "light_slash": {
+      "frames": 8,
+      "fps": 14,
+      "loop": false,
+      "sheet": "animations/light_slash.png",
+      "atlas": {
+        "x": 0,
+        "y": 0,
+        "frameWidth": 32,
+        "frameHeight": 32
+      }
+    },
+    "heavy_slash": {
+      "frames": 8,
+      "fps": 14,
+      "loop": false,
+      "sheet": "animations/heavy_slash.png",
+      "atlas": {
+        "x": 0,
+        "y": 32,
+        "frameWidth": 32,
+        "frameHeight": 32
+      }
+    },
+    "parry_flash": {
+      "frames": 8,
+      "fps": 14,
+      "loop": false,
+      "sheet": "animations/parry_flash.png",
+      "atlas": {
+        "x": 0,
+        "y": 64,
+        "frameWidth": 32,
+        "frameHeight": 32
+      }
+    },
+    "metal_sparks": {
+      "frames": 8,
+      "fps": 14,
+      "loop": false,
+      "sheet": "animations/metal_sparks.png",
+      "atlas": {
+        "x": 0,
+        "y": 96,
+        "frameWidth": 32,
+        "frameHeight": 32
+      }
+    },
+    "roll_dust": {
+      "frames": 8,
+      "fps": 14,
+      "loop": false,
+      "sheet": "animations/roll_dust.png",
+      "atlas": {
+        "x": 0,
+        "y": 128,
+        "frameWidth": 32,
+        "frameHeight": 32
+      }
+    },
+    "landing_dust": {
+      "frames": 8,
+      "fps": 14,
+      "loop": false,
+      "sheet": "animations/landing_dust.png",
+      "atlas": {
+        "x": 0,
+        "y": 160,
+        "frameWidth": 32,
+        "frameHeight": 32
+      }
+    },
+    "hit_flash": {
+      "frames": 8,
+      "fps": 14,
+      "loop": false,
+      "sheet": "animations/hit_flash.png",
+      "atlas": {
+        "x": 0,
+        "y": 192,
+        "frameWidth": 32,
+        "frameHeight": 32
+      }
+    },
+    "poise_break": {
+      "frames": 8,
+      "fps": 14,
+      "loop": false,
+      "sheet": "animations/poise_break.png",
+      "atlas": {
+        "x": 0,
+        "y": 224,
+        "frameWidth": 32,
+        "frameHeight": 32
+      }
+    },
+    "magic_projectile": {
+      "frames": 8,
+      "fps": 14,
+      "loop": true,
+      "sheet": "animations/magic_projectile.png",
+      "atlas": {
+        "x": 0,
+        "y": 256,
+        "frameWidth": 32,
+        "frameHeight": 32
+      }
+    },
+    "shockwave": {
+      "frames": 8,
+      "fps": 14,
+      "loop": false,
+      "sheet": "animations/shockwave.png",
+      "atlas": {
+        "x": 0,
+        "y": 288,
+        "frameWidth": 32,
+        "frameHeight": 32
+      }
+    },
+    "ability_aura": {
+      "frames": 8,
+      "fps": 14,
+      "loop": true,
+      "sheet": "animations/ability_aura.png",
+      "atlas": {
+        "x": 0,
+        "y": 320,
+        "frameWidth": 32,
+        "frameHeight": 32
+      }
+    },
+    "team_oath": {
+      "frames": 10,
+      "fps": 14,
+      "loop": false,
+      "sheet": "animations/team_oath.png",
+      "atlas": {
+        "x": 0,
+        "y": 352,
+        "frameWidth": 32,
+        "frameHeight": 32
+      }
+    },
+    "spawn_ash": {
+      "frames": 8,
+      "fps": 14,
+      "loop": false,
+      "sheet": "animations/spawn_ash.png",
+      "atlas": {
+        "x": 0,
+        "y": 384,
+        "frameWidth": 32,
+        "frameHeight": 32
+      }
+    },
+    "revive_ash": {
+      "frames": 8,
+      "fps": 14,
+      "loop": false,
+      "sheet": "animations/revive_ash.png",
+      "atlas": {
+        "x": 0,
+        "y": 416,
+        "frameWidth": 32,
+        "frameHeight": 32
+      }
+    },
+    "spectral_pulse": {
+      "frames": 8,
+      "fps": 14,
+      "loop": true,
+      "sheet": "animations/spectral_pulse.png",
+      "atlas": {
+        "x": 0,
+        "y": 448,
+        "frameWidth": 32,
+        "frameHeight": 32
+      }
+    },
+    "ember_burst": {
+      "frames": 8,
+      "fps": 14,
+      "loop": true,
+      "sheet": "animations/ember_burst.png",
+      "atlas": {
+        "x": 0,
+        "y": 480,
+        "frameWidth": 32,
+        "frameHeight": 32
+      }
+    }
+  },
+  "atlasWidth": 320,
+  "atlasHeight": 512
+}

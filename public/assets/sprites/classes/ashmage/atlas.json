@@ -1,0 +1,430 @@
+{
+  "classId": "ashmage",
+  "label": "Пепельный маг",
+  "accent": "#8d70b1",
+  "frameWidth": 32,
+  "frameHeight": 32,
+  "facing": "right",
+  "mirrorForLeft": true,
+  "animations": {
+    "idle": {
+      "label": "Бездействие",
+      "frames": 6,
+      "fps": 7,
+      "loop": true,
+      "sheet": "animations/idle.png",
+      "atlas": {
+        "x": 0,
+        "y": 0,
+        "frameWidth": 32,
+        "frameHeight": 32
+      }
+    },
+    "run_start": {
+      "label": "Начало бега",
+      "frames": 3,
+      "fps": 12,
+      "loop": false,
+      "sheet": "animations/run_start.png",
+      "atlas": {
+        "x": 0,
+        "y": 32,
+        "frameWidth": 32,
+        "frameHeight": 32
+      }
+    },
+    "run": {
+      "label": "Бег",
+      "frames": 8,
+      "fps": 12,
+      "loop": true,
+      "sheet": "animations/run.png",
+      "atlas": {
+        "x": 0,
+        "y": 64,
+        "frameWidth": 32,
+        "frameHeight": 32
+      }
+    },
+    "run_stop": {
+      "label": "Остановка",
+      "frames": 3,
+      "fps": 10,
+      "loop": false,
+      "sheet": "animations/run_stop.png",
+      "atlas": {
+        "x": 0,
+        "y": 96,
+        "frameWidth": 32,
+        "frameHeight": 32
+      }
+    },
+    "jump_start": {
+      "label": "Начало прыжка",
+      "frames": 3,
+      "fps": 12,
+      "loop": false,
+      "sheet": "animations/jump_start.png",
+      "atlas": {
+        "x": 0,
+        "y": 128,
+        "frameWidth": 32,
+        "frameHeight": 32
+      }
+    },
+    "jump_up": {
+      "label": "Полёт вверх",
+      "frames": 2,
+      "fps": 8,
+      "loop": true,
+      "sheet": "animations/jump_up.png",
+      "atlas": {
+        "x": 0,
+        "y": 160,
+        "frameWidth": 32,
+        "frameHeight": 32
+      }
+    },
+    "fall": {
+      "label": "Падение",
+      "frames": 2,
+      "fps": 8,
+      "loop": true,
+      "sheet": "animations/fall.png",
+      "atlas": {
+        "x": 0,
+        "y": 192,
+        "frameWidth": 32,
+        "frameHeight": 32
+      }
+    },
+    "land": {
+      "label": "Приземление",
+      "frames": 4,
+      "fps": 12,
+      "loop": false,
+      "sheet": "animations/land.png",
+      "atlas": {
+        "x": 0,
+        "y": 224,
+        "frameWidth": 32,
+        "frameHeight": 32
+      }
+    },
+    "roll": {
+      "label": "Перекат",
+      "frames": 8,
+      "fps": 16,
+      "loop": false,
+      "sheet": "animations/roll.png",
+      "atlas": {
+        "x": 0,
+        "y": 256,
+        "frameWidth": 32,
+        "frameHeight": 32
+      }
+    },
+    "light_1": {
+      "label": "Лёгкая атака 1",
+      "frames": 6,
+      "fps": 18,
+      "loop": false,
+      "sheet": "animations/light_1.png",
+      "atlas": {
+        "x": 0,
+        "y": 288,
+        "frameWidth": 32,
+        "frameHeight": 32
+      }
+    },
+    "light_2": {
+      "label": "Лёгкая атака 2",
+      "frames": 6,
+      "fps": 18,
+      "loop": false,
+      "sheet": "animations/light_2.png",
+      "atlas": {
+        "x": 0,
+        "y": 320,
+        "frameWidth": 32,
+        "frameHeight": 32
+      }
+    },
+    "light_3": {
+      "label": "Лёгкая атака 3",
+      "frames": 8,
+      "fps": 18,
+      "loop": false,
+      "sheet": "animations/light_3.png",
+      "atlas": {
+        "x": 0,
+        "y": 352,
+        "frameWidth": 32,
+        "frameHeight": 32
+      }
+    },
+    "heavy_charge": {
+      "label": "Подготовка тяжёлой атаки",
+      "frames": 5,
+      "fps": 10,
+      "loop": false,
+      "sheet": "animations/heavy_charge.png",
+      "atlas": {
+        "x": 0,
+        "y": 384,
+        "frameWidth": 32,
+        "frameHeight": 32
+      }
+    },
+    "heavy_attack": {
+      "label": "Тяжёлая атака",
+      "frames": 10,
+      "fps": 14,
+      "loop": false,
+      "sheet": "animations/heavy_attack.png",
+      "atlas": {
+        "x": 0,
+        "y": 416,
+        "frameWidth": 32,
+        "frameHeight": 32
+      }
+    },
+    "heavy_recover": {
+      "label": "Восстановление после тяжёлой",
+      "frames": 4,
+      "fps": 10,
+      "loop": false,
+      "sheet": "animations/heavy_recover.png",
+      "atlas": {
+        "x": 0,
+        "y": 448,
+        "frameWidth": 32,
+        "frameHeight": 32
+      }
+    },
+    "parry_start": {
+      "label": "Начало парирования",
+      "frames": 4,
+      "fps": 16,
+      "loop": false,
+      "sheet": "animations/parry_start.png",
+      "atlas": {
+        "x": 0,
+        "y": 480,
+        "frameWidth": 32,
+        "frameHeight": 32
+      }
+    },
+    "parry_hold": {
+      "label": "Окно парирования",
+      "frames": 2,
+      "fps": 8,
+      "loop": true,
+      "sheet": "animations/parry_hold.png",
+      "atlas": {
+        "x": 0,
+        "y": 512,
+        "frameWidth": 32,
+        "frameHeight": 32
+      }
+    },
+    "parry_success": {
+      "label": "Успешное парирование",
+      "frames": 6,
+      "fps": 18,
+      "loop": false,
+      "sheet": "animations/parry_success.png",
+      "atlas": {
+        "x": 0,
+        "y": 544,
+        "frameWidth": 32,
+        "frameHeight": 32
+      }
+    },
+    "riposte": {
+      "label": "Критический ответ",
+      "frames": 10,
+      "fps": 16,
+      "loop": false,
+      "sheet": "animations/riposte.png",
+      "atlas": {
+        "x": 0,
+        "y": 576,
+        "frameWidth": 32,
+        "frameHeight": 32
+      }
+    },
+    "hit": {
+      "label": "Получение попадания",
+      "frames": 4,
+      "fps": 14,
+      "loop": false,
+      "sheet": "animations/hit.png",
+      "atlas": {
+        "x": 0,
+        "y": 608,
+        "frameWidth": 32,
+        "frameHeight": 32
+      }
+    },
+    "exhausted": {
+      "label": "Нет выносливости",
+      "frames": 6,
+      "fps": 8,
+      "loop": true,
+      "sheet": "animations/exhausted.png",
+      "atlas": {
+        "x": 0,
+        "y": 640,
+        "frameWidth": 32,
+        "frameHeight": 32
+      }
+    },
+    "knockdown": {
+      "label": "Сбит с ног",
+      "frames": 8,
+      "fps": 10,
+      "loop": false,
+      "sheet": "animations/knockdown.png",
+      "atlas": {
+        "x": 0,
+        "y": 672,
+        "frameWidth": 32,
+        "frameHeight": 32
+      }
+    },
+    "get_up": {
+      "label": "Подъём",
+      "frames": 7,
+      "fps": 10,
+      "loop": false,
+      "sheet": "animations/get_up.png",
+      "atlas": {
+        "x": 0,
+        "y": 704,
+        "frameWidth": 32,
+        "frameHeight": 32
+      }
+    },
+    "ability": {
+      "label": "Способность класса",
+      "frames": 12,
+      "fps": 14,
+      "loop": false,
+      "sheet": "animations/ability.png",
+      "atlas": {
+        "x": 0,
+        "y": 736,
+        "frameWidth": 32,
+        "frameHeight": 32
+      }
+    },
+    "stance_switch": {
+      "label": "Смена стойки",
+      "frames": 6,
+      "fps": 12,
+      "loop": false,
+      "sheet": "animations/stance_switch.png",
+      "atlas": {
+        "x": 0,
+        "y": 768,
+        "frameWidth": 32,
+        "frameHeight": 32
+      }
+    },
+    "team_oath": {
+      "label": "Клятва команды",
+      "frames": 10,
+      "fps": 12,
+      "loop": false,
+      "sheet": "animations/team_oath.png",
+      "atlas": {
+        "x": 0,
+        "y": 800,
+        "frameWidth": 32,
+        "frameHeight": 32
+      }
+    },
+    "stolen_technique": {
+      "label": "Украденная техника",
+      "frames": 12,
+      "fps": 14,
+      "loop": false,
+      "sheet": "animations/stolen_technique.png",
+      "atlas": {
+        "x": 0,
+        "y": 832,
+        "frameWidth": 32,
+        "frameHeight": 32
+      }
+    },
+    "interact": {
+      "label": "Взаимодействие",
+      "frames": 6,
+      "fps": 10,
+      "loop": false,
+      "sheet": "animations/interact.png",
+      "atlas": {
+        "x": 0,
+        "y": 864,
+        "frameWidth": 32,
+        "frameHeight": 32
+      }
+    },
+    "spectral_help": {
+      "label": "Спектральная помощь",
+      "frames": 8,
+      "fps": 10,
+      "loop": false,
+      "sheet": "animations/spectral_help.png",
+      "atlas": {
+        "x": 0,
+        "y": 896,
+        "frameWidth": 32,
+        "frameHeight": 32
+      }
+    },
+    "spawn": {
+      "label": "Появление",
+      "frames": 8,
+      "fps": 12,
+      "loop": false,
+      "sheet": "animations/spawn.png",
+      "atlas": {
+        "x": 0,
+        "y": 928,
+        "frameWidth": 32,
+        "frameHeight": 32
+      }
+    },
+    "revive": {
+      "label": "Возрождение",
+      "frames": 10,
+      "fps": 12,
+      "loop": false,
+      "sheet": "animations/revive.png",
+      "atlas": {
+        "x": 0,
+        "y": 960,
+        "frameWidth": 32,
+        "frameHeight": 32
+      }
+    },
+    "defeat": {
+      "label": "Поражение",
+      "frames": 12,
+      "fps": 10,
+      "loop": false,
+      "sheet": "animations/defeat.png",
+      "atlas": {
+        "x": 0,
+        "y": 992,
+        "frameWidth": 32,
+        "frameHeight": 32
+      }
+    }
+  },
+  "totalFrames": 209,
+  "atlasWidth": 384,
+  "atlasHeight": 1024
+}

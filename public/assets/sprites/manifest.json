@@ -1,0 +1,82 @@
+{
+  "name": "Rift Raid Class Sprite Pack",
+  "version": 1,
+  "cellSize": 32,
+  "classes": {
+    "swordsman": {
+      "label": "Мечник",
+      "atlas": "classes/swordsman/atlas.png",
+      "metadata": "classes/swordsman/atlas.json",
+      "totalFrames": 209
+    },
+    "ashmage": {
+      "label": "Пепельный маг",
+      "atlas": "classes/ashmage/atlas.png",
+      "metadata": "classes/ashmage/atlas.json",
+      "totalFrames": 209
+    },
+    "greatsword": {
+      "label": "Тяжёлый мечник",
+      "atlas": "classes/greatsword/atlas.png",
+      "metadata": "classes/greatsword/atlas.json",
+      "totalFrames": 209
+    },
+    "rogue": {
+      "label": "Вор",
+      "atlas": "classes/rogue/atlas.png",
+      "metadata": "classes/rogue/atlas.json",
+      "totalFrames": 209
+    },
+    "spearman": {
+      "label": "Копейщик",
+      "atlas": "classes/spearman/atlas.png",
+      "metadata": "classes/spearman/atlas.json",
+      "totalFrames": 209
+    },
+    "berserker": {
+      "label": "Берсерк",
+      "atlas": "classes/berserker/atlas.png",
+      "metadata": "classes/berserker/atlas.json",
+      "totalFrames": 209
+    }
+  },
+  "effects": {
+    "atlas": "effects/atlas.png",
+    "metadata": "effects/atlas.json",
+    "count": 16
+  },
+  "animationOrder": [
+    "idle",
+    "run_start",
+    "run",
+    "run_stop",
+    "jump_start",
+    "jump_up",
+    "fall",
+    "land",
+    "roll",
+    "light_1",
+    "light_2",
+    "light_3",
+    "heavy_charge",
+    "heavy_attack",
+    "heavy_recover",
+    "parry_start",
+    "parry_hold",
+    "parry_success",
+    "riposte",
+    "hit",
+    "exhausted",
+    "knockdown",
+    "get_up",
+    "ability",
+    "stance_switch",
+    "team_oath",
+    "stolen_technique",
+    "interact",
+    "spectral_help",
+    "spawn",
+    "revive",
+    "defeat"
+  ]
+}
