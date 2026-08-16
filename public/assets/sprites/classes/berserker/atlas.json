@@ -426,5 +426,16 @@
   },
   "totalFrames": 209,
   "atlasWidth": 384,
-  "atlasHeight": 1024
+  "atlasHeight": 1024,
+  "attackPoseVersion": 2,
+  "attackPoseSource": "generated multi-pose combat atlas",
+  "attackAnimations": [
+    "light_1",
+    "light_2",
+    "light_3",
+    "heavy_charge",
+    "heavy_attack",
+    "heavy_recover",
+    "riposte"
+  ]
 }

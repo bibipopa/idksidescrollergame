@@ -16,6 +16,7 @@ const CLASS_SPRITE_IDS = Object.keys(CLASS_META);
 const BOSS_SPRITE_IDS = ['grave_knight','ember_colossus','drowned_oracle','bell_inquisitor','crimson_duelist','iron_warden','moon_huntress','storm_sovereign','void_apostle','ashen_king','mirror_saint','rootless_beast','clockwork_mourner','nameless_hunter'];
 const classSpriteAtlases = new Map();
 const bossSpriteAtlases = new Map();
+const playerTintFrameCache = new Map();
 let effectSpriteAtlas = null;
 
 async function loadSpriteAtlas(basePath) {
@@ -847,12 +848,16 @@ function renderSettings() {
 
 function renderAppearance() {
   if (!dom.appearanceShop) return;
-  dom.appearanceShop.innerHTML = `<div class="appearance-group"><strong>ЦВЕТ ДОСПЕХА</strong><div>${Object.entries(ARMOR_META).map(([id, item]) => `<button type="button" class="appearance-swatch ${profile.appearance.armor === id ? 'selected' : ''}" data-armor="${id}" style="--swatch:${item.color}" title="${item.name}"><i></i><span>${item.name}</span></button>`).join('')}</div></div>
+  const armorChoice = ARMOR_META[profile.appearance.armor] || ARMOR_META.ashen;
+  const auraChoice = AURA_META[profile.appearance.aura] || AURA_META.ash;
+  dom.appearanceShop.innerHTML = `<div class="appearance-preview" style="--armor-preview:${armorChoice.color};--aura-preview:${auraChoice.color}"><i></i><div><strong>${armorChoice.name} · ${auraChoice.name}</strong><small>Палитра применяется ко всем кадрам, след — к движению, перекатам и атакам.</small></div><b></b></div>
+    <div class="appearance-group"><strong>ЦВЕТ ДОСПЕХА</strong><div>${Object.entries(ARMOR_META).map(([id, item]) => `<button type="button" class="appearance-swatch ${profile.appearance.armor === id ? 'selected' : ''}" data-armor="${id}" style="--swatch:${item.color}" title="${item.name}"><i></i><span>${item.name}</span></button>`).join('')}</div></div>
     <div class="appearance-group"><strong>СЛЕД ДВИЖЕНИЯ</strong><div>${Object.entries(AURA_META).map(([id, item]) => `<button type="button" class="aura-choice ${profile.appearance.aura === id ? 'selected' : ''}" data-aura="${id}" style="--swatch:${item.color}"><i></i><span>${item.name}</span></button>`).join('')}</div></div>
     <div class="appearance-group title-group"><strong>ТИТУЛ НАД ИМЕНЕМ</strong><div><button type="button" data-title="wanderer" class="aura-choice ${profile.appearance.title === 'wanderer' ? 'selected' : ''}"><i>◇</i><span>Странник</span></button>${profile.bossTrophies.map((id) => { const boss = BOSS_BY_ID.get(id); return `<button type="button" data-title="title_${id}" class="aura-choice ${profile.appearance.title === `title_${id}` ? 'selected' : ''}"><i>♛</i><span>${boss.title}</span></button>`; }).join('')}</div></div>`;
-  dom.appearanceShop.querySelectorAll('[data-armor]').forEach((button) => button.addEventListener('click', () => { profile.appearance.armor = button.dataset.armor; saveProfile(); if (lobbyState) socket.emit('select-class', classPayload()); }));
-  dom.appearanceShop.querySelectorAll('[data-aura]').forEach((button) => button.addEventListener('click', () => { profile.appearance.aura = button.dataset.aura; saveProfile(); if (lobbyState) socket.emit('select-class', classPayload()); }));
-  dom.appearanceShop.querySelectorAll('[data-title]').forEach((button) => button.addEventListener('click', () => { profile.appearance.title = button.dataset.title; saveProfile(); if (lobbyState) socket.emit('select-class', classPayload()); }));
+  const commitAppearance = () => { playerTintFrameCache.clear(); saveProfile(); if (lobbyState) socket.emit('select-class', classPayload()); renderAppearance(); };
+  dom.appearanceShop.querySelectorAll('[data-armor]').forEach((button) => button.addEventListener('click', () => { profile.appearance.armor = button.dataset.armor; commitAppearance(); }));
+  dom.appearanceShop.querySelectorAll('[data-aura]').forEach((button) => button.addEventListener('click', () => { profile.appearance.aura = button.dataset.aura; commitAppearance(); }));
+  dom.appearanceShop.querySelectorAll('[data-title]').forEach((button) => button.addEventListener('click', () => { profile.appearance.title = button.dataset.title; commitAppearance(); }));
 }
 
 function renderLootGear() {
@@ -1615,6 +1620,81 @@ function selectPlayerAnimation(player, animationState) {
   return 'idle';
 }
 
+function tintedPlayerFrame(atlas, player, animationId, animation, frame, armorColor) {
+  const armorId = player.appearance?.armor || 'ashen';
+  const key = `${player.classId}:${armorId}:${animationId}:${frame}`;
+  const cached = playerTintFrameCache.get(key);
+  if (cached) return cached;
+  const frameWidth = animation.atlas.frameWidth || atlas.data.frameWidth || 32;
+  const frameHeight = animation.atlas.frameHeight || atlas.data.frameHeight || 32;
+  const canvas = document.createElement('canvas');
+  canvas.width = frameWidth;
+  canvas.height = frameHeight;
+  const frameContext = canvas.getContext('2d');
+  frameContext.imageSmoothingEnabled = false;
+  frameContext.drawImage(atlas.image, animation.atlas.x + frame * frameWidth, animation.atlas.y, frameWidth, frameHeight, 0, 0, frameWidth, frameHeight);
+  frameContext.globalCompositeOperation = 'source-atop';
+  frameContext.globalAlpha = armorId === 'ashen' ? 0.18 : 0.34;
+  frameContext.fillStyle = armorColor;
+  frameContext.fillRect(0, 0, frameWidth, frameHeight);
+  frameContext.globalCompositeOperation = 'source-over';
+  frameContext.globalAlpha = 1;
+  if (playerTintFrameCache.size > 2400) playerTintFrameCache.clear();
+  playerTintFrameCache.set(key, canvas);
+  return canvas;
+}
+
+function drawPlayerAppearanceTrail(player, time, auraColor) {
+  const moving = Math.abs(player.vx) > 90 || player.action === 'roll';
+  const attacking = player.action === 'light' || player.action === 'heavy';
+  if (!moving && !attacking) return;
+  const style = player.appearance?.aura || 'ash';
+  ctx.save();
+  ctx.fillStyle = auraColor;
+  ctx.strokeStyle = auraColor;
+  ctx.shadowColor = auraColor;
+  ctx.shadowBlur = style === 'mist' ? 13 : style === 'sparks' ? 7 : 4;
+  if (moving) {
+    for (let index = 0; index < 5; index += 1) {
+      const drift = (Math.floor(time * 22 + index * 5) % 13);
+      const x = -18 - index * 9 - drift;
+      const y = -11 + index * 6 + Math.sin(time * 8 + index) * 3;
+      ctx.globalAlpha = style === 'mist' ? 0.12 : 0.2;
+      if (style === 'mist') {
+        ctx.beginPath();ctx.ellipse(x, y, 10 + index * 2, 4, 0, 0, Math.PI * 2);ctx.fill();
+      } else if (style === 'runes') {
+        ctx.save();ctx.translate(x, y);ctx.rotate(Math.PI / 4);ctx.lineWidth = 1.5;ctx.strokeRect(-3, -3, 6, 6);ctx.restore();
+      } else {
+        const size = style === 'sparks' ? 3 + index % 2 : 2 + index % 2;
+        ctx.fillRect(x, y, size, size);
+      }
+    }
+  }
+  if (attacking) {
+    const progress = 1 - player.actionTimer / Math.max(0.01, player.actionDuration);
+    const heavy = player.action === 'heavy';
+    const radius = heavy ? 55 : 45;
+    ctx.globalAlpha = heavy ? 0.34 : 0.27;
+    ctx.lineWidth = heavy ? 6 : 3;
+    if (style === 'runes') ctx.setLineDash([5, 5]);
+    ctx.beginPath();
+    ctx.arc(2, -29, radius, -1.35 + progress * 0.45, 0.72 + progress * 0.6);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    const particles = heavy ? 7 : 4;
+    for (let index = 0; index < particles; index += 1) {
+      const angle = -1.1 + (index / Math.max(1, particles - 1)) * 1.7 + progress * 0.35;
+      const x = 2 + Math.cos(angle) * (radius + index % 2 * 5);
+      const y = -29 + Math.sin(angle) * (radius + index % 2 * 5);
+      ctx.globalAlpha = 0.24 + (index % 3) * 0.06;
+      if (style === 'mist') { ctx.beginPath();ctx.arc(x, y, 3 + index % 2, 0, Math.PI * 2);ctx.fill(); }
+      else if (style === 'runes') { ctx.strokeRect(x - 2, y - 2, 4, 4); }
+      else ctx.fillRect(x, y, style === 'sparks' ? 4 : 3, style === 'sparks' ? 2 : 3);
+    }
+  }
+  ctx.restore();
+}
+
 function drawPlayerLabels(player, isMe, renderX) {
   ctx.globalAlpha=1;ctx.textAlign='center';ctx.fillStyle=isMe?'#eee3cf':'rgba(225,217,201,.7)';ctx.font=`${isMe?700:600} 9px monospace`;ctx.fillText(player.downed?`${player.name} · ПАЛ`:player.connected===false?`${player.name} · СВЯЗЬ`:player.name,Math.round(renderX+21),Math.round(player.y-43));
   const titleId=player.appearance?.title?.replace(/^title_/,'');const title=titleId&&titleId!=='wanderer'?BOSS_BY_ID.get(titleId)?.title:'';if(title){ctx.fillStyle='rgba(211,180,111,.78)';ctx.font='600 7px monospace';ctx.fillText(title.toUpperCase(),Math.round(player.x+21),Math.round(player.y-54));}
@@ -1648,10 +1728,12 @@ function drawPlayer(player,time) {
   const drawHeight = frameHeight * spriteScale;
   ctx.save();ctx.translate(Math.round(renderX+21),Math.round(player.y+player.h+bob));ctx.scale(player.facing||1,1);
   if(gameState?.arena?.layered)ctx.globalAlpha=player.worldLayer===0?.94:.68;
-  if(Math.abs(player.vx)>90||player.action==='roll'){ctx.fillStyle=aura;ctx.globalAlpha*=.18;for(let i=0;i<4;i++)ctx.fillRect(-25-i*10-(Math.floor(time*18+i*3)%7),-20+i*5,5+i%2*3,5+i%2*3);ctx.globalAlpha=gameState?.arena?.layered&&player.worldLayer!==0?.68:1;}
+  drawPlayerAppearanceTrail(player,time,aura);
   if(player.invulnerable&&Math.floor(time*18)%2===0)ctx.globalAlpha*=.42;
   if(isMe){const currentAlpha=ctx.globalAlpha;ctx.globalAlpha=.2;ctx.fillStyle=armor;ctx.fillRect(-28,1,56,4);ctx.fillRect(-20,-3,40,4);ctx.globalAlpha=currentAlpha;}
-  ctx.drawImage(atlas.image,animation.atlas.x+frame*frameWidth,animation.atlas.y,frameWidth,frameHeight,-drawWidth/2,-drawHeight,drawWidth,drawHeight);
+  const renderedFrame = tintedPlayerFrame(atlas,player,animationId,animation,frame,armor);
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(renderedFrame,0,0,frameWidth,frameHeight,-drawWidth/2,-drawHeight,drawWidth,drawHeight);
   ctx.restore();
   drawPlayerLabels(player,isMe,renderX);
 }
