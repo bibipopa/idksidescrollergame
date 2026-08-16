@@ -2,7 +2,7 @@
 'use strict';
 
 const socket = io();
-const CLIENT_ASSET_VERSION = 'animation-v4-20260816';
+const CLIENT_ASSET_VERSION = 'arena-png-v5-20260816';
 const LIGHT_VISUAL_DURATION = { swordsman:0.42, greatsword:0.5, rogue:0.36, spearman:0.44, berserker:0.45, ashmage:0.42 };
 const JUMP_TAKEOFF_VISUAL_DURATION = 0.22;
 const LAND_VISUAL_DURATION = 0.28;
@@ -18,8 +18,21 @@ const CLASS_META = {
 
 const CLASS_SPRITE_IDS = Object.keys(CLASS_META);
 const BOSS_SPRITE_IDS = ['grave_knight','ember_colossus','drowned_oracle','bell_inquisitor','crimson_duelist','iron_warden','moon_huntress','storm_sovereign','void_apostle','ashen_king','mirror_saint','rootless_beast','clockwork_mourner','nameless_hunter'];
+const ARENA_IMAGE_BY_NAME = new Map([
+  ['Пепельные врата','ashen-gates'],
+  ['Зал тлеющих углей','ember-hall'],
+  ['Расколотая кузня','fractured-forge'],
+  ['Затопленная крипта','flooded-crypt'],
+  ['Погребальная колокольня','bell-tower'],
+  ['Багровый ров','crimson-moat'],
+  ['Безмолвная тюрьма','silent-prison'],
+  ['Лунный разлом','moon-rift'],
+  ['Сердце бури','storm-heart'],
+  ['Трон Пустоты','void-throne'],
+]);
 const classSpriteAtlases = new Map();
 const bossSpriteAtlases = new Map();
+const arenaImages = new Map();
 const playerTintFrameCache = new Map();
 let effectSpriteAtlas = null;
 
@@ -37,6 +50,16 @@ async function loadSpriteAtlas(basePath) {
   return { image, data };
 }
 
+async function loadImageAsset(path) {
+  const image = new Image();
+  await new Promise((resolve, reject) => {
+    image.onload = resolve;
+    image.onerror = () => reject(new Error(`Не удалось загрузить ${path}`));
+    image.src = `${path}?v=${CLIENT_ASSET_VERSION}`;
+  });
+  return image;
+}
+
 const spriteAssetsReady = Promise.all([
   ...CLASS_SPRITE_IDS.map(async (classId) => classSpriteAtlases.set(classId, await loadSpriteAtlas(`/assets/sprites/classes/${classId}`))),
   ...BOSS_SPRITE_IDS.map(async (bossId) => bossSpriteAtlases.set(bossId, await loadSpriteAtlas(`/assets/sprites/bosses/${bossId}`))),
@@ -45,6 +68,13 @@ const spriteAssetsReady = Promise.all([
   return true;
 }).catch((error) => {
   console.warn('Спрайты не загрузились, используется резервная графика.', error);
+  return false;
+});
+
+const arenaAssetsReady = Promise.all([...new Set(ARENA_IMAGE_BY_NAME.values())].map(async (arenaId) => {
+  arenaImages.set(arenaId, await loadImageAsset(`/assets/arenas/${arenaId}.png`));
+})).catch((error) => {
+  console.warn('PNG-карты не загрузились, используется резервный фон.', error);
   return false;
 });
 
@@ -1466,7 +1496,7 @@ function syncBossMusic(boss) {
 function resizeCanvas() {
   const rect = dom.gameCanvas.getBoundingClientRect();
   canvasWidth = Math.max(1, rect.width); canvasHeight = Math.max(1, rect.height);
-  pixelRatio = Math.min(1, 360 / canvasHeight);
+  pixelRatio = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
   dom.gameCanvas.width = Math.round(canvasWidth * pixelRatio); dom.gameCanvas.height = Math.round(canvasHeight * pixelRatio);
   ctx.setTransform(pixelRatio,0,0,pixelRatio,0,0);
   ctx.imageSmoothingEnabled = false;
@@ -1507,7 +1537,32 @@ function drawArenaBackdropDetails(state,time,theme){
   ctx.restore();
 }
 
+function currentArenaImage(state=gameState) {
+  const arenaName=state?.arena?.name||arena?.name;
+  return arenaImages.get(ARENA_IMAGE_BY_NAME.get(arenaName));
+}
+
+function drawArenaPngBackdrop(state) {
+  const image=currentArenaImage(state);
+  if(!image)return false;
+  const viewScale=Math.max(.001,canvasHeight/world.height);
+  const visibleWorldWidth=Math.min(world.width,canvasWidth/viewScale);
+  const sourceWidth=Math.min(image.naturalWidth,visibleWorldWidth/world.width*image.naturalWidth);
+  const sourceX=Math.max(0,Math.min(image.naturalWidth-sourceWidth,cameraX/world.width*image.naturalWidth));
+  ctx.save();
+  ctx.imageSmoothingEnabled=true;
+  ctx.drawImage(image,sourceX,0,sourceWidth,image.naturalHeight,0,0,canvasWidth,canvasHeight);
+  const readability=ctx.createLinearGradient(0,0,0,canvasHeight);
+  readability.addColorStop(0,'rgba(3,3,4,.08)');
+  readability.addColorStop(.6,'rgba(3,3,4,.02)');
+  readability.addColorStop(1,'rgba(3,3,4,.22)');
+  ctx.fillStyle=readability;ctx.fillRect(0,0,canvasWidth,canvasHeight);
+  ctx.restore();
+  return true;
+}
+
 function drawBackdrop(state,time=0) {
+  if(drawArenaPngBackdrop(state))return;
   const tier = state?.boss?.tier || 1;
   const theme = state?.arena?.theme || arena?.theme || { sky: '#11100d', horizon: '#19140f', ground: '#080806', glow: '#79522a', fog: '#877b64' };
   const gradient = ctx.createLinearGradient(0,0,0,canvasHeight); gradient.addColorStop(0,theme.sky); gradient.addColorStop(.58,theme.horizon); gradient.addColorStop(1,theme.ground);
@@ -1521,16 +1576,33 @@ function drawBackdrop(state,time=0) {
 
 function drawPlatform(platform) {
   const theme=gameState?.arena?.theme||arena?.theme||{stone:'#342d24',trim:'#caae73'};
-  ctx.fillStyle='#0b0a09';ctx.fillRect(Math.round(platform.x),Math.round(platform.y),Math.round(platform.w),Math.round(platform.h));
-  ctx.fillStyle=theme.stone;ctx.fillRect(Math.round(platform.x),Math.round(platform.y),Math.round(platform.w),Math.min(18,platform.h));
-  ctx.globalAlpha=.58;ctx.fillStyle=theme.trim;ctx.fillRect(Math.round(platform.x),Math.round(platform.y),Math.round(platform.w),4);ctx.globalAlpha=1;
-  for(let x=Math.round(platform.x);x<platform.x+platform.w;x+=48){ctx.fillStyle='rgba(0,0,0,.24)';ctx.fillRect(x,platform.y+12,4,Math.min(18,platform.h-12));ctx.fillStyle='rgba(255,255,255,.035)';ctx.fillRect(x+6,platform.y+8,22,4);}
+  const image=currentArenaImage();
+  const x0=Math.round(platform.x),y0=Math.round(platform.y),height=Math.max(1,Math.round(platform.h));
+  ctx.save();
+  if(image){
+    ctx.imageSmoothingEnabled=true;
+    const sourceY=Math.round(image.naturalHeight*.72),sourceHeight=Math.max(1,image.naturalHeight-sourceY);
+    const tileWidth=96;
+    for(let x=x0;x<platform.x+platform.w;x+=tileWidth){
+      const width=Math.min(tileWidth,platform.x+platform.w-x);
+      const sourceX=((Math.floor(x/tileWidth)*83)%Math.max(1,image.naturalWidth-160)+image.naturalWidth)%image.naturalWidth;
+      const sourceTileWidth=Math.min(160,image.naturalWidth-sourceX);
+      ctx.drawImage(image,sourceX,sourceY,sourceTileWidth,sourceHeight,x,y0,width,height);
+    }
+    ctx.globalAlpha=.2;ctx.fillStyle='#050505';ctx.fillRect(x0,y0,platform.w,height);
+  }else{
+    ctx.fillStyle='#0b0a09';ctx.fillRect(x0,y0,Math.round(platform.w),height);
+    ctx.fillStyle=theme.stone;ctx.fillRect(x0,y0,Math.round(platform.w),Math.min(18,height));
+  }
+  ctx.globalAlpha=.72;ctx.fillStyle=theme.trim;ctx.fillRect(x0,y0,Math.round(platform.w),3);
+  ctx.globalAlpha=.35;ctx.fillStyle='#030303';ctx.fillRect(x0,y0+Math.min(18,height),Math.round(platform.w),Math.max(0,height-18));
+  ctx.restore();
 }
 
 function drawAbyss(bounds,gaps,time) {
   if(!bounds)return;
   const zones=[{x:0,w:bounds.left},{x:bounds.right,w:world.width-bounds.right},...(gaps||[])];
-  for(const zone of zones){if(zone.w<=0)continue;const g=ctx.createLinearGradient(0,world.floor-35,0,world.height);g.addColorStop(0,'rgba(7,5,9,.25)');g.addColorStop(.18,'rgba(3,2,5,.88)');g.addColorStop(1,'#010102');ctx.fillStyle=g;ctx.fillRect(zone.x,world.floor-35,zone.w,world.height-world.floor+35);ctx.strokeStyle='rgba(160,113,178,.38)';ctx.lineWidth=3;for(const edge of [zone.x,zone.x+zone.w]){ctx.beginPath();ctx.moveTo(edge,world.floor-2);ctx.lineTo(edge,world.height);ctx.stroke();}ctx.fillStyle='rgba(126,93,145,.09)';for(let i=0;i<5;i++){const y=world.floor+8+i*17+Math.sin(time*1.8+i)*5;ctx.beginPath();ctx.ellipse(zone.x+zone.w/2,y,Math.max(18,zone.w*.55),8+i*2,0,0,Math.PI*2);ctx.fill();}}
+  for(const zone of zones){if(zone.w<=0)continue;const abyssTop=world.floor-92;const g=ctx.createLinearGradient(0,abyssTop,0,world.height);g.addColorStop(0,'rgba(7,5,9,.2)');g.addColorStop(.14,'rgba(3,2,5,.92)');g.addColorStop(1,'#010102');ctx.fillStyle=g;ctx.fillRect(zone.x,abyssTop,zone.w,world.height-abyssTop);ctx.strokeStyle='rgba(160,113,178,.38)';ctx.lineWidth=3;for(const edge of [zone.x,zone.x+zone.w]){ctx.beginPath();ctx.moveTo(edge,world.floor-18);ctx.lineTo(edge,world.height);ctx.stroke();}ctx.fillStyle='rgba(126,93,145,.09)';for(let i=0;i<5;i++){const y=world.floor+8+i*17+Math.sin(time*1.8+i)*5;ctx.beginPath();ctx.ellipse(zone.x+zone.w/2,y,Math.max(18,zone.w*.55),8+i*2,0,0,Math.PI*2);ctx.fill();}}
 }
 
 function drawArenaHazard(hazard,time) {
@@ -1650,7 +1722,7 @@ function tintedPlayerFrame(atlas, player, animationId, animation, frame, armorCo
   frameContext.imageSmoothingEnabled = false;
   frameContext.drawImage(atlas.image, animation.atlas.x + frame * frameWidth, animation.atlas.y, frameWidth, frameHeight, 0, 0, frameWidth, frameHeight);
   frameContext.globalCompositeOperation = 'source-atop';
-  frameContext.globalAlpha = armorId === 'ashen' ? 0.18 : 0.34;
+  frameContext.globalAlpha = armorId === 'ashen' ? 0.06 : 0.14;
   frameContext.fillStyle = armorColor;
   frameContext.fillRect(0, 0, frameWidth, frameHeight);
   frameContext.globalCompositeOperation = 'source-over';

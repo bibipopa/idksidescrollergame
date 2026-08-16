@@ -1,0 +1,17 @@
+{
+  "version": "arena-png-v5-20260816",
+  "format": "png",
+  "worldSize": { "width": 2800, "height": 720, "floor": 640 },
+  "arenas": [
+    { "tier": 1, "name": "Пепельные врата", "file": "ashen-gates.png" },
+    { "tier": 2, "name": "Зал тлеющих углей", "file": "ember-hall.png" },
+    { "tier": 3, "name": "Расколотая кузня", "file": "fractured-forge.png" },
+    { "tier": 4, "name": "Затопленная крипта", "file": "flooded-crypt.png" },
+    { "tier": 5, "name": "Погребальная колокольня", "file": "bell-tower.png" },
+    { "tier": 6, "name": "Багровый ров", "file": "crimson-moat.png" },
+    { "tier": 7, "name": "Безмолвная тюрьма", "file": "silent-prison.png" },
+    { "tier": 8, "name": "Лунный разлом", "file": "moon-rift.png" },
+    { "tier": 9, "name": "Сердце бури", "file": "storm-heart.png" },
+    { "tier": 10, "name": "Трон Пустоты", "file": "void-throne.png" }
+  ]
+}
