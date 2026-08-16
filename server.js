@@ -473,7 +473,11 @@ const dailyLeaderboard = new Map();
 let entitySequence = 1;
 
 app.disable('x-powered-by');
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'public'), {
+  setHeaders(res, filePath) {
+    if (/\.(?:html|css|js|json|png)$/i.test(filePath)) res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
+  },
+}));
 app.get(['/health', '/healthz'], (_req, res) => res.json({ ok: true, rooms: rooms.size }));
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));

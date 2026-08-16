@@ -2,6 +2,10 @@
 'use strict';
 
 const socket = io();
+const CLIENT_ASSET_VERSION = 'animation-v4-20260816';
+const LIGHT_VISUAL_DURATION = { swordsman:0.42, greatsword:0.5, rogue:0.36, spearman:0.44, berserker:0.45, ashmage:0.42 };
+const JUMP_TAKEOFF_VISUAL_DURATION = 0.22;
+const LAND_VISUAL_DURATION = 0.28;
 
 const CLASS_META = {
   swordsman: { label: 'Мечник', short: 'М', color: '#c9a862', icon: '†', price: 0, description: 'Равновесие скорости, защиты и урона.' },
@@ -20,14 +24,15 @@ const playerTintFrameCache = new Map();
 let effectSpriteAtlas = null;
 
 async function loadSpriteAtlas(basePath) {
-  const response = await fetch(`${basePath}/atlas.json`);
+  const response = await fetch(`${basePath}/atlas.json?v=${CLIENT_ASSET_VERSION}`, { cache:'no-store' });
   if (!response.ok) throw new Error(`Не удалось загрузить ${basePath}/atlas.json`);
   const data = await response.json();
   const image = new Image();
   await new Promise((resolve, reject) => {
     image.onload = resolve;
     image.onerror = () => reject(new Error(`Не удалось загрузить ${basePath}/atlas.png`));
-    image.src = `${basePath}/atlas.png`;
+    const atlasVersion = data.smoothAnimationVersion || data.attackPoseVersion || CLIENT_ASSET_VERSION;
+    image.src = `${basePath}/atlas.png?v=${CLIENT_ASSET_VERSION}-${atlasVersion}`;
   });
   return { image, data };
 }
@@ -1600,8 +1605,14 @@ function selectPlayerAnimation(player, animationState, time) {
   if (player.downed) return 'knockdown';
   if (player.action === 'roll') return 'roll';
   if (player.action === 'light') {
-    if (animationState.previousAction !== 'light') animationState.lightCombo = (animationState.lightCombo % 3) + 1;
-    return `light_${animationState.lightCombo}`;
+    if (animationState.previousAction !== 'light') {
+      animationState.lightCombo = (animationState.lightCombo % 3) + 1;
+      animationState.attackVisualStartedAt = time;
+      animationState.attackVisualDuration = LIGHT_VISUAL_DURATION[player.classId] || 0.42;
+      animationState.lockedAnimation = `light_${animationState.lightCombo}`;
+      animationState.lockedUntil = time + animationState.attackVisualDuration;
+    }
+    return animationState.lockedAnimation || `light_${animationState.lightCombo}`;
   }
   if (player.action === 'heavy') {
     const progress = 1 - player.actionTimer / Math.max(0.01, player.actionDuration);
@@ -1613,12 +1624,14 @@ function selectPlayerAnimation(player, animationState, time) {
   }
   if (player.action === 'parry_success') return 'parry_success';
   if (player.action === 'hurt') return 'hit';
+  if (animationState.lockedAnimation && time < animationState.lockedUntil && player.onGround !== false) return animationState.lockedAnimation;
+  if (time >= animationState.lockedUntil) animationState.lockedAnimation = '';
   if (player.stamina <= Math.max(4, player.maxStamina * 0.07)) return 'exhausted';
   if (player.onGround === false) {
-    if (time - animationState.jumpStartedAt < 0.18) return 'jump_start';
+    if (time - animationState.jumpStartedAt < JUMP_TAKEOFF_VISUAL_DURATION) return 'jump_start';
     return player.vy < 70 ? 'jump_up' : 'fall';
   }
-  if (time - animationState.landedAt < 0.24) return 'land';
+  if (time - animationState.landedAt < LAND_VISUAL_DURATION) return 'land';
   if (Math.abs(player.vx) > 45) return 'run';
   return 'idle';
 }
@@ -1647,9 +1660,9 @@ function tintedPlayerFrame(atlas, player, animationId, animation, frame, armorCo
   return canvas;
 }
 
-function drawPlayerAppearanceTrail(player, time, auraColor) {
+function drawPlayerAppearanceTrail(player, time, auraColor, animationId, animationState) {
   const moving = Math.abs(player.vx) > 90 || player.action === 'roll';
-  const attacking = player.action === 'light' || player.action === 'heavy';
+  const attacking = animationId.startsWith('light_') || animationId.startsWith('heavy_') || animationId === 'riposte';
   if (!moving && !attacking) return;
   const style = player.appearance?.aura || 'ash';
   ctx.save();
@@ -1674,8 +1687,10 @@ function drawPlayerAppearanceTrail(player, time, auraColor) {
     }
   }
   if (attacking) {
-    const progress = 1 - player.actionTimer / Math.max(0.01, player.actionDuration);
-    const heavy = player.action === 'heavy';
+    const progress = animationId.startsWith('light_')
+      ? Math.min(1, Math.max(0, (time - animationState.attackVisualStartedAt) / Math.max(0.01, animationState.attackVisualDuration)))
+      : 1 - player.actionTimer / Math.max(0.01, player.actionDuration);
+    const heavy = animationId.startsWith('heavy_') || animationId === 'riposte';
     const radius = heavy ? 55 : 45;
     ctx.globalAlpha = heavy ? 0.34 : 0.27;
     ctx.lineWidth = heavy ? 6 : 3;
@@ -1710,7 +1725,7 @@ function drawPlayer(player,time) {
   const meta=CLASS_META[player.classId];const armor=ARMOR_META[player.appearance?.armor]?.color||meta.color;const aura=AURA_META[player.appearance?.aura]?.color||'#b5aa96';const isMe=player.id===socket.id;const bob=player.onGround===false?0:Math.round(Math.sin(time*8+player.slot)*Math.min(2,Math.abs(player.vx)/190));const prediction=isMe?(Number(input.right)-Number(input.left))*Math.min(14,Math.abs(player.vx)*.04):0;const renderX=player.x+prediction;
   let animationState = playerAnimationStates.get(player.id);
   if (!animationState) {
-    animationState = { animation:'idle', startedAt:time, previousAction:'idle', lightCombo:0, wasOnGround:player.onGround!==false, jumpStartedAt:-Infinity, landedAt:-Infinity };
+    animationState = { animation:'idle', startedAt:time, previousAction:'idle', lightCombo:0, wasOnGround:player.onGround!==false, jumpStartedAt:-Infinity, landedAt:-Infinity, attackVisualStartedAt:-Infinity, attackVisualDuration:0.42, lockedAnimation:'', lockedUntil:-Infinity };
     playerAnimationStates.set(player.id, animationState);
   }
   const grounded = player.onGround !== false;
@@ -1725,9 +1740,22 @@ function drawPlayer(player,time) {
   animationState.previousAction = player.action;
   const animation = atlas.data.animations[animationId] || atlas.data.animations.idle;
   const elapsed = Math.max(0, time - animationState.startedAt);
-  let frame = Math.floor(elapsed * animation.fps);
-  if (animation.loop) frame %= animation.frames;
-  else frame = Math.min(animation.frames - 1, frame);
+  let normalizedProgress = null;
+  if (animationId.startsWith('light_')) normalizedProgress = (time - animationState.attackVisualStartedAt) / Math.max(0.01, animationState.attackVisualDuration);
+  else if (player.action === 'heavy') {
+    const heavyProgress = 1 - player.actionTimer / Math.max(0.01, player.actionDuration);
+    if (animationId === 'heavy_charge') normalizedProgress = heavyProgress / 0.38;
+    else if (animationId === 'heavy_attack') normalizedProgress = (heavyProgress - 0.38) / 0.42;
+    else if (animationId === 'heavy_recover') normalizedProgress = (heavyProgress - 0.8) / 0.2;
+  } else if (animationId === 'jump_start') normalizedProgress = (time - animationState.jumpStartedAt) / JUMP_TAKEOFF_VISUAL_DURATION;
+  else if (animationId === 'land') normalizedProgress = (time - animationState.landedAt) / LAND_VISUAL_DURATION;
+  let frame;
+  if (normalizedProgress !== null) frame = Math.min(animation.frames - 1, Math.max(0, Math.floor(Math.min(0.999, normalizedProgress) * animation.frames)));
+  else {
+    frame = Math.floor(elapsed * animation.fps);
+    if (animation.loop) frame %= animation.frames;
+    else frame = Math.min(animation.frames - 1, frame);
+  }
   const frameWidth = animation.atlas.frameWidth || atlas.data.frameWidth || 32;
   const frameHeight = animation.atlas.frameHeight || atlas.data.frameHeight || 32;
   const spriteScale = 3;
@@ -1735,7 +1763,7 @@ function drawPlayer(player,time) {
   const drawHeight = frameHeight * spriteScale;
   ctx.save();ctx.translate(Math.round(renderX+21),Math.round(player.y+player.h+bob));ctx.scale(player.facing||1,1);
   if(gameState?.arena?.layered)ctx.globalAlpha=player.worldLayer===0?.94:.68;
-  drawPlayerAppearanceTrail(player,time,aura);
+  drawPlayerAppearanceTrail(player,time,aura,animationId,animationState);
   if(player.invulnerable&&Math.floor(time*18)%2===0)ctx.globalAlpha*=.42;
   if(isMe){const currentAlpha=ctx.globalAlpha;ctx.globalAlpha=.2;ctx.fillStyle=armor;ctx.fillRect(-28,1,56,4);ctx.fillRect(-20,-3,40,4);ctx.globalAlpha=currentAlpha;}
   const renderedFrame = tintedPlayerFrame(atlas,player,animationId,animation,frame,armor);
