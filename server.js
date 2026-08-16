@@ -699,7 +699,7 @@ function publicPlayer(player, hostId, inGame = false) {
   if (!inGame) return base;
   return {
     ...base, x: Math.round(player.x * 10) / 10, y: Math.round(player.y * 10) / 10,
-    vx: Math.round(player.vx), vy: Math.round(player.vy), w: player.w, h: player.h, facing: player.facing,
+    vx: Math.round(player.vx), vy: Math.round(player.vy), onGround: player.onGround, w: player.w, h: player.h, facing: player.facing,
     hp: Math.max(0, Math.round(player.hp)), maxHp: player.maxHp,
     stamina: Math.max(0, Math.round(player.stamina)), maxStamina: Math.round(player.maxStamina),
     downed: player.downed, invulnerable: player.invulnerable > 0,

@@ -1595,7 +1595,7 @@ function drawFallbackPlayer(player,time) {
   if(gameState?.boss?.targetId===player.id&&!player.downed){ctx.fillStyle='#d65c69';ctx.fillRect(Math.round(player.x+16),Math.round(player.y-34),10,4);ctx.fillRect(Math.round(player.x+19),Math.round(player.y-39),4,4);}
 }
 
-function selectPlayerAnimation(player, animationState) {
+function selectPlayerAnimation(player, animationState, time) {
   if (player.visualAction) return player.visualAction;
   if (player.downed) return 'knockdown';
   if (player.action === 'roll') return 'roll';
@@ -1614,8 +1614,11 @@ function selectPlayerAnimation(player, animationState) {
   if (player.action === 'parry_success') return 'parry_success';
   if (player.action === 'hurt') return 'hit';
   if (player.stamina <= Math.max(4, player.maxStamina * 0.07)) return 'exhausted';
-  if (player.vy < -45) return 'jump_up';
-  if (player.vy > 45) return 'fall';
+  if (player.onGround === false) {
+    if (time - animationState.jumpStartedAt < 0.18) return 'jump_start';
+    return player.vy < 70 ? 'jump_up' : 'fall';
+  }
+  if (time - animationState.landedAt < 0.24) return 'land';
   if (Math.abs(player.vx) > 45) return 'run';
   return 'idle';
 }
@@ -1704,13 +1707,17 @@ function drawPlayerLabels(player, isMe, renderX) {
 function drawPlayer(player,time) {
   const atlas = classSpriteAtlases.get(player.classId);
   if (!atlas) return drawFallbackPlayer(player,time);
-  const meta=CLASS_META[player.classId];const armor=ARMOR_META[player.appearance?.armor]?.color||meta.color;const aura=AURA_META[player.appearance?.aura]?.color||'#b5aa96';const isMe=player.id===socket.id;const bob=Math.round(Math.sin(time*8+player.slot)*Math.min(2,Math.abs(player.vx)/190));const prediction=isMe?(Number(input.right)-Number(input.left))*Math.min(14,Math.abs(player.vx)*.04):0;const renderX=player.x+prediction;
+  const meta=CLASS_META[player.classId];const armor=ARMOR_META[player.appearance?.armor]?.color||meta.color;const aura=AURA_META[player.appearance?.aura]?.color||'#b5aa96';const isMe=player.id===socket.id;const bob=player.onGround===false?0:Math.round(Math.sin(time*8+player.slot)*Math.min(2,Math.abs(player.vx)/190));const prediction=isMe?(Number(input.right)-Number(input.left))*Math.min(14,Math.abs(player.vx)*.04):0;const renderX=player.x+prediction;
   let animationState = playerAnimationStates.get(player.id);
   if (!animationState) {
-    animationState = { animation:'idle', startedAt:time, previousAction:'idle', lightCombo:0 };
+    animationState = { animation:'idle', startedAt:time, previousAction:'idle', lightCombo:0, wasOnGround:player.onGround!==false, jumpStartedAt:-Infinity, landedAt:-Infinity };
     playerAnimationStates.set(player.id, animationState);
   }
-  const animationId = selectPlayerAnimation(player, animationState);
+  const grounded = player.onGround !== false;
+  if (animationState.wasOnGround && !grounded) animationState.jumpStartedAt = time;
+  if (!animationState.wasOnGround && grounded) animationState.landedAt = time;
+  animationState.wasOnGround = grounded;
+  const animationId = selectPlayerAnimation(player, animationState, time);
   if (animationId !== animationState.animation) {
     animationState.animation = animationId;
     animationState.startedAt = time;

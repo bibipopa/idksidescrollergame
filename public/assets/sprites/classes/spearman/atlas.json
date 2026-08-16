@@ -61,8 +61,8 @@
     },
     "jump_start": {
       "label": "Начало прыжка",
-      "frames": 3,
-      "fps": 12,
+      "frames": 6,
+      "fps": 36,
       "loop": false,
       "sheet": "animations/jump_start.png",
       "atlas": {
@@ -74,9 +74,9 @@
     },
     "jump_up": {
       "label": "Полёт вверх",
-      "frames": 2,
-      "fps": 8,
-      "loop": true,
+      "frames": 6,
+      "fps": 12,
+      "loop": false,
       "sheet": "animations/jump_up.png",
       "atlas": {
         "x": 0,
@@ -87,8 +87,8 @@
     },
     "fall": {
       "label": "Падение",
-      "frames": 2,
-      "fps": 8,
+      "frames": 6,
+      "fps": 10,
       "loop": true,
       "sheet": "animations/fall.png",
       "atlas": {
@@ -100,8 +100,8 @@
     },
     "land": {
       "label": "Приземление",
-      "frames": 4,
-      "fps": 12,
+      "frames": 8,
+      "fps": 32,
       "loop": false,
       "sheet": "animations/land.png",
       "atlas": {
@@ -126,8 +126,8 @@
     },
     "light_1": {
       "label": "Лёгкая атака 1",
-      "frames": 6,
-      "fps": 18,
+      "frames": 10,
+      "fps": 30,
       "loop": false,
       "sheet": "animations/light_1.png",
       "atlas": {
@@ -139,8 +139,8 @@
     },
     "light_2": {
       "label": "Лёгкая атака 2",
-      "frames": 6,
-      "fps": 18,
+      "frames": 10,
+      "fps": 30,
       "loop": false,
       "sheet": "animations/light_2.png",
       "atlas": {
@@ -152,8 +152,8 @@
     },
     "light_3": {
       "label": "Лёгкая атака 3",
-      "frames": 8,
-      "fps": 18,
+      "frames": 12,
+      "fps": 36,
       "loop": false,
       "sheet": "animations/light_3.png",
       "atlas": {
@@ -165,8 +165,8 @@
     },
     "heavy_charge": {
       "label": "Подготовка тяжёлой атаки",
-      "frames": 5,
-      "fps": 10,
+      "frames": 8,
+      "fps": 28,
       "loop": false,
       "sheet": "animations/heavy_charge.png",
       "atlas": {
@@ -178,8 +178,8 @@
     },
     "heavy_attack": {
       "label": "Тяжёлая атака",
-      "frames": 10,
-      "fps": 14,
+      "frames": 12,
+      "fps": 39,
       "loop": false,
       "sheet": "animations/heavy_attack.png",
       "atlas": {
@@ -191,8 +191,8 @@
     },
     "heavy_recover": {
       "label": "Восстановление после тяжёлой",
-      "frames": 4,
-      "fps": 10,
+      "frames": 6,
+      "fps": 41,
       "loop": false,
       "sheet": "animations/heavy_recover.png",
       "atlas": {
@@ -243,8 +243,8 @@
     },
     "riposte": {
       "label": "Критический ответ",
-      "frames": 10,
-      "fps": 16,
+      "frames": 12,
+      "fps": 24,
       "loop": false,
       "sheet": "animations/riposte.png",
       "atlas": {
@@ -437,5 +437,20 @@
     "heavy_attack",
     "heavy_recover",
     "riposte"
-  ]
+  ],
+  "smoothAnimationVersion": 3,
+  "smoothAnimationFrames": {
+    "jump_start": 6,
+    "jump_up": 6,
+    "fall": 6,
+    "land": 8,
+    "light_1": 10,
+    "light_2": 10,
+    "light_3": 12,
+    "heavy_charge": 8,
+    "heavy_attack": 12,
+    "heavy_recover": 6,
+    "riposte": 12
+  },
+  "jumpPoseSource": "generated six-key-pose jump atlas"
 }
