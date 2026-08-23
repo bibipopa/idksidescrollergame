@@ -1,17 +1,18 @@
 {
-  "version": "parallax-v7-20260823",
+  "version": "multilayer-background-v8-20260823",
   "format": "png",
   "worldSize": { "width": 2800, "height": 720, "floor": 640 },
+  "decorAtlas": "parallax-decor-v1.png",
   "arenas": [
-    { "tier": 1, "name": "Пепельные врата", "file": "ashen-gates.png", "foreground": "ashen-gates-foreground.png" },
-    { "tier": 2, "name": "Зал тлеющих углей", "file": "ember-hall.png", "foreground": "ember-hall-foreground.png" },
-    { "tier": 3, "name": "Расколотая кузня", "file": "fractured-forge.png", "foreground": "fractured-forge-foreground.png" },
-    { "tier": 4, "name": "Затопленная крипта", "file": "flooded-crypt.png", "foreground": "flooded-crypt-foreground.png" },
-    { "tier": 5, "name": "Погребальная колокольня", "file": "bell-tower.png", "foreground": "bell-tower-foreground.png" },
-    { "tier": 6, "name": "Багровый ров", "file": "crimson-moat.png", "foreground": "crimson-moat-foreground.png" },
-    { "tier": 7, "name": "Безмолвная тюрьма", "file": "silent-prison.png", "foreground": "silent-prison-foreground.png" },
-    { "tier": 8, "name": "Лунный разлом", "file": "moon-rift.png", "foreground": "moon-rift-foreground.png" },
-    { "tier": 9, "name": "Сердце бури", "file": "storm-heart.png", "foreground": "storm-heart-foreground.png" },
-    { "tier": 10, "name": "Трон Пустоты", "file": "void-throne.png", "foreground": "void-throne-foreground.png" }
+    { "tier": 1, "name": "Пепельные врата", "file": "ashen-gates.png", "far": "ashen-gates-far.png", "midground": "ashen-gates-midground.png", "foreground": "ashen-gates-foreground.png" },
+    { "tier": 2, "name": "Зал тлеющих углей", "file": "ember-hall.png", "far": "ember-hall-far.png", "midground": "ember-hall-midground.png", "foreground": "ember-hall-foreground.png" },
+    { "tier": 3, "name": "Расколотая кузня", "file": "fractured-forge.png", "far": "fractured-forge-far.png", "midground": "fractured-forge-midground.png", "foreground": "fractured-forge-foreground.png" },
+    { "tier": 4, "name": "Затопленная крипта", "file": "flooded-crypt.png", "far": "flooded-crypt-far.png", "midground": "flooded-crypt-midground.png", "foreground": "flooded-crypt-foreground.png" },
+    { "tier": 5, "name": "Погребальная колокольня", "file": "bell-tower.png", "far": "bell-tower-far.png", "midground": "bell-tower-midground.png", "foreground": "bell-tower-foreground.png" },
+    { "tier": 6, "name": "Багровый ров", "file": "crimson-moat.png", "far": "crimson-moat-far.png", "midground": "crimson-moat-midground.png", "foreground": "crimson-moat-foreground.png" },
+    { "tier": 7, "name": "Безмолвная тюрьма", "file": "silent-prison.png", "far": "silent-prison-far.png", "midground": "silent-prison-midground.png", "foreground": "silent-prison-foreground.png" },
+    { "tier": 8, "name": "Лунный разлом", "file": "moon-rift.png", "far": "moon-rift-far.png", "midground": "moon-rift-midground.png", "foreground": "moon-rift-foreground.png" },
+    { "tier": 9, "name": "Сердце бури", "file": "storm-heart.png", "far": "storm-heart-far.png", "midground": "storm-heart-midground.png", "foreground": "storm-heart-foreground.png" },
+    { "tier": 10, "name": "Трон Пустоты", "file": "void-throne.png", "far": "void-throne-far.png", "midground": "void-throne-midground.png", "foreground": "void-throne-foreground.png" }
   ]
 }

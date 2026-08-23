@@ -1,5 +1,5 @@
 {
-  "version": "parallax-v7-20260823",
+  "version": "multilayer-background-v8-20260823",
   "file": "effects-v2.png",
   "grid": { "columns": 4, "rows": 4 },
   "runtimeAnimation": true,

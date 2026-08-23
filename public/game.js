@@ -2,7 +2,7 @@
 'use strict';
 
 const socket = io();
-const CLIENT_ASSET_VERSION = 'parallax-v7-20260823';
+const CLIENT_ASSET_VERSION = 'multilayer-background-v8-20260823';
 const LIGHT_VISUAL_DURATION = { swordsman:0.42, greatsword:0.5, rogue:0.36, spearman:0.44, berserker:0.45, ashmage:0.42 };
 const JUMP_TAKEOFF_VISUAL_DURATION = 0.22;
 const LAND_VISUAL_DURATION = 0.28;
@@ -30,13 +30,18 @@ const ARENA_IMAGE_BY_NAME = new Map([
   ['Сердце бури','storm-heart'],
   ['Трон Пустоты','void-throne'],
 ]);
+const ARENA_IDS = [...new Set(ARENA_IMAGE_BY_NAME.values())];
+const ARENA_DECOR_INDEX = new Map(ARENA_IDS.map((arenaId,index)=>[arenaId,index]));
 const classSpriteAtlases = new Map();
 const bossSpriteAtlases = new Map();
 const arenaImages = new Map();
+const arenaFarImages = new Map();
+const arenaMidgroundImages = new Map();
 const arenaForegroundImages = new Map();
 const playerTintFrameCache = new Map();
 let effectSpriteAtlas = null;
 let generatedVfxAtlas = null;
+let arenaDecorAtlas = null;
 
 async function loadSpriteAtlas(basePath) {
   const response = await fetch(`${basePath}/atlas.json?v=${CLIENT_ASSET_VERSION}`, { cache:'no-store' });
@@ -73,10 +78,12 @@ const spriteAssetsReady = Promise.all([
   return false;
 });
 
-const arenaAssetsReady = Promise.all([...new Set(ARENA_IMAGE_BY_NAME.values())].flatMap((arenaId) => [
+const arenaAssetsReady = Promise.all([...ARENA_IDS.flatMap((arenaId) => [
   loadImageAsset(`/assets/arenas/${arenaId}.png`).then((image) => arenaImages.set(arenaId,image)),
+  loadImageAsset(`/assets/arenas/${arenaId}-far.png`).then((image) => arenaFarImages.set(arenaId,image)),
+  loadImageAsset(`/assets/arenas/${arenaId}-midground.png`).then((image) => arenaMidgroundImages.set(arenaId,image)),
   loadImageAsset(`/assets/arenas/${arenaId}-foreground.png`).then((image) => arenaForegroundImages.set(arenaId,image)),
-])).catch((error) => {
+]),loadImageAsset('/assets/arenas/parallax-decor-v1.png').then((image)=>{arenaDecorAtlas=image;})]).catch((error) => {
   console.warn('PNG-карты не загрузились, используется резервный фон.', error);
   return false;
 });
@@ -1557,14 +1564,17 @@ function drawArenaBackdropDetails(state,time,theme){
   ctx.restore();
 }
 
-function currentArenaImage(state=gameState) {
+function currentArenaId(state=gameState){
   const arenaName=state?.arena?.name||arena?.name;
-  return arenaImages.get(ARENA_IMAGE_BY_NAME.get(arenaName));
+  return ARENA_IMAGE_BY_NAME.get(arenaName);
 }
 
+function currentArenaImage(state=gameState) { return arenaImages.get(currentArenaId(state)); }
+function currentArenaFarImage(state=gameState) { return arenaFarImages.get(currentArenaId(state)); }
+function currentArenaMidgroundImage(state=gameState) { return arenaMidgroundImages.get(currentArenaId(state)); }
+
 function currentArenaForegroundImage(state=gameState) {
-  const arenaName=state?.arena?.name||arena?.name;
-  return arenaForegroundImages.get(ARENA_IMAGE_BY_NAME.get(arenaName));
+  return arenaForegroundImages.get(currentArenaId(state));
 }
 
 const VFX_CELL = {
@@ -1609,19 +1619,19 @@ function drawLocalVfx(time){
   for(const effect of localVfx){const progress=(time-effect.startedAt)/effect.duration;drawAnimatedVfx(effect.id,effect.x,effect.y,effect.size,progress,effect.options);}
 }
 
+function parallaxMetrics(image){
+  const viewScale=Math.max(.001,canvasHeight/world.height);const visibleWorldWidth=Math.min(world.width,canvasWidth/viewScale);const sourceWidth=Math.min(image.naturalWidth,visibleWorldWidth/world.width*image.naturalWidth);const maximumCamera=Math.max(1,world.width-visibleWorldWidth);const cameraProgress=Math.max(0,Math.min(1,cameraX/maximumCamera));return{sourceWidth,cameraProgress};
+}
+
+function drawParallaxBitmap(image,factor,alpha=1){
+  if(!image)return false;const{sourceWidth,cameraProgress}=parallaxMetrics(image);const maximumSource=Math.max(0,image.naturalWidth-sourceWidth);const sourceX=Math.max(0,Math.min(maximumSource,maximumSource*cameraProgress*factor));ctx.save();ctx.imageSmoothingEnabled=true;ctx.globalAlpha=alpha;ctx.drawImage(image,sourceX,0,sourceWidth,image.naturalHeight,0,0,canvasWidth,canvasHeight);ctx.restore();return true;
+}
+
 function drawArenaPngBackdrop(state) {
-  const image=currentArenaImage(state);
+  const rank=graphicsRank();const image=rank===0?currentArenaImage(state):(currentArenaFarImage(state)||currentArenaImage(state));
   if(!image)return false;
-  const viewScale=Math.max(.001,canvasHeight/world.height);
-  const visibleWorldWidth=Math.min(world.width,canvasWidth/viewScale);
-  const sourceWidth=Math.min(image.naturalWidth,visibleWorldWidth/world.width*image.naturalWidth);
-  const maximumCamera=Math.max(1,world.width-visibleWorldWidth);
-  const cameraProgress=Math.max(0,Math.min(1,cameraX/maximumCamera));
-  const parallax=graphicsRank()===2?.18:graphicsRank()===1?.24:.34;
-  const sourceX=(image.naturalWidth-sourceWidth)*cameraProgress*parallax;
+  drawParallaxBitmap(image,rank===2?.12:rank===1?.17:.34,1);
   ctx.save();
-  ctx.imageSmoothingEnabled=true;
-  ctx.drawImage(image,sourceX,0,sourceWidth,image.naturalHeight,0,0,canvasWidth,canvasHeight);
   const readability=ctx.createLinearGradient(0,0,0,canvasHeight);
   readability.addColorStop(0,'rgba(3,3,4,.08)');
   readability.addColorStop(.6,'rgba(3,3,4,.02)');
@@ -1631,18 +1641,23 @@ function drawArenaPngBackdrop(state) {
   return true;
 }
 
+function drawArenaDecorScreen(state,time,rank){
+  if(!arenaDecorAtlas||rank===0)return;const arenaId=currentArenaId(state);const index=ARENA_DECOR_INDEX.get(arenaId);if(index===undefined)return;const column=index%5,row=Math.floor(index/5);const sourceWidth=arenaDecorAtlas.naturalWidth/5,sourceHeight=arenaDecorAtlas.naturalHeight/2;const viewScale=Math.max(.001,canvasHeight/world.height);const visibleWorldWidth=Math.min(world.width,canvasWidth/viewScale);const cameraRange=Math.max(1,world.width-visibleWorldWidth);const cameraProgress=Math.max(0,Math.min(1,cameraX/cameraRange));const height=canvasHeight*(rank===2?.72:.63);const width=height*(sourceWidth/sourceHeight);const x=canvasWidth*.58-width*.5-cameraProgress*canvasWidth*.31;const y=canvasHeight-height+canvasHeight*.035+Math.sin(time*.32+index)*2.2;ctx.save();ctx.imageSmoothingEnabled=true;ctx.globalAlpha=rank===2?.58:.36;ctx.drawImage(arenaDecorAtlas,column*sourceWidth,row*sourceHeight,sourceWidth,sourceHeight,x,y,width,height);ctx.restore();
+}
+
 function drawArenaMidgroundScreen(state,time){
-  const rank=graphicsRank();if(rank===0)return;const tier=state?.arena?.tier||state?.boss?.tier||1;const theme=state?.arena?.theme||{fog:'#8b8170',trim:'#b69b70'};const drift=cameraX*canvasScale*(rank===2?.47:.39);ctx.save();
+  const rank=graphicsRank();if(rank===0)return;const tier=state?.arena?.tier||state?.boss?.tier||1;const theme=state?.arena?.theme||{fog:'#8b8170',trim:'#b69b70'};const drift=cameraX*canvasScale*(rank===2?.47:.39);drawParallaxBitmap(currentArenaMidgroundImage(state),rank===2?.42:.34,rank===2?.66:.52);drawArenaDecorScreen(state,time,rank);ctx.save();
   const hazeCount=rank===2?4:2;
   for(let index=0;index<hazeCount;index++){
     const span=canvasWidth+520;const x=((index*463-drift*(.18+index*.025)-time*(7+index*2))%span+span)%span-260;const y=canvasHeight*(.48+index*.095)+Math.sin(time*.28+index)*7;ctx.globalAlpha=.035+index*.012;ctx.fillStyle=theme.fog;ctx.beginPath();ctx.ellipse(x,y,310+index*46,22+index*7,0,0,Math.PI*2);ctx.fill();
   }
-  const silhouetteCount=rank===2?8:5;ctx.fillStyle='rgba(4,4,6,.18)';ctx.strokeStyle='rgba(209,188,145,.055)';ctx.lineWidth=1;
-  for(let index=0;index<silhouetteCount;index++){
-    const span=canvasWidth+340;const x=((index*347+tier*113-drift*.52)%span+span)%span-170;const base=canvasHeight*.78;const height=54+((index*37+tier*19)%105);const width=14+(index%3)*9;
-    if([2,6,9].includes(tier)){ctx.save();ctx.translate(x,base-height*.52);ctx.rotate(Math.sin(time*.24+index)*.025);ctx.fillRect(-2,-height*.48,4,height);ctx.beginPath();ctx.moveTo(2,-height*.38);ctx.lineTo(54+(index%2)*18,-height*.12);ctx.lineTo(3,height*.18);ctx.closePath();ctx.fill();ctx.restore();}
-    else if([4,8,10].includes(tier)){ctx.beginPath();ctx.moveTo(x-width,base);ctx.lineTo(x-width*.38,base-height);ctx.lineTo(x+width*.12,base-height-18);ctx.lineTo(x+width,base);ctx.closePath();ctx.fill();ctx.stroke();}
-    else{ctx.fillRect(x-width*.5,base-height,width,height);ctx.beginPath();ctx.moveTo(x-width,base-height);ctx.lineTo(x,base-height-30-(index%2)*18);ctx.lineTo(x+width,base-height);ctx.closePath();ctx.fill();}
+  if(!arenaDecorAtlas){const silhouetteCount=rank===2?8:5;ctx.fillStyle='rgba(4,4,6,.18)';ctx.strokeStyle='rgba(209,188,145,.055)';ctx.lineWidth=1;
+    for(let index=0;index<silhouetteCount;index++){
+      const span=canvasWidth+340;const x=((index*347+tier*113-drift*.52)%span+span)%span-170;const base=canvasHeight*.78;const height=54+((index*37+tier*19)%105);const width=14+(index%3)*9;
+      if([2,6,9].includes(tier)){ctx.save();ctx.translate(x,base-height*.52);ctx.rotate(Math.sin(time*.24+index)*.025);ctx.fillRect(-2,-height*.48,4,height);ctx.beginPath();ctx.moveTo(2,-height*.38);ctx.lineTo(54+(index%2)*18,-height*.12);ctx.lineTo(3,height*.18);ctx.closePath();ctx.fill();ctx.restore();}
+      else if([4,8,10].includes(tier)){ctx.beginPath();ctx.moveTo(x-width,base);ctx.lineTo(x-width*.38,base-height);ctx.lineTo(x+width*.12,base-height-18);ctx.lineTo(x+width,base);ctx.closePath();ctx.fill();ctx.stroke();}
+      else{ctx.fillRect(x-width*.5,base-height,width,height);ctx.beginPath();ctx.moveTo(x-width,base-height);ctx.lineTo(x,base-height-30-(index%2)*18);ctx.lineTo(x+width,base-height);ctx.closePath();ctx.fill();}
+    }
   }
   ctx.restore();
 }
@@ -1663,7 +1678,7 @@ function drawArenaWeatherScreen(state,time,foreground=false){
 }
 
 function drawArenaForegroundScreen(state,time){
-  const rank=graphicsRank();if(rank===0)return;const image=currentArenaForegroundImage(state);if(!image)return;const viewScale=Math.max(.001,canvasHeight/world.height);const visibleWorldWidth=Math.min(world.width,canvasWidth/viewScale);const sourceWidth=Math.min(image.naturalWidth,visibleWorldWidth/world.width*image.naturalWidth);const maximumCamera=Math.max(1,world.width-visibleWorldWidth);const cameraProgress=Math.max(0,Math.min(1,cameraX/maximumCamera));const foregroundFactor=rank===2?1.12:.92;const sourceX=Math.min(image.naturalWidth-sourceWidth,(image.naturalWidth-sourceWidth)*cameraProgress*foregroundFactor);ctx.save();ctx.imageSmoothingEnabled=true;ctx.globalAlpha=rank===2?.38:.2;ctx.drawImage(image,sourceX,0,sourceWidth,image.naturalHeight,0,0,canvasWidth,canvasHeight);ctx.restore();drawArenaWeatherScreen(state,time,true);
+  const rank=graphicsRank();if(rank===0)return;const image=currentArenaForegroundImage(state);if(!image)return;const viewScale=Math.max(.001,canvasHeight/world.height);const visibleWorldWidth=Math.min(world.width,canvasWidth/viewScale);const sourceWidth=Math.min(image.naturalWidth,visibleWorldWidth/world.width*image.naturalWidth);const maximumCamera=Math.max(1,world.width-visibleWorldWidth);const cameraProgress=Math.max(0,Math.min(1,cameraX/maximumCamera));const foregroundFactor=rank===2?1.12:.92;const sourceX=Math.min(image.naturalWidth-sourceWidth,(image.naturalWidth-sourceWidth)*cameraProgress*foregroundFactor);ctx.save();ctx.imageSmoothingEnabled=true;ctx.globalAlpha=rank===2?.46:.24;ctx.drawImage(image,sourceX,0,sourceWidth,image.naturalHeight,0,0,canvasWidth,canvasHeight);ctx.restore();drawArenaWeatherScreen(state,time,true);
 }
 
 function drawArenaLightingScreen(state,time){
