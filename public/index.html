@@ -125,6 +125,13 @@
 
       <section class="screen game-screen" id="gameScreen">
         <canvas id="gameCanvas"></canvas>
+        <div class="damage-vignette" id="damageVignette" aria-hidden="true"></div>
+        <div class="arena-transition" id="arenaTransition" aria-hidden="true">
+          <i></i><div><small id="transitionStageText">СТАДИЯ I</small><strong id="transitionArenaName">ПЕПЕЛЬНЫЕ ВРАТА</strong></div><b></b>
+        </div>
+        <div class="boss-intro" id="bossIntro" aria-hidden="true">
+          <div><small>ПРОКЛЯТЫЙ ВЛАДЫКА</small><strong id="bossIntroName">МОГИЛЬНЫЙ РЫЦАРЬ</strong><span id="bossIntroTitle">Хранитель первых врат</span></div>
+        </div>
         <div class="game-hud">
           <div class="raid-meta hud-panel">
             <span class="mini-sigil">✦</span>
@@ -271,6 +278,6 @@
     </div>
   </div>
   <script src="/socket.io/socket.io.js"></script>
-  <script src="/game.js?v=arena-png-v5-20260816"></script>
+  <script src="/game.js?v=parallax-v7-20260823"></script>
 </body>
 </html>

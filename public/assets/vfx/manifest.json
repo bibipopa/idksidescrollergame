@@ -1,0 +1,12 @@
+{
+  "version": "parallax-v7-20260823",
+  "file": "effects-v2.png",
+  "grid": { "columns": 4, "rows": 4 },
+  "runtimeAnimation": true,
+  "effects": [
+    "steelSlash", "heavyImpact", "parry", "rogueSlash",
+    "spearThrust", "emberBurst", "ashRune", "magicBurst",
+    "lightning", "voidRift", "waterSplash", "heal",
+    "revive", "bossPhase", "debris", "portal"
+  ]
+}
